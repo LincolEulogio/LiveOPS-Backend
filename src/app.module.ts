@@ -15,6 +15,7 @@ import { IntercomModule } from './intercom/intercom.module';
 import { ObsModule } from './obs/obs.module';
 import { VmixModule } from './vmix/vmix.module';
 import { TimelineModule } from './timeline/timeline.module';
+import { AutomationModule } from './automation/automation.module';
 
 @Module({
   imports: [
@@ -32,7 +33,7 @@ import { TimelineModule } from './timeline/timeline.module';
       ttl: 60000,
       limit: 100,
     }]),
-    EventEmitterModule.forRoot(),
+    EventEmitterModule.forRoot({ wildcard: true }),
     WebsocketsModule,
     AuthModule,
     ProductionsModule,
@@ -41,6 +42,7 @@ import { TimelineModule } from './timeline/timeline.module';
     ObsModule,
     VmixModule,
     TimelineModule,
+    AutomationModule,
   ],
   controllers: [AppController],
   providers: [

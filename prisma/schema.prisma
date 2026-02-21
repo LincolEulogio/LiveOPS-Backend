@@ -86,6 +86,69 @@ model TimelineBlock {
   @@index([productionId])
 }
 
+model Rule {
+  id           String  @id @default(uuid()) @db.Uuid
+  productionId String  @db.Uuid
+  name         String
+  description  String?
+  isEnabled    Boolean @default(true)
+
+  production Production         @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  triggers   Trigger[]
+  actions    Action[]
+  logs       RuleExecutionLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productionId])
+  @@index([isEnabled])
+}
+
+model Trigger {
+  id        String @id @default(uuid()) @db.Uuid
+  ruleId    String @db.Uuid
+  eventType String // e.g., 'obs.scene.changed', 'timeline.updated'
+  condition Json? // e.g., { "sceneName": "Intro" }
+
+  rule Rule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ruleId])
+}
+
+model Action {
+  id         String @id @default(uuid()) @db.Uuid
+  ruleId     String @db.Uuid
+  actionType String // e.g., 'obs.changeScene', 'vmix.cut', 'intercom.send'
+  payload    Json? // e.g., { "sceneName": "Camera 1" }
+  order      Int    @default(0)
+
+  rule Rule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ruleId])
+}
+
+model RuleExecutionLog {
+  id           String  @id @default(uuid()) @db.Uuid
+  ruleId       String  @db.Uuid
+  productionId String  @db.Uuid
+  status       String // e.g., 'SUCCESS', 'ERROR'
+  details      String?
+
+  rule Rule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([ruleId])
+  @@index([productionId])
+}
+
 model Permission {
   id          String  @id @default(uuid()) @db.Uuid
   action      String  @unique // e.g., 'production:create', 'scene:switch'
@@ -128,6 +191,7 @@ model Production {
   obsConnection    ObsConnection?
   vmixConnection   VmixConnection?
   timelineBlocks   TimelineBlock[]
+  rules            Rule[]
 
   @@index([status])
   @@index([deletedAt])

@@ -24,6 +24,7 @@ const intercom_module_1 = require("./intercom/intercom.module");
 const obs_module_1 = require("./obs/obs.module");
 const vmix_module_1 = require("./vmix/vmix.module");
 const timeline_module_1 = require("./timeline/timeline.module");
+const automation_module_1 = require("./automation/automation.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -49,7 +50,7 @@ exports.AppModule = AppModule = __decorate([
                     ttl: 60000,
                     limit: 100,
                 }]),
-            event_emitter_1.EventEmitterModule.forRoot(),
+            event_emitter_1.EventEmitterModule.forRoot({ wildcard: true }),
             websockets_module_1.WebsocketsModule,
             auth_module_1.AuthModule,
             productions_module_1.ProductionsModule,
@@ -58,6 +59,7 @@ exports.AppModule = AppModule = __decorate([
             obs_module_1.ObsModule,
             vmix_module_1.VmixModule,
             timeline_module_1.TimelineModule,
+            automation_module_1.AutomationModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [
