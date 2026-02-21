@@ -14,6 +14,8 @@ interface ObsInstance {
         scenes: string[];
         isStreaming: boolean;
         isRecording: boolean;
+        cpuUsage: number;
+        fps: number;
     };
 }
 
@@ -145,23 +147,31 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
             this.eventEmitter.emit('obs.connection.state', { productionId, connected: true });
 
             // Fetch metadata in background or before final resolution
-            const [sceneList, streamStatus, recordStatus] = await Promise.all([
+            const [sceneList, streamStatus, recordStatus, stats, videoSettings] = await Promise.all([
                 obs.call('GetSceneList'),
                 obs.call('GetStreamStatus'),
-                obs.call('GetRecordStatus')
+                obs.call('GetRecordStatus'),
+                obs.call('GetStats'),
+                obs.call('GetVideoSettings')
             ]);
+
+            const fps = Math.round(videoSettings.fpsNumerator / videoSettings.fpsDenominator);
 
             instance.lastState = {
                 currentScene: sceneList.currentProgramSceneName,
                 scenes: sceneList.scenes.map((s: any) => s.sceneName),
                 isStreaming: streamStatus.outputActive,
                 isRecording: recordStatus.outputActive,
+                cpuUsage: stats.cpuUsage,
+                fps: fps,
             };
 
             // Re-emit scene change if we have one to populate frontend
             this.eventEmitter.emit('obs.scene.changed', {
                 productionId,
-                sceneName: sceneList.currentProgramSceneName
+                sceneName: sceneList.currentProgramSceneName,
+                cpuUsage: stats.cpuUsage,
+                fps: fps,
             });
 
         } catch (error: any) {

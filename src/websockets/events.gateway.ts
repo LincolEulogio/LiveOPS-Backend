@@ -146,10 +146,14 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     // --- Internal Events Handlers (Forwarding to WS) ---
 
     @OnEvent('obs.scene.changed')
-    handleObsSceneChanged(payload: { productionId: string; sceneName: string }) {
+    handleObsSceneChanged(payload: { productionId: string; sceneName: string; cpuUsage?: number; fps?: number }) {
         this.server
             .to(`production_${payload.productionId}`)
-            .emit('obs.scene.changed', { sceneName: payload.sceneName });
+            .emit('obs.scene.changed', {
+                sceneName: payload.sceneName,
+                cpuUsage: payload.cpuUsage,
+                fps: payload.fps
+            });
     }
 
     @OnEvent('obs.stream.state')
@@ -174,7 +178,15 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     }
 
     @OnEvent('vmix.input.changed')
-    handleVmixInputChanged(payload: { productionId: string; activeInput: number; previewInput: number }) {
+    handleVmixInputChanged(payload: {
+        productionId: string;
+        activeInput: number;
+        previewInput: number;
+        isStreaming?: boolean;
+        isRecording?: boolean;
+        isExternal?: boolean;
+        isMultiCorder?: boolean;
+    }) {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('vmix.input.changed', payload);

@@ -94,18 +94,21 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
             // Check Active and Preview Inputs
             const newActive = parseInt(parsed.vmix.active, 10);
             const newPreview = parseInt(parsed.vmix.preview, 10);
+            const isStreaming = parsed.vmix.streaming === 'True';
+            const isRecording = parsed.vmix.recording === 'True';
+            const isExternal = parsed.vmix.external === 'True';
+            const isMultiCorder = parsed.vmix.multiCorder === 'True';
 
-            // Emit domain event if inputs changed
-            if (instance.activeInput !== newActive || instance.previewInput !== newPreview) {
-                instance.activeInput = newActive;
-                instance.previewInput = newPreview;
-
-                this.eventEmitter.emit('vmix.input.changed', {
-                    productionId,
-                    activeInput: newActive,
-                    previewInput: newPreview
-                });
-            }
+            // Emit domain event if inputs or states changed
+            this.eventEmitter.emit('vmix.input.changed', {
+                productionId,
+                activeInput: newActive,
+                previewInput: newPreview,
+                isStreaming,
+                isRecording,
+                isExternal,
+                isMultiCorder,
+            });
 
             // We consider it connected if the poll succeeded
             this.eventEmitter.emit('vmix.connection.state', { productionId, connected: true });
