@@ -16,6 +16,7 @@ import { ObsModule } from './obs/obs.module';
 import { VmixModule } from './vmix/vmix.module';
 import { TimelineModule } from './timeline/timeline.module';
 import { AutomationModule } from './automation/automation.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { AutomationModule } from './automation/automation.module';
     VmixModule,
     TimelineModule,
     AutomationModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [

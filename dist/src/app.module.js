@@ -25,6 +25,7 @@ const obs_module_1 = require("./obs/obs.module");
 const vmix_module_1 = require("./vmix/vmix.module");
 const timeline_module_1 = require("./timeline/timeline.module");
 const automation_module_1 = require("./automation/automation.module");
+const analytics_module_1 = require("./analytics/analytics.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -60,6 +61,7 @@ exports.AppModule = AppModule = __decorate([
             vmix_module_1.VmixModule,
             timeline_module_1.TimelineModule,
             automation_module_1.AutomationModule,
+            analytics_module_1.AnalyticsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

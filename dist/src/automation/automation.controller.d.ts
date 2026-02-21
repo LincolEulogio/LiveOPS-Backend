@@ -58,6 +58,14 @@ export declare class AutomationController {
         isEnabled: boolean;
     }>;
     getRule(productionId: string, id: string): Promise<{
+        logs: {
+            productionId: string;
+            id: string;
+            status: string;
+            createdAt: Date;
+            details: string | null;
+            ruleId: string;
+        }[];
         triggers: {
             id: string;
             createdAt: Date;
@@ -73,14 +81,6 @@ export declare class AutomationController {
             order: number;
             actionType: string;
             payload: import("@prisma/client/runtime/client").JsonValue | null;
-            ruleId: string;
-        }[];
-        logs: {
-            productionId: string;
-            id: string;
-            status: string;
-            createdAt: Date;
-            details: string | null;
             ruleId: string;
         }[];
     } & {

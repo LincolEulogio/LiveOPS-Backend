@@ -31,6 +31,14 @@ export declare class AutomationService {
         isEnabled: boolean;
     })[]>;
     getRule(id: string, productionId: string): Promise<{
+        logs: {
+            productionId: string;
+            id: string;
+            status: string;
+            createdAt: Date;
+            details: string | null;
+            ruleId: string;
+        }[];
         triggers: {
             id: string;
             createdAt: Date;
@@ -46,14 +54,6 @@ export declare class AutomationService {
             order: number;
             actionType: string;
             payload: import("@prisma/client/runtime/client").JsonValue | null;
-            ruleId: string;
-        }[];
-        logs: {
-            productionId: string;
-            id: string;
-            status: string;
-            createdAt: Date;
-            details: string | null;
             ruleId: string;
         }[];
     } & {

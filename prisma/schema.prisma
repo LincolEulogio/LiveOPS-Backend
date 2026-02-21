@@ -7,25 +7,20 @@ datasource db {
 }
 
 model User {
-  id       String  @id @default(uuid()) @db.Uuid
-  email    String  @unique
-  password String
-  name     String?
-
-  // Relations
-  sessions    Session[]
-  productions ProductionUser[]
-  auditLogs   AuditLog[]
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Soft Delete
-  deletedAt        DateTime?
-  deviceSessions   DeviceSession[]
-  commands         Command[]         @relation("CommandSender")
-  commandResponses CommandResponse[]
+  id                 String             @id @default(uuid()) @db.Uuid
+  email              String             @unique
+  password           String
+  name               String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  deletedAt          DateTime?
+  sessions           Session[]
+  productions        ProductionUser[]
+  sentCommands       Command[]          @relation("CommandSender")
+  commandResponses   CommandResponse[]
+  operatorActivities OperatorActivity[]
+  auditLogs          AuditLog[]
+  deviceSessions     DeviceSession[]
 
   // Performance Indexes
   @@index([email])
@@ -149,6 +144,37 @@ model RuleExecutionLog {
   @@index([productionId])
 }
 
+model ProductionLog {
+  id           String @id @default(uuid()) @db.Uuid
+  productionId String @db.Uuid
+  eventType    String // e.g., 'obs.scene.changed', 'command.sent', 'timeline.started'
+  details      Json? // e.g., { sceneName: "Camera 1", durationMs: 5000 }
+
+  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([productionId])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+model OperatorActivity {
+  id           String @id @default(uuid()) @db.Uuid
+  userId       String @db.Uuid
+  productionId String @db.Uuid
+  action       String // e.g., 'command.ack_sent'
+  details      Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([productionId])
+  @@index([createdAt])
+}
+
 model Permission {
   id          String  @id @default(uuid()) @db.Uuid
   action      String  @unique // e.g., 'production:create', 'scene:switch'
@@ -192,6 +218,7 @@ model Production {
   vmixConnection   VmixConnection?
   timelineBlocks   TimelineBlock[]
   rules            Rule[]
+  logs             ProductionLog[]
 
   @@index([status])
   @@index([deletedAt])
