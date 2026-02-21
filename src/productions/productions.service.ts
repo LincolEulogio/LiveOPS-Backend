@@ -82,16 +82,17 @@ export class ProductionsService {
             });
 
             if (obsConfig) {
+                const url = `ws://${obsConfig.host || '127.0.0.1'}:${obsConfig.port || '4455'}`;
                 await tx.obsConnection.upsert({
                     where: { productionId },
                     create: {
                         productionId,
-                        url: obsConfig.url,
+                        url,
                         password: obsConfig.password,
                         isEnabled: obsConfig.isEnabled ?? true
                     },
                     update: {
-                        url: obsConfig.url,
+                        url,
                         password: obsConfig.password,
                         isEnabled: obsConfig.isEnabled
                     }
@@ -99,15 +100,16 @@ export class ProductionsService {
             }
 
             if (vmixConfig) {
+                const url = `http://${vmixConfig.host || '127.0.0.1'}:${vmixConfig.port || '8088'}`;
                 await tx.vmixConnection.upsert({
                     where: { productionId },
                     create: {
                         productionId,
-                        url: vmixConfig.url,
+                        url,
                         isEnabled: vmixConfig.isEnabled ?? true
                     },
                     update: {
-                        url: vmixConfig.url,
+                        url,
                         isEnabled: vmixConfig.isEnabled
                     }
                 });

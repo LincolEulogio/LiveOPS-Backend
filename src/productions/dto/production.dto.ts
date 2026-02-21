@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsEnum, ValidateNested, IsBoolean, IsUrl } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export enum EngineType {
     OBS = 'OBS',
@@ -10,6 +11,38 @@ export enum ProductionStatus {
     ACTIVE = 'ACTIVE',
     ARCHIVED = 'ARCHIVED',
     DRAFT = 'DRAFT',
+}
+
+export class ObsConfigDto {
+    @IsString()
+    @IsOptional()
+    host?: string;
+
+    @IsString()
+    @IsOptional()
+    port?: string;
+
+    @IsString()
+    @IsOptional()
+    password?: string;
+
+    @IsBoolean()
+    @IsOptional()
+    isEnabled?: boolean;
+}
+
+export class VmixConfigDto {
+    @IsString()
+    @IsOptional()
+    host?: string;
+
+    @IsString()
+    @IsOptional()
+    port?: string;
+
+    @IsBoolean()
+    @IsOptional()
+    isEnabled?: boolean;
 }
 
 export class CreateProductionDto {
@@ -48,17 +81,14 @@ export class UpdateProductionDto {
     status?: ProductionStatus;
 
     @IsOptional()
-    obsConfig?: {
-        url: string;
-        password?: string;
-        isEnabled?: boolean;
-    };
+    @ValidateNested()
+    @Type(() => ObsConfigDto)
+    obsConfig?: ObsConfigDto;
 
     @IsOptional()
-    vmixConfig?: {
-        url: string;
-        isEnabled?: boolean;
-    };
+    @ValidateNested()
+    @Type(() => VmixConfigDto)
+    vmixConfig?: VmixConfigDto;
 }
 
 export class UpdateProductionStateDto {

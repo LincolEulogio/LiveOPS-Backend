@@ -9,8 +9,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AssignUserDto = exports.UpdateProductionStateDto = exports.UpdateProductionDto = exports.CreateProductionDto = exports.ProductionStatus = exports.EngineType = void 0;
+exports.AssignUserDto = exports.UpdateProductionStateDto = exports.UpdateProductionDto = exports.CreateProductionDto = exports.VmixConfigDto = exports.ObsConfigDto = exports.ProductionStatus = exports.EngineType = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 var EngineType;
 (function (EngineType) {
     EngineType["OBS"] = "OBS";
@@ -23,6 +24,54 @@ var ProductionStatus;
     ProductionStatus["ARCHIVED"] = "ARCHIVED";
     ProductionStatus["DRAFT"] = "DRAFT";
 })(ProductionStatus || (exports.ProductionStatus = ProductionStatus = {}));
+class ObsConfigDto {
+    host;
+    port;
+    password;
+    isEnabled;
+}
+exports.ObsConfigDto = ObsConfigDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], ObsConfigDto.prototype, "host", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], ObsConfigDto.prototype, "port", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], ObsConfigDto.prototype, "password", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], ObsConfigDto.prototype, "isEnabled", void 0);
+class VmixConfigDto {
+    host;
+    port;
+    isEnabled;
+}
+exports.VmixConfigDto = VmixConfigDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], VmixConfigDto.prototype, "host", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], VmixConfigDto.prototype, "port", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], VmixConfigDto.prototype, "isEnabled", void 0);
 class CreateProductionDto {
     name;
     description;
@@ -55,6 +104,8 @@ class UpdateProductionDto {
     description;
     engineType;
     status;
+    obsConfig;
+    vmixConfig;
 }
 exports.UpdateProductionDto = UpdateProductionDto;
 __decorate([
@@ -77,6 +128,18 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateProductionDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => ObsConfigDto),
+    __metadata("design:type", ObsConfigDto)
+], UpdateProductionDto.prototype, "obsConfig", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => VmixConfigDto),
+    __metadata("design:type", VmixConfigDto)
+], UpdateProductionDto.prototype, "vmixConfig", void 0);
 class UpdateProductionStateDto {
     status;
 }

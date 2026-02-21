@@ -67,7 +67,9 @@ let ProductionsService = class ProductionsService {
                         user: { select: { id: true, name: true, email: true } },
                         role: true
                     }
-                }
+                },
+                obsConnection: true,
+                vmixConnection: true
             }
         });
         if (!prod)
@@ -75,14 +77,45 @@ let ProductionsService = class ProductionsService {
         return prod;
     }
     async update(productionId, dto) {
-        return this.prisma.production.update({
-            where: { id: productionId },
-            data: {
-                name: dto.name,
-                description: dto.description,
-                engineType: dto.engineType,
-                status: dto.status
+        const { obsConfig, vmixConfig, ...basicData } = dto;
+        return this.prisma.$transaction(async (tx) => {
+            const production = await tx.production.update({
+                where: { id: productionId },
+                data: basicData
+            });
+            if (obsConfig) {
+                const url = `ws://${obsConfig.host || '127.0.0.1'}:${obsConfig.port || '4455'}`;
+                await tx.obsConnection.upsert({
+                    where: { productionId },
+                    create: {
+                        productionId,
+                        url,
+                        password: obsConfig.password,
+                        isEnabled: obsConfig.isEnabled ?? true
+                    },
+                    update: {
+                        url,
+                        password: obsConfig.password,
+                        isEnabled: obsConfig.isEnabled
+                    }
+                });
             }
+            if (vmixConfig) {
+                const url = `http://${vmixConfig.host || '127.0.0.1'}:${vmixConfig.port || '8088'}`;
+                await tx.vmixConnection.upsert({
+                    where: { productionId },
+                    create: {
+                        productionId,
+                        url,
+                        isEnabled: vmixConfig.isEnabled ?? true
+                    },
+                    update: {
+                        url,
+                        isEnabled: vmixConfig.isEnabled
+                    }
+                });
+            }
+            return production;
         });
     }
     async updateState(productionId, dto) {

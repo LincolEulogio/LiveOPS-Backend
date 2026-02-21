@@ -40,6 +40,23 @@ export declare class ProductionsController {
         engineType: import("@prisma/client").$Enums.EngineType;
     })[]>;
     findOne(id: string, req: any): Promise<{
+        vmixConnection: {
+            url: string;
+            productionId: string;
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            isEnabled: boolean;
+        } | null;
+        obsConnection: {
+            url: string;
+            productionId: string;
+            id: string;
+            createdAt: Date;
+            password: string | null;
+            updatedAt: Date;
+            isEnabled: boolean;
+        } | null;
         users: ({
             user: {
                 id: string;

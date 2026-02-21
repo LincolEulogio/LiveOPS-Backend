@@ -8,6 +8,17 @@ export declare enum ProductionStatus {
     ARCHIVED = "ARCHIVED",
     DRAFT = "DRAFT"
 }
+export declare class ObsConfigDto {
+    host?: string;
+    port?: string;
+    password?: string;
+    isEnabled?: boolean;
+}
+export declare class VmixConfigDto {
+    host?: string;
+    port?: string;
+    isEnabled?: boolean;
+}
 export declare class CreateProductionDto {
     name: string;
     description?: string;
@@ -19,6 +30,8 @@ export declare class UpdateProductionDto {
     description?: string;
     engineType?: EngineType;
     status?: ProductionStatus;
+    obsConfig?: ObsConfigDto;
+    vmixConfig?: VmixConfigDto;
 }
 export declare class UpdateProductionStateDto {
     status: ProductionStatus;
