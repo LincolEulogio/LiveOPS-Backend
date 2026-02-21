@@ -71,11 +71,12 @@ export class VmixService {
         }
     }
 
-    async fade(productionId: string) {
+    async fade(productionId: string, dto?: { duration?: number }) {
         try {
             // Triggers a fade transition from Preview to Active
-            await this.vmixManager.sendCommand(productionId, 'Fade');
-            return { success: true, action: 'fade' };
+            const params = dto?.duration ? { Duration: dto.duration } : undefined;
+            await this.vmixManager.sendCommand(productionId, 'Fade', params);
+            return { success: true, action: 'fade', duration: dto?.duration };
         } catch (e: any) {
             this.logger.error(`Failed to trigger fade: ${e.message}`);
             throw new BadRequestException(`vMix Error: ${e.message || 'Unknown'}`);

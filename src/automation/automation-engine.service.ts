@@ -93,6 +93,10 @@ export class AutomationEngineService {
                         await this.vmixService.cut(rule.productionId);
                         break;
 
+                    case 'vmix.fade':
+                        await this.vmixService.fade(rule.productionId, { duration: payload?.duration || 500 });
+                        break;
+
                     case 'vmix.changeInput':
                         if (payload?.input) {
                             await this.vmixService.changeInput(rule.productionId, { input: payload.input });
