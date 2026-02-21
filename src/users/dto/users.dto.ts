@@ -11,6 +11,10 @@ export class CreateUserDto {
     @IsString()
     @MinLength(6)
     password: string;
+
+    @IsString()
+    @IsOptional()
+    globalRoleId?: string;
 }
 
 export class UpdateUserDto {
@@ -22,6 +26,10 @@ export class UpdateUserDto {
     @MinLength(6)
     @IsOptional()
     password?: string;
+
+    @IsString()
+    @IsOptional()
+    globalRoleId?: string;
 }
 
 export class CreateRoleDto {

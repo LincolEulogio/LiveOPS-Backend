@@ -15,6 +15,7 @@ class CreateUserDto {
     email;
     name;
     password;
+    globalRoleId;
 }
 exports.CreateUserDto = CreateUserDto;
 __decorate([
@@ -31,9 +32,15 @@ __decorate([
     (0, class_validator_1.MinLength)(6),
     __metadata("design:type", String)
 ], CreateUserDto.prototype, "password", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateUserDto.prototype, "globalRoleId", void 0);
 class UpdateUserDto {
     name;
     password;
+    globalRoleId;
 }
 exports.UpdateUserDto = UpdateUserDto;
 __decorate([
@@ -47,6 +54,11 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateUserDto.prototype, "password", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateUserDto.prototype, "globalRoleId", void 0);
 class CreateRoleDto {
     name;
     description;

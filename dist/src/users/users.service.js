@@ -106,7 +106,17 @@ let UsersService = UsersService_1 = class UsersService {
     async findAllUsers() {
         return this.prisma.user.findMany({
             where: { deletedAt: null },
-            select: { id: true, email: true, name: true, createdAt: true, updatedAt: true }
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                createdAt: true,
+                updatedAt: true,
+                globalRoleId: true,
+                globalRole: {
+                    select: { name: true }
+                }
+            }
         });
     }
     async createUser(dto) {
@@ -118,9 +128,17 @@ let UsersService = UsersService_1 = class UsersService {
             data: {
                 email: dto.email,
                 name: dto.name,
-                password: hashedPassword
+                password: hashedPassword,
+                globalRoleId: dto.globalRoleId || null
             },
-            select: { id: true, email: true, name: true, createdAt: true }
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                createdAt: true,
+                globalRoleId: true,
+                globalRole: { select: { name: true } }
+            }
         });
     }
     async updateUser(id, dto) {
@@ -131,10 +149,20 @@ let UsersService = UsersService_1 = class UsersService {
         if (dto.password) {
             data.password = await bcrypt.hash(dto.password, 10);
         }
+        if (data.globalRoleId === "") {
+            data.globalRoleId = null;
+        }
         return this.prisma.user.update({
             where: { id },
             data,
-            select: { id: true, email: true, name: true, updatedAt: true }
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                updatedAt: true,
+                globalRoleId: true,
+                globalRole: { select: { name: true } }
+            }
         });
     }
     async deleteUser(id) {

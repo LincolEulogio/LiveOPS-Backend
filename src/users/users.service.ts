@@ -74,7 +74,17 @@ export class UsersService implements OnModuleInit {
     async findAllUsers() {
         return this.prisma.user.findMany({
             where: { deletedAt: null },
-            select: { id: true, email: true, name: true, createdAt: true, updatedAt: true }
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                createdAt: true,
+                updatedAt: true,
+                globalRoleId: true,
+                globalRole: {
+                    select: { name: true }
+                }
+            }
         });
     }
 
@@ -87,9 +97,17 @@ export class UsersService implements OnModuleInit {
             data: {
                 email: dto.email,
                 name: dto.name,
-                password: hashedPassword
+                password: hashedPassword,
+                globalRoleId: dto.globalRoleId || null
             },
-            select: { id: true, email: true, name: true, createdAt: true }
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                createdAt: true,
+                globalRoleId: true,
+                globalRole: { select: { name: true } }
+            }
         });
     }
 
@@ -101,11 +119,21 @@ export class UsersService implements OnModuleInit {
         if (dto.password) {
             data.password = await bcrypt.hash(dto.password, 10);
         }
+        if (data.globalRoleId === "") {
+            data.globalRoleId = null;
+        }
 
         return this.prisma.user.update({
             where: { id },
             data,
-            select: { id: true, email: true, name: true, updatedAt: true }
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                updatedAt: true,
+                globalRoleId: true,
+                globalRole: { select: { name: true } }
+            }
         });
     }
 

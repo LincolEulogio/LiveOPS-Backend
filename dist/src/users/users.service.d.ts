@@ -33,18 +33,30 @@ export declare class UsersService implements OnModuleInit {
         email: string;
         name: string | null;
         updatedAt: Date;
+        globalRoleId: string | null;
+        globalRole: {
+            name: string;
+        } | null;
     }[]>;
     createUser(dto: CreateUserDto): Promise<{
         id: string;
         createdAt: Date;
         email: string;
         name: string | null;
+        globalRoleId: string | null;
+        globalRole: {
+            name: string;
+        } | null;
     }>;
     updateUser(id: string, dto: UpdateUserDto): Promise<{
         id: string;
         email: string;
         name: string | null;
         updatedAt: Date;
+        globalRoleId: string | null;
+        globalRole: {
+            name: string;
+        } | null;
     }>;
     deleteUser(id: string): Promise<{
         id: string;
