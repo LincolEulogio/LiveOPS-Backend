@@ -46,6 +46,19 @@ export class UpdateProductionDto {
     @IsEnum(ProductionStatus)
     @IsOptional()
     status?: ProductionStatus;
+
+    @IsOptional()
+    obsConfig?: {
+        url: string;
+        password?: string;
+        isEnabled?: boolean;
+    };
+
+    @IsOptional()
+    vmixConfig?: {
+        url: string;
+        isEnabled?: boolean;
+    };
 }
 
 export class UpdateProductionStateDto {

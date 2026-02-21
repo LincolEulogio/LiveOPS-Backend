@@ -62,7 +62,9 @@ export class ProductionsService {
                         user: { select: { id: true, name: true, email: true } },
                         role: true
                     }
-                }
+                },
+                obsConnection: true,
+                vmixConnection: true
             }
         });
 
@@ -71,14 +73,47 @@ export class ProductionsService {
     }
 
     async update(productionId: string, dto: UpdateProductionDto) {
-        return this.prisma.production.update({
-            where: { id: productionId },
-            data: {
-                name: dto.name,
-                description: dto.description,
-                engineType: dto.engineType,
-                status: dto.status
+        const { obsConfig, vmixConfig, ...basicData } = dto;
+
+        return this.prisma.$transaction(async (tx) => {
+            const production = await tx.production.update({
+                where: { id: productionId },
+                data: basicData
+            });
+
+            if (obsConfig) {
+                await tx.obsConnection.upsert({
+                    where: { productionId },
+                    create: {
+                        productionId,
+                        url: obsConfig.url,
+                        password: obsConfig.password,
+                        isEnabled: obsConfig.isEnabled ?? true
+                    },
+                    update: {
+                        url: obsConfig.url,
+                        password: obsConfig.password,
+                        isEnabled: obsConfig.isEnabled
+                    }
+                });
             }
+
+            if (vmixConfig) {
+                await tx.vmixConnection.upsert({
+                    where: { productionId },
+                    create: {
+                        productionId,
+                        url: vmixConfig.url,
+                        isEnabled: vmixConfig.isEnabled ?? true
+                    },
+                    update: {
+                        url: vmixConfig.url,
+                        isEnabled: vmixConfig.isEnabled
+                    }
+                });
+            }
+
+            return production;
         });
     }
 
