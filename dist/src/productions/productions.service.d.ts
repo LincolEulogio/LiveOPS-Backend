@@ -1,8 +1,10 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductionDto, UpdateProductionDto, UpdateProductionStateDto, AssignUserDto } from './dto/production.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 export declare class ProductionsService {
     private prisma;
-    constructor(prisma: PrismaService);
+    private eventEmitter;
+    constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
     create(userId: string, dto: CreateProductionDto): Promise<{
         description: string | null;
         id: string;
@@ -47,6 +49,7 @@ export declare class ProductionsService {
             createdAt: Date;
             updatedAt: Date;
             isEnabled: boolean;
+            pollingInterval: number;
         } | null;
         obsConnection: {
             url: string;

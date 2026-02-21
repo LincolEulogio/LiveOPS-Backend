@@ -28,15 +28,17 @@ let VmixService = VmixService_1 = class VmixService {
             update: {
                 url: dto.url,
                 isEnabled: dto.isEnabled ?? true,
+                pollingInterval: dto.pollingInterval ?? 500,
             },
             create: {
                 productionId,
                 url: dto.url,
                 isEnabled: dto.isEnabled ?? true,
+                pollingInterval: dto.pollingInterval ?? 500,
             }
         });
         if (connection.isEnabled) {
-            this.vmixManager.connectVmix(productionId, connection.url);
+            this.vmixManager.connectVmix(productionId, connection.url, connection.pollingInterval);
         }
         else {
             this.vmixManager.stopPolling(productionId);
@@ -50,6 +52,9 @@ let VmixService = VmixService_1 = class VmixService {
         if (!conn)
             throw new common_1.NotFoundException('vMix Connection not configured for this production');
         return conn;
+    }
+    isConnected(productionId) {
+        return this.vmixManager.isConnected(productionId);
     }
     async changeInput(productionId, dto) {
         try {
@@ -71,10 +76,11 @@ let VmixService = VmixService_1 = class VmixService {
             throw new common_1.BadRequestException(`vMix Error: ${e.message || 'Unknown'}`);
         }
     }
-    async fade(productionId) {
+    async fade(productionId, dto) {
         try {
-            await this.vmixManager.sendCommand(productionId, 'Fade');
-            return { success: true, action: 'fade' };
+            const params = dto?.duration ? { Duration: dto.duration } : undefined;
+            await this.vmixManager.sendCommand(productionId, 'Fade', params);
+            return { success: true, action: 'fade', duration: dto?.duration };
         }
         catch (e) {
             this.logger.error(`Failed to trigger fade: ${e.message}`);

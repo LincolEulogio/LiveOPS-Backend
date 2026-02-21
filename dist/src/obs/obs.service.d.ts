@@ -24,6 +24,16 @@ export declare class ObsService {
         updatedAt: Date;
         isEnabled: boolean;
     }>;
+    isConnected(productionId: string): boolean;
+    getRealTimeState(productionId: string): Promise<{
+        currentScene?: string | undefined;
+        scenes?: string[] | undefined;
+        isStreaming?: boolean | undefined;
+        isRecording?: boolean | undefined;
+        cpuUsage?: number | undefined;
+        fps?: number | undefined;
+        isConnected: boolean;
+    }>;
     private getObs;
     changeScene(productionId: string, dto: ChangeSceneDto): Promise<{
         success: boolean;
@@ -33,6 +43,12 @@ export declare class ObsService {
         success: boolean;
     }>;
     stopStream(productionId: string): Promise<{
+        success: boolean;
+    }>;
+    startRecord(productionId: string): Promise<{
+        success: boolean;
+    }>;
+    stopRecord(productionId: string): Promise<{
         success: boolean;
     }>;
 }

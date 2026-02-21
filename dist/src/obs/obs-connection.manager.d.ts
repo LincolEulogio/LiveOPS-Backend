@@ -2,6 +2,7 @@ import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import OBSWebSocket from 'obs-websocket-js';
 import { PrismaService } from '../prisma/prisma.service';
+import { EngineType } from '../productions/dto/production.dto';
 export declare class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     private prisma;
     private eventEmitter;
@@ -15,5 +16,20 @@ export declare class ObsConnectionManager implements OnModuleInit, OnModuleDestr
     private disconnectInstance;
     disconnectObs(productionId: string): Promise<void>;
     private scheduleReconnect;
+    handleConnectionUpdate(payload: {
+        productionId: string;
+        type: EngineType;
+        url: string;
+        password?: string;
+    }): void;
     getInstance(productionId: string): OBSWebSocket | undefined;
+    getObsState(productionId: string): {
+        currentScene?: string | undefined;
+        scenes?: string[] | undefined;
+        isStreaming?: boolean | undefined;
+        isRecording?: boolean | undefined;
+        cpuUsage?: number | undefined;
+        fps?: number | undefined;
+        isConnected: boolean;
+    };
 }

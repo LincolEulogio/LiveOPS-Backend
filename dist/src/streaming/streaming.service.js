@@ -29,10 +29,23 @@ let StreamingService = class StreamingService {
         });
         if (!production)
             throw new common_1.NotFoundException('Production not found');
+        let isConnected = false;
+        let obsState = null;
+        let vmixState = null;
+        if (production.engineType === 'OBS') {
+            obsState = await this.obsService.getRealTimeState(productionId);
+            isConnected = obsState.isConnected;
+        }
+        else if (production.engineType === 'VMIX') {
+            isConnected = this.vmixService.isConnected(productionId);
+        }
         return {
             productionId,
             engineType: production.engineType,
             status: production.status,
+            isConnected,
+            obs: obsState,
+            vmix: vmixState,
             lastUpdate: new Date().toISOString(),
         };
     }
@@ -62,6 +75,10 @@ let StreamingService = class StreamingService {
                 return this.obsService.startStream(productionId);
             case 'STOP_STREAM':
                 return this.obsService.stopStream(productionId);
+            case 'START_RECORD':
+                return this.obsService.startRecord(productionId);
+            case 'STOP_RECORD':
+                return this.obsService.stopRecord(productionId);
             default:
                 throw new common_1.BadRequestException(`Unknown OBS command: ${dto.type}`);
         }

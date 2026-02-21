@@ -1,11 +1,13 @@
 import { OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     private prisma;
+    private eventEmitter;
     server: Server;
     private logger;
-    constructor(prisma: PrismaService);
+    constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
     afterInit(server: Server): void;
     handleConnection(client: Socket, ...args: any[]): Promise<void>;
     handleJoinRoom(data: {
@@ -45,8 +47,15 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
     handleObsSceneChanged(payload: {
         productionId: string;
         sceneName: string;
+        cpuUsage?: number;
+        fps?: number;
     }): void;
     handleObsStreamState(payload: {
+        productionId: string;
+        active: boolean;
+        state: string;
+    }): void;
+    handleObsRecordState(payload: {
         productionId: string;
         active: boolean;
         state: string;
@@ -59,6 +68,10 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         productionId: string;
         activeInput: number;
         previewInput: number;
+        isStreaming?: boolean;
+        isRecording?: boolean;
+        isExternal?: boolean;
+        isMultiCorder?: boolean;
     }): void;
     handleVmixConnectionState(payload: {
         productionId: string;

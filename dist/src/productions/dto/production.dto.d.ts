@@ -13,11 +13,13 @@ export declare class ObsConfigDto {
     port?: string;
     password?: string;
     isEnabled?: boolean;
+    pollingInterval?: number;
 }
 export declare class VmixConfigDto {
     host?: string;
     port?: string;
     isEnabled?: boolean;
+    pollingInterval?: number;
 }
 export declare class CreateProductionDto {
     name: string;

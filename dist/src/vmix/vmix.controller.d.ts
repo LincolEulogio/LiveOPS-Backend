@@ -10,6 +10,7 @@ export declare class VmixController {
         createdAt: Date;
         updatedAt: Date;
         isEnabled: boolean;
+        pollingInterval: number;
     }>;
     getConnection(productionId: string): Promise<{
         url: string;
@@ -18,6 +19,7 @@ export declare class VmixController {
         createdAt: Date;
         updatedAt: Date;
         isEnabled: boolean;
+        pollingInterval: number;
     }>;
     changeInput(productionId: string, dto: ChangeInputDto): Promise<{
         success: boolean;
@@ -31,5 +33,6 @@ export declare class VmixController {
     fade(productionId: string): Promise<{
         success: boolean;
         action: string;
+        duration: number | undefined;
     }>;
 }

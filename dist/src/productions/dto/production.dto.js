@@ -29,6 +29,7 @@ class ObsConfigDto {
     port;
     password;
     isEnabled;
+    pollingInterval;
 }
 exports.ObsConfigDto = ObsConfigDto;
 __decorate([
@@ -51,10 +52,16 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], ObsConfigDto.prototype, "isEnabled", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], ObsConfigDto.prototype, "pollingInterval", void 0);
 class VmixConfigDto {
     host;
     port;
     isEnabled;
+    pollingInterval;
 }
 exports.VmixConfigDto = VmixConfigDto;
 __decorate([
@@ -72,6 +79,11 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], VmixConfigDto.prototype, "isEnabled", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], VmixConfigDto.prototype, "pollingInterval", void 0);
 class CreateProductionDto {
     name;
     description;

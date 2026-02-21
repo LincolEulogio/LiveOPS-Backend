@@ -14,6 +14,8 @@ model User {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   deletedAt          DateTime?
+  globalRoleId       String?            @db.Uuid
+  globalRole         Role?              @relation("GlobalUserRole", fields: [globalRoleId], references: [id])
   sessions           Session[]
   productions        ProductionUser[]
   sentCommands       Command[]          @relation("CommandSender")
@@ -35,6 +37,7 @@ model Role {
   // Relations
   permissions RolePermission[]
   users       ProductionUser[]
+  globalUsers User[]           @relation("GlobalUserRole")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

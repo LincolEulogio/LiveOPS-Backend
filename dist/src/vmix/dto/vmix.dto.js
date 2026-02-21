@@ -14,6 +14,7 @@ const class_validator_1 = require("class-validator");
 class SaveVmixConnectionDto {
     url;
     isEnabled;
+    pollingInterval;
 }
 exports.SaveVmixConnectionDto = SaveVmixConnectionDto;
 __decorate([
@@ -27,6 +28,11 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], SaveVmixConnectionDto.prototype, "isEnabled", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], SaveVmixConnectionDto.prototype, "pollingInterval", void 0);
 class ChangeInputDto {
     input;
 }

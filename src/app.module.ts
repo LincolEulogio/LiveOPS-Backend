@@ -18,6 +18,7 @@ import { TimelineModule } from './timeline/timeline.module';
 import { AutomationModule } from './automation/automation.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { StreamingModule } from './streaming/streaming.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { StreamingModule } from './streaming/streaming.module';
     AutomationModule,
     AnalyticsModule,
     StreamingModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [

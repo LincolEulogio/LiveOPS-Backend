@@ -12,10 +12,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductionsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const production_dto_1 = require("./dto/production.dto");
+const event_emitter_1 = require("@nestjs/event-emitter");
 let ProductionsService = class ProductionsService {
     prisma;
-    constructor(prisma) {
+    eventEmitter;
+    constructor(prisma, eventEmitter) {
         this.prisma = prisma;
+        this.eventEmitter = eventEmitter;
     }
     async create(userId, dto) {
         let adminRole = await this.prisma.role.findUnique({ where: { name: 'ADMIN' } });
@@ -84,7 +88,11 @@ let ProductionsService = class ProductionsService {
                 data: basicData
             });
             if (obsConfig) {
-                const url = `ws://${obsConfig.host || '127.0.0.1'}:${obsConfig.port || '4455'}`;
+                let host = obsConfig.host || '127.0.0.1';
+                if (host.includes(':') && !host.startsWith('[') && !host.endsWith(']')) {
+                    host = `[${host}]`;
+                }
+                const url = `ws://${host}:${obsConfig.port || '4455'}`;
                 await tx.obsConnection.upsert({
                     where: { productionId },
                     create: {
@@ -99,20 +107,38 @@ let ProductionsService = class ProductionsService {
                         isEnabled: obsConfig.isEnabled
                     }
                 });
+                this.eventEmitter.emit('engine.connection.update', {
+                    productionId,
+                    type: production_dto_1.EngineType.OBS,
+                    url,
+                    password: obsConfig.password
+                });
             }
             if (vmixConfig) {
-                const url = `http://${vmixConfig.host || '127.0.0.1'}:${vmixConfig.port || '8088'}`;
+                let host = vmixConfig.host || '127.0.0.1';
+                if (host.includes(':') && !host.startsWith('[') && !host.endsWith(']')) {
+                    host = `[${host}]`;
+                }
+                const url = `http://${host}:${vmixConfig.port || '8088'}`;
                 await tx.vmixConnection.upsert({
                     where: { productionId },
                     create: {
                         productionId,
                         url,
-                        isEnabled: vmixConfig.isEnabled ?? true
+                        isEnabled: vmixConfig.isEnabled ?? true,
+                        pollingInterval: vmixConfig.pollingInterval ?? 500
                     },
                     update: {
                         url,
-                        isEnabled: vmixConfig.isEnabled
+                        isEnabled: vmixConfig.isEnabled,
+                        pollingInterval: vmixConfig.pollingInterval
                     }
+                });
+                this.eventEmitter.emit('engine.connection.update', {
+                    productionId,
+                    type: production_dto_1.EngineType.VMIX,
+                    url,
+                    pollingInterval: vmixConfig.pollingInterval
                 });
             }
             return production;
@@ -141,7 +167,7 @@ let ProductionsService = class ProductionsService {
         });
         if (existing)
             throw new common_1.ConflictException('User is already in this production');
-        return this.prisma.productionUser.create({
+        const result = await this.prisma.productionUser.create({
             data: {
                 userId: userToAssign.id,
                 productionId,
@@ -152,9 +178,16 @@ let ProductionsService = class ProductionsService {
                 role: true
             }
         });
+        this.eventEmitter.emit('production.user.assigned', {
+            productionId,
+            userId: userToAssign.id,
+            userEmail: userToAssign.email,
+            roleName: roleToAssign.name
+        });
+        return result;
     }
     async removeUser(productionId, userIdToRemove) {
-        return this.prisma.productionUser.delete({
+        const result = await this.prisma.productionUser.delete({
             where: {
                 userId_productionId: {
                     userId: userIdToRemove,
@@ -162,11 +195,17 @@ let ProductionsService = class ProductionsService {
                 }
             }
         });
+        this.eventEmitter.emit('production.user.removed', {
+            productionId,
+            userId: userIdToRemove
+        });
+        return result;
     }
 };
 exports.ProductionsService = ProductionsService;
 exports.ProductionsService = ProductionsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        event_emitter_1.EventEmitter2])
 ], ProductionsService);
 //# sourceMappingURL=productions.service.js.map

@@ -47,6 +47,7 @@ export declare class ProductionsController {
             createdAt: Date;
             updatedAt: Date;
             isEnabled: boolean;
+            pollingInterval: number;
         } | null;
         obsConnection: {
             url: string;

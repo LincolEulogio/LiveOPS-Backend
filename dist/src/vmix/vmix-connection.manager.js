@@ -17,6 +17,8 @@ exports.VmixConnectionManager = void 0;
 const common_1 = require("@nestjs/common");
 const event_emitter_1 = require("@nestjs/event-emitter");
 const prisma_service_1 = require("../prisma/prisma.service");
+const event_emitter_2 = require("@nestjs/event-emitter");
+const production_dto_1 = require("../productions/dto/production.dto");
 const axios_1 = __importDefault(require("axios"));
 const xml2js_1 = require("xml2js");
 let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManager {
@@ -44,20 +46,21 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
             where: { isEnabled: true }
         });
         for (const config of vmixConnections) {
-            this.connectVmix(config.productionId, config.url);
+            this.connectVmix(config.productionId, config.url, config.pollingInterval);
         }
     }
-    connectVmix(productionId, url) {
+    connectVmix(productionId, url, pollingInterval) {
         const existing = this.connections.get(productionId);
         if (existing) {
             this.disconnectVmix(productionId, existing);
         }
         const instance = { url };
         this.connections.set(productionId, instance);
-        this.logger.log(`Starting vMix polling for production ${productionId} at ${url}`);
+        const interval = pollingInterval || this.POLLING_RATE_MS;
+        this.logger.log(`Starting vMix polling for production ${productionId} at ${url} (${interval}ms)`);
         instance.pollInterval = setInterval(async () => {
             await this.pollApi(productionId, instance);
-        }, this.POLLING_RATE_MS);
+        }, interval);
     }
     disconnectVmix(productionId, instance) {
         if (instance.pollInterval)
@@ -81,20 +84,33 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
                 return;
             const newActive = parseInt(parsed.vmix.active, 10);
             const newPreview = parseInt(parsed.vmix.preview, 10);
-            if (instance.activeInput !== newActive || instance.previewInput !== newPreview) {
-                instance.activeInput = newActive;
-                instance.previewInput = newPreview;
-                this.eventEmitter.emit('vmix.input.changed', {
-                    productionId,
-                    activeInput: newActive,
-                    previewInput: newPreview
-                });
-            }
+            const isStreaming = parsed.vmix.streaming === 'True';
+            const isRecording = parsed.vmix.recording === 'True';
+            const isExternal = parsed.vmix.external === 'True';
+            const isMultiCorder = parsed.vmix.multiCorder === 'True';
+            this.eventEmitter.emit('vmix.input.changed', {
+                productionId,
+                activeInput: newActive,
+                previewInput: newPreview,
+                isStreaming,
+                isRecording,
+                isExternal,
+                isMultiCorder,
+            });
             this.eventEmitter.emit('vmix.connection.state', { productionId, connected: true });
         }
         catch (error) {
             this.eventEmitter.emit('vmix.connection.state', { productionId, connected: false });
         }
+    }
+    handleConnectionUpdate(payload) {
+        if (payload.type === production_dto_1.EngineType.VMIX) {
+            this.logger.log(`Received connection update for production ${payload.productionId} (vMix)`);
+            this.connectVmix(payload.productionId, payload.url, payload.pollingInterval);
+        }
+    }
+    isConnected(productionId) {
+        return this.connections.has(productionId);
     }
     async sendCommand(productionId, command, params = {}) {
         const instance = this.connections.get(productionId);
@@ -106,6 +122,12 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
     }
 };
 exports.VmixConnectionManager = VmixConnectionManager;
+__decorate([
+    (0, event_emitter_2.OnEvent)('engine.connection.update'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], VmixConnectionManager.prototype, "handleConnectionUpdate", null);
 exports.VmixConnectionManager = VmixConnectionManager = VmixConnectionManager_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,

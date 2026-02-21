@@ -20,10 +20,12 @@ const event_emitter_1 = require("@nestjs/event-emitter");
 const prisma_service_1 = require("../prisma/prisma.service");
 let EventsGateway = class EventsGateway {
     prisma;
+    eventEmitter;
     server;
     logger = new common_1.Logger('EventsGateway');
-    constructor(prisma) {
+    constructor(prisma, eventEmitter) {
         this.prisma = prisma;
+        this.eventEmitter = eventEmitter;
     }
     afterInit(server) {
         this.logger.log('WebSocket Gateway initialized');
@@ -37,6 +39,10 @@ let EventsGateway = class EventsGateway {
             this.server.to(`production_${productionId}`).emit('device.online', {
                 clientId: client.id,
                 timestamp: new Date().toISOString()
+            });
+            this.eventEmitter.emit('device.online', {
+                productionId,
+                clientId: client.id
             });
             client.data.productionId = productionId;
         }
@@ -62,6 +68,10 @@ let EventsGateway = class EventsGateway {
             this.server.to(`production_${productionId}`).emit('device.offline', {
                 clientId: client.id,
                 timestamp: new Date().toISOString()
+            });
+            this.eventEmitter.emit('device.offline', {
+                productionId,
+                clientId: client.id
             });
         }
     }
@@ -104,12 +114,21 @@ let EventsGateway = class EventsGateway {
     handleObsSceneChanged(payload) {
         this.server
             .to(`production_${payload.productionId}`)
-            .emit('obs.scene.changed', { sceneName: payload.sceneName });
+            .emit('obs.scene.changed', {
+            sceneName: payload.sceneName,
+            cpuUsage: payload.cpuUsage,
+            fps: payload.fps
+        });
     }
     handleObsStreamState(payload) {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('obs.stream.state', payload);
+    }
+    handleObsRecordState(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('obs.record.state', payload);
     }
     handleObsConnectionState(payload) {
         this.server
@@ -182,6 +201,12 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], EventsGateway.prototype, "handleObsStreamState", null);
 __decorate([
+    (0, event_emitter_1.OnEvent)('obs.record.state'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleObsRecordState", null);
+__decorate([
     (0, event_emitter_1.OnEvent)('obs.connection.state'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -211,6 +236,7 @@ exports.EventsGateway = EventsGateway = __decorate([
             origin: '*',
         },
     }),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        event_emitter_1.EventEmitter2])
 ], EventsGateway);
 //# sourceMappingURL=events.gateway.js.map

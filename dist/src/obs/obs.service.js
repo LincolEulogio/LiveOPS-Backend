@@ -53,6 +53,12 @@ let ObsService = ObsService_1 = class ObsService {
             throw new common_1.NotFoundException('OBS Connection not configured for this production');
         return conn;
     }
+    isConnected(productionId) {
+        return this.obsManager.getObsState(productionId).isConnected;
+    }
+    async getRealTimeState(productionId) {
+        return this.obsManager.getObsState(productionId);
+    }
     getObs(productionId) {
         const obs = this.obsManager.getInstance(productionId);
         if (!obs) {
@@ -90,6 +96,28 @@ let ObsService = ObsService_1 = class ObsService {
         }
         catch (e) {
             this.logger.error(`Failed to stop stream: ${e.message}`);
+            throw new common_1.BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
+        }
+    }
+    async startRecord(productionId) {
+        const obs = this.getObs(productionId);
+        try {
+            await obs.call('StartRecord');
+            return { success: true };
+        }
+        catch (e) {
+            this.logger.error(`Failed to start record: ${e.message}`);
+            throw new common_1.BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
+        }
+    }
+    async stopRecord(productionId) {
+        const obs = this.getObs(productionId);
+        try {
+            await obs.call('StopRecord');
+            return { success: true };
+        }
+        catch (e) {
+            this.logger.error(`Failed to stop record: ${e.message}`);
             throw new common_1.BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
         }
     }

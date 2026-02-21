@@ -10,7 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
+import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 
 @WebSocketGateway({
@@ -26,7 +26,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
     constructor(
         private prisma: PrismaService,
-        private eventEmitter: import('@nestjs/event-emitter').EventEmitter2
+        private eventEmitter: EventEmitter2
     ) { }
 
     afterInit(server: Server) {
