@@ -12,6 +12,13 @@ export class AuthService {
         private jwtService: JwtService,
     ) { }
 
+    async getProfile(userId: string) {
+        return this.prisma.user.findUnique({
+            where: { id: userId, deletedAt: null },
+            select: { id: true, email: true, name: true, globalRole: { select: { id: true, name: true } } }
+        });
+    }
+
     async register(dto: RegisterUserDto) {
         const existing = await this.prisma.user.findUnique({
             where: { email: dto.email }
@@ -30,7 +37,11 @@ export class AuthService {
         });
 
         const tokens = await this.generateTokens(user.id);
-        return { user: { id: user.id, email: user.email }, ...tokens };
+        const fullUser = await this.prisma.user.findUnique({
+            where: { id: user.id },
+            select: { id: true, email: true, name: true, globalRole: { select: { id: true, name: true } } }
+        });
+        return { user: fullUser, ...tokens };
     }
 
     async login(dto: LoginUserDto, ipAddress?: string) {
@@ -57,7 +68,11 @@ export class AuthService {
         }).catch((e: any) => console.error('Failed to write audit log', e));
 
         const tokens = await this.generateTokens(user.id);
-        return { user: { id: user.id, email: user.email }, ...tokens };
+        const fullUser = await this.prisma.user.findUnique({
+            where: { id: user.id },
+            select: { id: true, email: true, name: true, globalRole: { select: { id: true, name: true } } }
+        });
+        return { user: fullUser, ...tokens };
     }
 
     async refresh(refreshToken: string) {
