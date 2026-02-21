@@ -31,7 +31,8 @@ let AnalyticsController = class AnalyticsController {
     }
     async exportCsv(productionId, res) {
         const logs = await this.analyticsService.getAllLogsForExport(productionId);
-        const csvData = logs.map(log => ({
+        const header = 'id,productionId,eventType,createdAt,details\n';
+        const csvData = logs.map((log) => ({
             id: log.id,
             timestamp: log.createdAt.toISOString(),
             eventType: log.eventType,

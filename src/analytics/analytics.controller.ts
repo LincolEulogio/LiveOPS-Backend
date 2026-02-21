@@ -27,8 +27,9 @@ export class AnalyticsController {
     ) {
         const logs = await this.analyticsService.getAllLogsForExport(productionId);
 
-        // Flatten data for CSV
-        const csvData = logs.map(log => ({
+        // Simple CSV generation
+        const header = 'id,productionId,eventType,createdAt,details\n';
+        const csvData = logs.map((log: any) => ({
             id: log.id,
             timestamp: log.createdAt.toISOString(),
             eventType: log.eventType,
