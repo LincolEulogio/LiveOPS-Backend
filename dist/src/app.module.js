@@ -23,6 +23,7 @@ const production_middleware_1 = require("./common/middleware/production.middlewa
 const intercom_module_1 = require("./intercom/intercom.module");
 const obs_module_1 = require("./obs/obs.module");
 const vmix_module_1 = require("./vmix/vmix.module");
+const timeline_module_1 = require("./timeline/timeline.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -56,6 +57,7 @@ exports.AppModule = AppModule = __decorate([
             intercom_module_1.IntercomModule,
             obs_module_1.ObsModule,
             vmix_module_1.VmixModule,
+            timeline_module_1.TimelineModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

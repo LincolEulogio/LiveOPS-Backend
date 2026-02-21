@@ -112,6 +112,11 @@ let EventsGateway = class EventsGateway {
             .to(`production_${payload.productionId}`)
             .emit('vmix.connection.state', payload);
     }
+    handleTimelineUpdated(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('timeline.updated', payload);
+    }
 };
 exports.EventsGateway = EventsGateway;
 __decorate([
@@ -164,6 +169,12 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], EventsGateway.prototype, "handleVmixConnectionState", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('timeline.updated'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleTimelineUpdated", null);
 exports.EventsGateway = EventsGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {

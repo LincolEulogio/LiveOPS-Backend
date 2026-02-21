@@ -14,6 +14,7 @@ import { ProductionMiddleware } from './common/middleware/production.middleware'
 import { IntercomModule } from './intercom/intercom.module';
 import { ObsModule } from './obs/obs.module';
 import { VmixModule } from './vmix/vmix.module';
+import { TimelineModule } from './timeline/timeline.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { VmixModule } from './vmix/vmix.module';
     IntercomModule,
     ObsModule,
     VmixModule,
+    TimelineModule,
   ],
   controllers: [AppController],
   providers: [

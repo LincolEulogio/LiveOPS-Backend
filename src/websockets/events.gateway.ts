@@ -155,4 +155,11 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             .to(`production_${payload.productionId}`)
             .emit('vmix.connection.state', payload);
     }
+
+    @OnEvent('timeline.updated')
+    handleTimelineUpdated(payload: { productionId: string }) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('timeline.updated', payload);
+    }
 }

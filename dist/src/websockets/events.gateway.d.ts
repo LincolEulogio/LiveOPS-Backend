@@ -52,4 +52,7 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         productionId: string;
         connected: boolean;
     }): void;
+    handleTimelineUpdated(payload: {
+        productionId: string;
+    }): void;
 }

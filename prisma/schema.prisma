@@ -58,6 +58,34 @@ model VmixConnection {
   updatedAt DateTime @updatedAt
 }
 
+enum BlockStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+}
+
+model TimelineBlock {
+  id                 String      @id @default(uuid()) @db.Uuid
+  productionId       String      @db.Uuid
+  title              String
+  description        String?
+  durationMs         Int         @default(0) // 0 means manual trigger
+  status             BlockStatus @default(PENDING)
+  order              Int         @default(0)
+  linkedScene        String? // e.g., name of OBS/vMix scene
+  intercomTemplateId String?     @db.Uuid // Optional auto-command
+  startTime          DateTime?
+  endTime            DateTime?
+
+  production       Production       @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  intercomTemplate CommandTemplate? @relation(fields: [intercomTemplateId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productionId])
+}
+
 model Permission {
   id          String  @id @default(uuid()) @db.Uuid
   action      String  @unique // e.g., 'production:create', 'scene:switch'
@@ -99,6 +127,7 @@ model Production {
   commands         Command[]
   obsConnection    ObsConnection?
   vmixConnection   VmixConnection?
+  timelineBlocks   TimelineBlock[]
 
   @@index([status])
   @@index([deletedAt])
@@ -182,8 +211,9 @@ model CommandTemplate {
   production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
   commands   Command[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  timelineBlocks TimelineBlock[]
 
   @@index([productionId])
 }
