@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsEnum, ValidateNested, IsBoolean, IsUrl, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsEnum, ValidateNested, IsBoolean, IsUrl, IsNumber, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum EngineType {
@@ -69,6 +69,12 @@ export class CreateProductionDto {
     @IsEnum(ProductionStatus)
     @IsOptional()
     status?: ProductionStatus;
+
+    @IsArray()
+    @IsOptional()
+    @ValidateNested({ each: true })
+    @Type(() => AssignUserDto)
+    initialMembers?: AssignUserDto[];
 }
 
 export class UpdateProductionDto {

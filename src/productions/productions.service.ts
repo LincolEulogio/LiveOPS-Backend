@@ -18,22 +18,55 @@ export class ProductionsService {
             adminRole = await this.prisma.role.create({ data: { name: 'ADMIN', description: 'Production Administrator' } });
         }
 
-        const production = await this.prisma.production.create({
-            data: {
-                name: dto.name,
-                description: dto.description,
-                status: dto.status || 'DRAFT',
-                engineType: dto.engineType || 'OBS',
-                users: {
-                    create: {
-                        userId,
-                        roleId: adminRole.id,
+        return this.prisma.$transaction(async (tx) => {
+            const production = await tx.production.create({
+                data: {
+                    name: dto.name,
+                    description: dto.description,
+                    status: dto.status || 'DRAFT',
+                    engineType: dto.engineType || 'OBS',
+                    users: {
+                        create: {
+                            userId,
+                            roleId: adminRole.id,
+                        }
                     }
                 }
-            }
-        });
+            });
 
-        return production;
+            // Handle initial members if provided
+            if (dto.initialMembers && dto.initialMembers.length > 0) {
+                for (const member of dto.initialMembers) {
+                    const user = await tx.user.findUnique({ where: { email: member.email } });
+                    if (!user) continue; // Or throw error? Logic usually skips if not found or allows creation if we had invite logic
+
+                    const role = await tx.role.findUnique({ where: { name: member.roleName } });
+                    if (!role) continue;
+
+                    // Skip if creator (handled above)
+                    if (user.id === userId) continue;
+
+                    await tx.productionUser.upsert({
+                        where: {
+                            userId_productionId: {
+                                userId: user.id,
+                                productionId: production.id
+                            }
+                        },
+                        create: {
+                            userId: user.id,
+                            productionId: production.id,
+                            roleId: role.id
+                        },
+                        update: {
+                            roleId: role.id
+                        }
+                    });
+                }
+            }
+
+            return production;
+        });
     }
 
     async findAllForUser(userId: string) {
