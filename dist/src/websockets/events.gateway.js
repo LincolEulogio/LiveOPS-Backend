@@ -41,6 +41,20 @@ let EventsGateway = class EventsGateway {
             client.data.productionId = productionId;
         }
     }
+    handleJoinRoom(data, client) {
+        const room = `production_${data.productionId}`;
+        client.join(room);
+        client.data.productionId = data.productionId;
+        this.logger.log(`Client ${client.id} manually joined room ${room}`);
+        return { status: 'joined', room };
+    }
+    handleLeaveRoom(data, client) {
+        const room = `production_${data.productionId}`;
+        client.leave(room);
+        delete client.data.productionId;
+        this.logger.log(`Client ${client.id} manually left room ${room}`);
+        return { status: 'left', room };
+    }
     handleDisconnect(client) {
         this.logger.log(`Client disconnected: ${client.id}`);
         const productionId = client.data.productionId;
@@ -123,6 +137,22 @@ __decorate([
     (0, websockets_1.WebSocketServer)(),
     __metadata("design:type", socket_io_1.Server)
 ], EventsGateway.prototype, "server", void 0);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('production.join'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleJoinRoom", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('production.leave'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleLeaveRoom", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('command.send'),
     __param(0, (0, websockets_1.MessageBody)()),

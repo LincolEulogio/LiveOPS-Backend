@@ -31,6 +31,9 @@ let ProductionsController = class ProductionsController {
     findOne(id, req) {
         return this.productionsService.findOne(id, req.user.userId);
     }
+    update(id, dto) {
+        return this.productionsService.update(id, dto);
+    }
     updateState(id, dto) {
         return this.productionsService.updateState(id, dto);
     }
@@ -65,6 +68,14 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], ProductionsController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, production_dto_1.UpdateProductionDto]),
+    __metadata("design:returntype", void 0)
+], ProductionsController.prototype, "update", null);
 __decorate([
     (0, common_1.Patch)(':id/state'),
     __param(0, (0, common_1.Param)('id')),

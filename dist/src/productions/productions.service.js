@@ -26,7 +26,8 @@ let ProductionsService = class ProductionsService {
             data: {
                 name: dto.name,
                 description: dto.description,
-                status: 'DRAFT',
+                status: dto.status || 'DRAFT',
+                engineType: dto.engineType || 'OBS',
                 users: {
                     create: {
                         userId,
@@ -72,6 +73,17 @@ let ProductionsService = class ProductionsService {
         if (!prod)
             throw new common_1.NotFoundException('Production not found or access denied');
         return prod;
+    }
+    async update(productionId, dto) {
+        return this.prisma.production.update({
+            where: { id: productionId },
+            data: {
+                name: dto.name,
+                description: dto.description,
+                engineType: dto.engineType,
+                status: dto.status
+            }
+        });
     }
     async updateState(productionId, dto) {
         return this.prisma.production.update({

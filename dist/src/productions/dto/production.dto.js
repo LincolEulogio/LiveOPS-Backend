@@ -9,11 +9,25 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AssignUserDto = exports.UpdateProductionStateDto = exports.ProductionStatus = exports.CreateProductionDto = void 0;
+exports.AssignUserDto = exports.UpdateProductionStateDto = exports.UpdateProductionDto = exports.CreateProductionDto = exports.ProductionStatus = exports.EngineType = void 0;
 const class_validator_1 = require("class-validator");
+var EngineType;
+(function (EngineType) {
+    EngineType["OBS"] = "OBS";
+    EngineType["VMIX"] = "VMIX";
+})(EngineType || (exports.EngineType = EngineType = {}));
+var ProductionStatus;
+(function (ProductionStatus) {
+    ProductionStatus["SETUP"] = "SETUP";
+    ProductionStatus["ACTIVE"] = "ACTIVE";
+    ProductionStatus["ARCHIVED"] = "ARCHIVED";
+    ProductionStatus["DRAFT"] = "DRAFT";
+})(ProductionStatus || (exports.ProductionStatus = ProductionStatus = {}));
 class CreateProductionDto {
     name;
     description;
+    engineType;
+    status;
 }
 exports.CreateProductionDto = CreateProductionDto;
 __decorate([
@@ -26,12 +40,43 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateProductionDto.prototype, "description", void 0);
-var ProductionStatus;
-(function (ProductionStatus) {
-    ProductionStatus["DRAFT"] = "DRAFT";
-    ProductionStatus["LIVE"] = "LIVE";
-    ProductionStatus["FINISHED"] = "FINISHED";
-})(ProductionStatus || (exports.ProductionStatus = ProductionStatus = {}));
+__decorate([
+    (0, class_validator_1.IsEnum)(EngineType),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateProductionDto.prototype, "engineType", void 0);
+__decorate([
+    (0, class_validator_1.IsEnum)(ProductionStatus),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateProductionDto.prototype, "status", void 0);
+class UpdateProductionDto {
+    name;
+    description;
+    engineType;
+    status;
+}
+exports.UpdateProductionDto = UpdateProductionDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateProductionDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateProductionDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsEnum)(EngineType),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateProductionDto.prototype, "engineType", void 0);
+__decorate([
+    (0, class_validator_1.IsEnum)(ProductionStatus),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateProductionDto.prototype, "status", void 0);
 class UpdateProductionStateDto {
     status;
 }

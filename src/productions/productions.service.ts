@@ -18,7 +18,7 @@ export class ProductionsService {
             data: {
                 name: dto.name,
                 description: dto.description,
-                status: 'DRAFT',
+                status: dto.status || 'DRAFT',
                 engineType: dto.engineType || 'OBS',
                 users: {
                     create: {

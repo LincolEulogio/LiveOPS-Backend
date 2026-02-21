@@ -8,6 +8,18 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
     constructor(prisma: PrismaService);
     afterInit(server: Server): void;
     handleConnection(client: Socket, ...args: any[]): Promise<void>;
+    handleJoinRoom(data: {
+        productionId: string;
+    }, client: Socket): {
+        status: string;
+        room: string;
+    };
+    handleLeaveRoom(data: {
+        productionId: string;
+    }, client: Socket): {
+        status: string;
+        room: string;
+    };
     handleDisconnect(client: Socket): void;
     handleCommandSend(data: {
         productionId: string;

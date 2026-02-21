@@ -24,6 +24,10 @@ export class CreateProductionDto {
     @IsEnum(EngineType)
     @IsOptional()
     engineType?: EngineType;
+
+    @IsEnum(ProductionStatus)
+    @IsOptional()
+    status?: ProductionStatus;
 }
 
 export class UpdateProductionDto {
