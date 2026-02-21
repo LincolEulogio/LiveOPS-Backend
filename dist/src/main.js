@@ -16,7 +16,7 @@ async function bootstrap() {
     app.useLogger(app.get(nestjs_pino_1.Logger));
     app.use((0, helmet_1.default)());
     app.enableCors({
-        origin: process.env.CORS_ORIGIN || '*',
+        origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
         credentials: true,
     });

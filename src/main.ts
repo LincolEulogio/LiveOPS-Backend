@@ -18,7 +18,7 @@ async function bootstrap() {
 
   // Strict CORS configuration
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || '*', // Ideally specify actual origins in prod
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3001', // Ideally specify actual origins in prod
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
