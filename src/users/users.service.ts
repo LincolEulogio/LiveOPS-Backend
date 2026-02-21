@@ -18,14 +18,14 @@ export class UsersService implements OnModuleInit {
         const adminRole = await this.prisma.role.findUnique({ where: { name: 'ADMIN' } });
         if (!adminRole) return;
 
-        // Ensure admin@liveops.com has the ADMIN role if it exists
+        // Ensure admin@liveops.com has the ADMIN role
         const adminUser = await this.prisma.user.findUnique({ where: { email: 'admin@liveops.com' } });
-        if (adminUser && !adminUser.globalRoleId) {
+        if (adminUser && adminUser.globalRoleId !== adminRole.id) {
             await this.prisma.user.update({
                 where: { id: adminUser.id },
                 data: { globalRoleId: adminRole.id }
             });
-            this.logger.log('Bootstrapped admin@liveops.com as Global ADMIN');
+            this.logger.log('Force-bootstrapped admin@liveops.com as Global ADMIN');
         }
     }
 
