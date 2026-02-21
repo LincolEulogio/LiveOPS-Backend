@@ -16,6 +16,8 @@ exports.ProductionsController = void 0;
 const common_1 = require("@nestjs/common");
 const productions_service_1 = require("./productions.service");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
+const permissions_guard_1 = require("../common/guards/permissions.guard");
+const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
 const production_dto_1 = require("./dto/production.dto");
 let ProductionsController = class ProductionsController {
     productionsService;
@@ -47,6 +49,7 @@ let ProductionsController = class ProductionsController {
 exports.ProductionsController = ProductionsController;
 __decorate([
     (0, common_1.Post)(),
+    (0, permissions_decorator_1.Permissions)('production:create'),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -70,6 +73,7 @@ __decorate([
 ], ProductionsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
+    (0, permissions_decorator_1.Permissions)('production:manage'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -78,6 +82,7 @@ __decorate([
 ], ProductionsController.prototype, "update", null);
 __decorate([
     (0, common_1.Patch)(':id/state'),
+    (0, permissions_decorator_1.Permissions)('production:manage'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -86,6 +91,7 @@ __decorate([
 ], ProductionsController.prototype, "updateState", null);
 __decorate([
     (0, common_1.Post)(':id/users'),
+    (0, permissions_decorator_1.Permissions)('production:manage'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -94,6 +100,7 @@ __decorate([
 ], ProductionsController.prototype, "assignUser", null);
 __decorate([
     (0, common_1.Delete)(':id/users/:userId'),
+    (0, permissions_decorator_1.Permissions)('production:manage'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('userId')),
     __metadata("design:type", Function),
@@ -101,7 +108,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ProductionsController.prototype, "removeUser", null);
 exports.ProductionsController = ProductionsController = __decorate([
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     (0, common_1.Controller)('productions'),
     __metadata("design:paramtypes", [productions_service_1.ProductionsService])
 ], ProductionsController);

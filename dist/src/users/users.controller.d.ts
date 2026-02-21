@@ -94,6 +94,13 @@ export declare class UsersController {
         name: string;
         updatedAt: Date;
     }) | null>;
+    deleteRole(id: string): Promise<{
+        description: string | null;
+        id: string;
+        createdAt: Date;
+        name: string;
+        updatedAt: Date;
+    }>;
     findAllPermissions(): Promise<{
         action: string;
         description: string | null;

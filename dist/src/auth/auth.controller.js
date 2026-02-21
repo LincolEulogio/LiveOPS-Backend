@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
 const register_user_dto_1 = require("./dto/register-user.dto");
 const login_user_dto_1 = require("./dto/login-user.dto");
+const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 let AuthController = class AuthController {
     authService;
     constructor(authService) {
@@ -24,6 +25,12 @@ let AuthController = class AuthController {
     }
     register(dto) {
         return this.authService.register(dto);
+    }
+    getProfile(req) {
+        return this.authService.getProfile(req.user.userId);
+    }
+    updateProfile(req, data) {
+        return this.authService.updateProfile(req.user.userId, data);
     }
     login(dto, req) {
         return this.authService.login(dto, req.ip);
@@ -43,6 +50,23 @@ __decorate([
     __metadata("design:paramtypes", [register_user_dto_1.RegisterUserDto]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "register", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('profile'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "getProfile", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Patch)('profile'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "updateProfile", null);
 __decorate([
     (0, common_1.Post)('login'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),

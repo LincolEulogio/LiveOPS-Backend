@@ -80,7 +80,15 @@ export class ProductionsService {
             include: {
                 users: {
                     where: { userId },
-                    include: { role: true }
+                    include: {
+                        role: {
+                            include: {
+                                permissions: {
+                                    include: { permission: true }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         });

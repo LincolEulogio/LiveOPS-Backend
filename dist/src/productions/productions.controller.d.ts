@@ -16,6 +16,19 @@ export declare class ProductionsController {
     findAll(req: any): Promise<({
         users: ({
             role: {
+                permissions: ({
+                    permission: {
+                        action: string;
+                        description: string | null;
+                        id: string;
+                        createdAt: Date;
+                        updatedAt: Date;
+                    };
+                } & {
+                    roleId: string;
+                    permissionId: string;
+                })[];
+            } & {
                 description: string | null;
                 id: string;
                 createdAt: Date;
@@ -26,8 +39,8 @@ export declare class ProductionsController {
             productionId: string;
             createdAt: Date;
             updatedAt: Date;
-            userId: string;
             roleId: string;
+            userId: string;
         })[];
     } & {
         description: string | null;
@@ -75,8 +88,8 @@ export declare class ProductionsController {
             productionId: string;
             createdAt: Date;
             updatedAt: Date;
-            userId: string;
             roleId: string;
+            userId: string;
         })[];
     } & {
         description: string | null;
@@ -125,14 +138,14 @@ export declare class ProductionsController {
         productionId: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         roleId: string;
+        userId: string;
     }>;
     removeUser(id: string, userId: string): Promise<{
         productionId: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         roleId: string;
+        userId: string;
     }>;
 }

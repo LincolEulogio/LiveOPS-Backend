@@ -9,16 +9,71 @@ export declare class AuthController {
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
             id: string;
+            createdAt: Date;
             email: string;
-        };
+            name: string | null;
+            globalRole: {
+                id: string;
+                name: string;
+                permissions: {
+                    permission: {
+                        action: string;
+                    };
+                }[];
+            } | null;
+        } | null;
+    }>;
+    getProfile(req: any): Promise<{
+        id: string;
+        createdAt: Date;
+        email: string;
+        name: string | null;
+        globalRole: {
+            id: string;
+            name: string;
+            permissions: {
+                permission: {
+                    action: string;
+                };
+            }[];
+        } | null;
+    } | null>;
+    updateProfile(req: any, data: {
+        name?: string;
+        password?: string;
+    }): Promise<{
+        id: string;
+        createdAt: Date;
+        email: string;
+        name: string | null;
+        globalRole: {
+            id: string;
+            name: string;
+            permissions: {
+                permission: {
+                    action: string;
+                };
+            }[];
+        } | null;
     }>;
     login(dto: LoginUserDto, req: any): Promise<{
         accessToken: string;
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
             id: string;
+            createdAt: Date;
             email: string;
-        };
+            name: string | null;
+            globalRole: {
+                id: string;
+                name: string;
+                permissions: {
+                    permission: {
+                        action: string;
+                    };
+                }[];
+            } | null;
+        } | null;
     }>;
     refresh(refreshToken: string): Promise<{
         accessToken: string;

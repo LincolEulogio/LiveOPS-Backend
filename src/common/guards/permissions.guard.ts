@@ -21,52 +21,65 @@ export class PermissionsGuard implements CanActivate {
         }
 
         const request = context.switchToHttp().getRequest();
-        const user = request.user; // Set by JwtAuthGuard
-
-        // Also get productionId from params or body if we're operating in a production context
-        const productionId = request.params.productionId || request.body.productionId;
+        const user = request.user;
 
         if (!user) {
             throw new ForbiddenException('User not authenticated');
         }
 
-        if (!productionId) {
-            // For global permissions, we could check global roles here.
-            // For simplicity, let's assume all ops are production-scoped if they have a permission check
-            // OR let admins bypass.
-            // This is a placeholder for global admin checks.
-            return true;
-        }
-
-        // Check user's role in this specific production
-        const productionUser = await this.prisma.productionUser.findUnique({
-            where: {
-                userId_productionId: {
-                    userId: user.userId,
-                    productionId: productionId
-                }
-            },
+        // 1. Check Global Permissions
+        const dbUser = await this.prisma.user.findUnique({
+            where: { id: user.userId },
             include: {
-                role: {
+                globalRole: {
                     include: {
-                        permissions: {
-                            include: { permission: true }
-                        }
+                        permissions: { include: { permission: true } }
                     }
                 }
             }
         });
 
-        if (!productionUser) {
-            throw new ForbiddenException('User is not part of this production');
+        if (!dbUser) {
+            throw new ForbiddenException('User record not found');
         }
 
-        const userPermissions = productionUser.role.permissions.map((rp: any) => rp.permission.action);
-        const hasPermission = requiredPermissions.every(perm => userPermissions.includes(perm));
+        const globalPermissions = dbUser.globalRole?.permissions.map(rp => rp.permission.action) || [];
+        const hasGlobalPermission = requiredPermissions.every(perm => globalPermissions.includes(perm));
 
-        if (!hasPermission) {
-            throw new ForbiddenException('Insufficient permissions');
+        if (hasGlobalPermission) {
+            return true;
         }
+
+        // 2. Check Production-Specific Permissions
+        const productionId = request.params.productionId || request.params.id || request.body.productionId;
+
+        if (productionId && typeof productionId === 'string' && productionId.length > 20) { // Simple UUID check
+            const productionUser = await this.prisma.productionUser.findUnique({
+                where: {
+                    userId_productionId: {
+                        userId: user.userId,
+                        productionId: productionId
+                    }
+                },
+                include: {
+                    role: {
+                        include: {
+                            permissions: { include: { permission: true } }
+                        }
+                    }
+                }
+            });
+
+            if (productionUser) {
+                const productionPermissions = productionUser.role.permissions.map(rp => rp.permission.action);
+                const hasProdPermission = requiredPermissions.every(perm => productionPermissions.includes(perm));
+                if (hasProdPermission) {
+                    return true;
+                }
+            }
+        }
+
+        throw new ForbiddenException('Insufficient permissions');
 
         return true;
     }

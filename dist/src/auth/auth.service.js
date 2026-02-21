@@ -54,6 +54,48 @@ let AuthService = class AuthService {
         this.prisma = prisma;
         this.jwtService = jwtService;
     }
+    async getProfile(userId) {
+        return this.prisma.user.findUnique({
+            where: { id: userId, deletedAt: null },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                createdAt: true,
+                globalRole: {
+                    select: {
+                        id: true,
+                        name: true,
+                        permissions: { select: { permission: { select: { action: true } } } }
+                    }
+                }
+            }
+        });
+    }
+    async updateProfile(userId, data) {
+        const updateData = {};
+        if (data.name)
+            updateData.name = data.name;
+        if (data.password)
+            updateData.password = await bcrypt.hash(data.password, 10);
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: updateData,
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                createdAt: true,
+                globalRole: {
+                    select: {
+                        id: true,
+                        name: true,
+                        permissions: { select: { permission: { select: { action: true } } } }
+                    }
+                }
+            }
+        });
+    }
     async register(dto) {
         const existing = await this.prisma.user.findUnique({
             where: { email: dto.email }
@@ -62,15 +104,40 @@ let AuthService = class AuthService {
             throw new common_1.ConflictException('Email already in use');
         }
         const hashedPassword = await bcrypt.hash(dto.password, 10);
+        const userCount = await this.prisma.user.count();
+        let globalRoleId;
+        if (userCount === 0) {
+            const adminRole = await this.prisma.role.findUnique({ where: { name: 'ADMIN' } });
+            if (adminRole) {
+                globalRoleId = adminRole.id;
+            }
+        }
         const user = await this.prisma.user.create({
             data: {
                 email: dto.email,
                 password: hashedPassword,
                 name: dto.name,
+                globalRoleId: globalRoleId,
             }
         });
         const tokens = await this.generateTokens(user.id);
-        return { user: { id: user.id, email: user.email }, ...tokens };
+        const fullUser = await this.prisma.user.findUnique({
+            where: { id: user.id },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                createdAt: true,
+                globalRole: {
+                    select: {
+                        id: true,
+                        name: true,
+                        permissions: { select: { permission: { select: { action: true } } } }
+                    }
+                }
+            }
+        });
+        return { user: fullUser, ...tokens };
     }
     async login(dto, ipAddress) {
         const user = await this.prisma.user.findUnique({
@@ -91,7 +158,23 @@ let AuthService = class AuthService {
             }
         }).catch((e) => console.error('Failed to write audit log', e));
         const tokens = await this.generateTokens(user.id);
-        return { user: { id: user.id, email: user.email }, ...tokens };
+        const fullUser = await this.prisma.user.findUnique({
+            where: { id: user.id },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                createdAt: true,
+                globalRole: {
+                    select: {
+                        id: true,
+                        name: true,
+                        permissions: { select: { permission: { select: { action: true } } } }
+                    }
+                }
+            }
+        });
+        return { user: fullUser, ...tokens };
     }
     async refresh(refreshToken) {
         const session = await this.prisma.session.findUnique({

@@ -89,6 +89,7 @@ class CreateProductionDto {
     description;
     engineType;
     status;
+    initialMembers;
 }
 exports.CreateProductionDto = CreateProductionDto;
 __decorate([
@@ -111,6 +112,13 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateProductionDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => AssignUserDto),
+    __metadata("design:type", Array)
+], CreateProductionDto.prototype, "initialMembers", void 0);
 class UpdateProductionDto {
     name;
     description;

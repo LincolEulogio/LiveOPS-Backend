@@ -26,21 +26,51 @@ let ProductionsService = class ProductionsService {
         if (!adminRole) {
             adminRole = await this.prisma.role.create({ data: { name: 'ADMIN', description: 'Production Administrator' } });
         }
-        const production = await this.prisma.production.create({
-            data: {
-                name: dto.name,
-                description: dto.description,
-                status: dto.status || 'DRAFT',
-                engineType: dto.engineType || 'OBS',
-                users: {
-                    create: {
-                        userId,
-                        roleId: adminRole.id,
+        return this.prisma.$transaction(async (tx) => {
+            const production = await tx.production.create({
+                data: {
+                    name: dto.name,
+                    description: dto.description,
+                    status: dto.status || 'DRAFT',
+                    engineType: dto.engineType || 'OBS',
+                    users: {
+                        create: {
+                            userId,
+                            roleId: adminRole.id,
+                        }
                     }
                 }
+            });
+            if (dto.initialMembers && dto.initialMembers.length > 0) {
+                for (const member of dto.initialMembers) {
+                    const user = await tx.user.findUnique({ where: { email: member.email } });
+                    if (!user)
+                        continue;
+                    const role = await tx.role.findUnique({ where: { name: member.roleName } });
+                    if (!role)
+                        continue;
+                    if (user.id === userId)
+                        continue;
+                    await tx.productionUser.upsert({
+                        where: {
+                            userId_productionId: {
+                                userId: user.id,
+                                productionId: production.id
+                            }
+                        },
+                        create: {
+                            userId: user.id,
+                            productionId: production.id,
+                            roleId: role.id
+                        },
+                        update: {
+                            roleId: role.id
+                        }
+                    });
+                }
             }
+            return production;
         });
-        return production;
     }
     async findAllForUser(userId) {
         return this.prisma.production.findMany({
@@ -53,7 +83,15 @@ let ProductionsService = class ProductionsService {
             include: {
                 users: {
                     where: { userId },
-                    include: { role: true }
+                    include: {
+                        role: {
+                            include: {
+                                permissions: {
+                                    include: { permission: true }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         });

@@ -17,6 +17,8 @@ const common_1 = require("@nestjs/common");
 const users_service_1 = require("./users.service");
 const users_dto_1 = require("./dto/users.dto");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
+const permissions_guard_1 = require("../common/guards/permissions.guard");
+const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
 let UsersController = class UsersController {
     usersService;
     constructor(usersService) {
@@ -46,6 +48,9 @@ let UsersController = class UsersController {
     updateRolePermissions(id, data) {
         return this.usersService.updateRolePermissions(id, data.permissionIds);
     }
+    deleteRole(id) {
+        return this.usersService.deleteRole(id);
+    }
     findAllPermissions() {
         return this.usersService.findAllPermissions();
     }
@@ -53,12 +58,14 @@ let UsersController = class UsersController {
 exports.UsersController = UsersController;
 __decorate([
     (0, common_1.Get)(),
+    (0, permissions_decorator_1.Permissions)('user:manage'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "findAllUsers", null);
 __decorate([
     (0, common_1.Post)(),
+    (0, permissions_decorator_1.Permissions)('user:manage'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [users_dto_1.CreateUserDto]),
@@ -66,6 +73,7 @@ __decorate([
 ], UsersController.prototype, "createUser", null);
 __decorate([
     (0, common_1.Patch)(':id'),
+    (0, permissions_decorator_1.Permissions)('user:manage'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -74,6 +82,7 @@ __decorate([
 ], UsersController.prototype, "updateUser", null);
 __decorate([
     (0, common_1.Delete)(':id'),
+    (0, permissions_decorator_1.Permissions)('user:manage'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -81,12 +90,14 @@ __decorate([
 ], UsersController.prototype, "deleteUser", null);
 __decorate([
     (0, common_1.Get)('roles'),
+    (0, permissions_decorator_1.Permissions)('role:manage'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "findAllRoles", null);
 __decorate([
     (0, common_1.Post)('roles'),
+    (0, permissions_decorator_1.Permissions)('role:manage'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [users_dto_1.CreateRoleDto]),
@@ -94,6 +105,7 @@ __decorate([
 ], UsersController.prototype, "createRole", null);
 __decorate([
     (0, common_1.Patch)('roles/:id'),
+    (0, permissions_decorator_1.Permissions)('role:manage'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -102,6 +114,7 @@ __decorate([
 ], UsersController.prototype, "updateRole", null);
 __decorate([
     (0, common_1.Post)('roles/:id/permissions'),
+    (0, permissions_decorator_1.Permissions)('role:manage'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -109,14 +122,23 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "updateRolePermissions", null);
 __decorate([
+    (0, common_1.Delete)('roles/:id'),
+    (0, permissions_decorator_1.Permissions)('role:manage'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], UsersController.prototype, "deleteRole", null);
+__decorate([
     (0, common_1.Get)('permissions'),
+    (0, permissions_decorator_1.Permissions)('role:manage'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "findAllPermissions", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('users'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     __metadata("design:paramtypes", [users_service_1.UsersService])
 ], UsersController);
 //# sourceMappingURL=users.controller.js.map

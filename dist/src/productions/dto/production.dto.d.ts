@@ -26,6 +26,7 @@ export declare class CreateProductionDto {
     description?: string;
     engineType?: EngineType;
     status?: ProductionStatus;
+    initialMembers?: AssignUserDto[];
 }
 export declare class UpdateProductionDto {
     name?: string;

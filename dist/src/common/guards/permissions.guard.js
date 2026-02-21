@@ -31,38 +31,53 @@ let PermissionsGuard = class PermissionsGuard {
         }
         const request = context.switchToHttp().getRequest();
         const user = request.user;
-        const productionId = request.params.productionId || request.body.productionId;
         if (!user) {
             throw new common_1.ForbiddenException('User not authenticated');
         }
-        if (!productionId) {
-            return true;
-        }
-        const productionUser = await this.prisma.productionUser.findUnique({
-            where: {
-                userId_productionId: {
-                    userId: user.userId,
-                    productionId: productionId
-                }
-            },
+        const dbUser = await this.prisma.user.findUnique({
+            where: { id: user.userId },
             include: {
-                role: {
+                globalRole: {
                     include: {
-                        permissions: {
-                            include: { permission: true }
-                        }
+                        permissions: { include: { permission: true } }
                     }
                 }
             }
         });
-        if (!productionUser) {
-            throw new common_1.ForbiddenException('User is not part of this production');
+        if (!dbUser) {
+            throw new common_1.ForbiddenException('User record not found');
         }
-        const userPermissions = productionUser.role.permissions.map((rp) => rp.permission.action);
-        const hasPermission = requiredPermissions.every(perm => userPermissions.includes(perm));
-        if (!hasPermission) {
-            throw new common_1.ForbiddenException('Insufficient permissions');
+        const globalPermissions = dbUser.globalRole?.permissions.map(rp => rp.permission.action) || [];
+        const hasGlobalPermission = requiredPermissions.every(perm => globalPermissions.includes(perm));
+        if (hasGlobalPermission) {
+            return true;
         }
+        const productionId = request.params.productionId || request.params.id || request.body.productionId;
+        if (productionId && typeof productionId === 'string' && productionId.length > 20) {
+            const productionUser = await this.prisma.productionUser.findUnique({
+                where: {
+                    userId_productionId: {
+                        userId: user.userId,
+                        productionId: productionId
+                    }
+                },
+                include: {
+                    role: {
+                        include: {
+                            permissions: { include: { permission: true } }
+                        }
+                    }
+                }
+            });
+            if (productionUser) {
+                const productionPermissions = productionUser.role.permissions.map(rp => rp.permission.action);
+                const hasProdPermission = requiredPermissions.every(perm => productionPermissions.includes(perm));
+                if (hasProdPermission) {
+                    return true;
+                }
+            }
+        }
+        throw new common_1.ForbiddenException('Insufficient permissions');
         return true;
     }
 };

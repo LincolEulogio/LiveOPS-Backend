@@ -11,6 +11,22 @@ export class UsersService implements OnModuleInit {
 
     async onModuleInit() {
         await this.seedDefaultRoles();
+        await this.bootstrapAdmin();
+    }
+
+    private async bootstrapAdmin() {
+        const adminRole = await this.prisma.role.findUnique({ where: { name: 'ADMIN' } });
+        if (!adminRole) return;
+
+        // Ensure admin@liveops.com has the ADMIN role if it exists
+        const adminUser = await this.prisma.user.findUnique({ where: { email: 'admin@liveops.com' } });
+        if (adminUser && !adminUser.globalRoleId) {
+            await this.prisma.user.update({
+                where: { id: adminUser.id },
+                data: { globalRoleId: adminRole.id }
+            });
+            this.logger.log('Bootstrapped admin@liveops.com as Global ADMIN');
+        }
     }
 
     private async seedDefaultRoles() {
@@ -37,16 +53,31 @@ export class UsersService implements OnModuleInit {
         ];
 
         for (const roleData of defaultRoles) {
-            const exists = await this.prisma.role.findUnique({ where: { name: roleData.name } });
-            if (!exists) {
-                const role = await this.prisma.role.create({ data: roleData });
+            let role = await this.prisma.role.findUnique({ where: { name: roleData.name } });
+            if (!role) {
+                role = await this.prisma.role.create({ data: roleData });
                 this.logger.log(`Created default role: ${roleData.name}`);
+            }
 
-                // Auto-assign all permissions to ADMIN for convenience in development
-                if (roleData.name === 'ADMIN') {
-                    const allPerms = await this.prisma.permission.findMany();
-                    await this.prisma.rolePermission.createMany({
-                        data: allPerms.map(p => ({ roleId: role.id, permissionId: p.id }))
+            // Sync permissions for default roles
+            const allPerms = await this.prisma.permission.findMany();
+
+            if (role.name === 'ADMIN') {
+                for (const p of allPerms) {
+                    await this.prisma.rolePermission.upsert({
+                        where: { roleId_permissionId: { roleId: role.id, permissionId: p.id } },
+                        create: { roleId: role.id, permissionId: p.id },
+                        update: {}
+                    });
+                }
+            } else if (role.name === 'OPERATOR') {
+                const operatorPermActions = ['production:create', 'production:manage'];
+                const operatorPerms = allPerms.filter(p => operatorPermActions.includes(p.action));
+                for (const p of operatorPerms) {
+                    await this.prisma.rolePermission.upsert({
+                        where: { roleId_permissionId: { roleId: role.id, permissionId: p.id } },
+                        create: { roleId: role.id, permissionId: p.id },
+                        update: {}
                     });
                 }
             }
