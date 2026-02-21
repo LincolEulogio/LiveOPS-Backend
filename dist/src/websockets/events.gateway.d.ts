@@ -30,4 +30,17 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         status: string;
         responseId: string;
     }>;
+    handleObsSceneChanged(payload: {
+        productionId: string;
+        sceneName: string;
+    }): void;
+    handleObsStreamState(payload: {
+        productionId: string;
+        active: boolean;
+        state: string;
+    }): void;
+    handleObsConnectionState(payload: {
+        productionId: string;
+        connected: boolean;
+    }): void;
 }

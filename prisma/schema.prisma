@@ -85,6 +85,7 @@ model Production {
   deviceSessions   DeviceSession[]
   commandTemplates CommandTemplate[]
   commands         Command[]
+  obsConnection    ObsConnection?
 
   @@index([status])
   @@index([deletedAt])
@@ -211,4 +212,17 @@ model CommandResponse {
 
   @@index([commandId])
   @@index([responderId])
+}
+
+model ObsConnection {
+  id           String  @id @default(uuid()) @db.Uuid
+  productionId String  @unique @db.Uuid
+  url          String // usually ws://127.0.0.1:4455
+  password     String?
+  isEnabled    Boolean @default(true)
+
+  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

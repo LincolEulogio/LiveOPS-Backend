@@ -16,6 +16,7 @@ exports.EventsGateway = void 0;
 const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 const common_1 = require("@nestjs/common");
+const event_emitter_1 = require("@nestjs/event-emitter");
 const prisma_service_1 = require("../prisma/prisma.service");
 let EventsGateway = class EventsGateway {
     prisma;
@@ -86,6 +87,21 @@ let EventsGateway = class EventsGateway {
         this.server.to(room).emit('command.ack_received', response);
         return { status: 'ok', responseId: response.id };
     }
+    handleObsSceneChanged(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('obs.scene.changed', { sceneName: payload.sceneName });
+    }
+    handleObsStreamState(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('obs.stream.state', payload);
+    }
+    handleObsConnectionState(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('obs.connection.state', payload);
+    }
 };
 exports.EventsGateway = EventsGateway;
 __decorate([
@@ -108,6 +124,24 @@ __decorate([
     __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
     __metadata("design:returntype", Promise)
 ], EventsGateway.prototype, "handleCommandAck", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('obs.scene.changed'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleObsSceneChanged", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('obs.stream.state'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleObsStreamState", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('obs.connection.state'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleObsConnectionState", null);
 exports.EventsGateway = EventsGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {

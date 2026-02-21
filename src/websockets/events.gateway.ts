@@ -10,6 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 
 @WebSocketGateway({
@@ -116,5 +117,28 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         this.server.to(room).emit('command.ack_received', response);
 
         return { status: 'ok', responseId: response.id };
+    }
+
+    // --- Internal Events Handlers (Forwarding to WS) ---
+
+    @OnEvent('obs.scene.changed')
+    handleObsSceneChanged(payload: { productionId: string; sceneName: string }) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('obs.scene.changed', { sceneName: payload.sceneName });
+    }
+
+    @OnEvent('obs.stream.state')
+    handleObsStreamState(payload: { productionId: string; active: boolean; state: string }) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('obs.stream.state', payload);
+    }
+
+    @OnEvent('obs.connection.state')
+    handleObsConnectionState(payload: { productionId: string; connected: boolean }) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('obs.connection.state', payload);
     }
 }
