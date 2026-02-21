@@ -17,6 +17,7 @@ import { VmixModule } from './vmix/vmix.module';
 import { TimelineModule } from './timeline/timeline.module';
 import { AutomationModule } from './automation/automation.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { StreamingModule } from './streaming/streaming.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     TimelineModule,
     AutomationModule,
     AnalyticsModule,
+    StreamingModule,
   ],
   controllers: [AppController],
   providers: [

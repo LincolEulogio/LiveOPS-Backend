@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Req } from '@nestjs/common';
 import { ProductionsService } from './productions.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { CreateProductionDto, UpdateProductionStateDto, AssignUserDto } from './dto/production.dto';
+import { CreateProductionDto, UpdateProductionDto, UpdateProductionStateDto, AssignUserDto } from './dto/production.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('productions')
@@ -21,6 +21,11 @@ export class ProductionsController {
     @Get(':id')
     findOne(@Param('id') id: string, @Req() req: any) {
         return this.productionsService.findOne(id, req.user.userId);
+    }
+
+    @Patch(':id')
+    update(@Param('id') id: string, @Body() dto: UpdateProductionDto) {
+        return this.productionsService.update(id, dto);
     }
 
     @Patch(':id/state')

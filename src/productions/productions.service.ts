@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProductionDto, UpdateProductionStateDto, AssignUserDto } from './dto/production.dto';
+import { CreateProductionDto, UpdateProductionDto, UpdateProductionStateDto, AssignUserDto } from './dto/production.dto';
 
 @Injectable()
 export class ProductionsService {
@@ -19,6 +19,7 @@ export class ProductionsService {
                 name: dto.name,
                 description: dto.description,
                 status: 'DRAFT',
+                engineType: dto.engineType || 'OBS',
                 users: {
                     create: {
                         userId,
@@ -67,6 +68,18 @@ export class ProductionsService {
 
         if (!prod) throw new NotFoundException('Production not found or access denied');
         return prod;
+    }
+
+    async update(productionId: string, dto: UpdateProductionDto) {
+        return this.prisma.production.update({
+            where: { id: productionId },
+            data: {
+                name: dto.name,
+                description: dto.description,
+                engineType: dto.engineType,
+                status: dto.status
+            }
+        });
     }
 
     async updateState(productionId: string, dto: UpdateProductionStateDto) {

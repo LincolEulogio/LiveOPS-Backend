@@ -53,6 +53,30 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         }
     }
 
+    @SubscribeMessage('production.join')
+    handleJoinRoom(
+        @MessageBody() data: { productionId: string },
+        @ConnectedSocket() client: Socket
+    ) {
+        const room = `production_${data.productionId}`;
+        client.join(room);
+        client.data.productionId = data.productionId; // Track for disconnect
+        this.logger.log(`Client ${client.id} manually joined room ${room}`);
+        return { status: 'joined', room };
+    }
+
+    @SubscribeMessage('production.leave')
+    handleLeaveRoom(
+        @MessageBody() data: { productionId: string },
+        @ConnectedSocket() client: Socket
+    ) {
+        const room = `production_${data.productionId}`;
+        client.leave(room);
+        delete client.data.productionId;
+        this.logger.log(`Client ${client.id} manually left room ${room}`);
+        return { status: 'left', room };
+    }
+
     handleDisconnect(client: Socket) {
         this.logger.log(`Client disconnected: ${client.id}`);
         const productionId = client.data.productionId;

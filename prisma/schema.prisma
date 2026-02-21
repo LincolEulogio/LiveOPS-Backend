@@ -59,6 +59,18 @@ enum BlockStatus {
   COMPLETED
 }
 
+enum EngineType {
+  OBS
+  VMIX
+}
+
+enum ProductionStatus {
+  SETUP
+  ACTIVE
+  ARCHIVED
+  DRAFT
+}
+
 model TimelineBlock {
   id                 String      @id @default(uuid()) @db.Uuid
   productionId       String      @db.Uuid
@@ -200,10 +212,11 @@ model RolePermission {
 }
 
 model Production {
-  id          String  @id @default(uuid()) @db.Uuid
+  id          String           @id @default(uuid()) @db.Uuid
   name        String
   description String?
-  status      String  @default("DRAFT") // DRAFT, LIVE, FINISHED
+  status      ProductionStatus @default(DRAFT)
+  engineType  EngineType       @default(OBS)
 
   // Relations
   users ProductionUser[]
