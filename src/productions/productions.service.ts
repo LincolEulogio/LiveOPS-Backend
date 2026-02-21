@@ -129,11 +129,13 @@ export class ProductionsService {
                     create: {
                         productionId,
                         url,
-                        isEnabled: vmixConfig.isEnabled ?? true
+                        isEnabled: vmixConfig.isEnabled ?? true,
+                        pollingInterval: vmixConfig.pollingInterval ?? 500
                     },
                     update: {
                         url,
-                        isEnabled: vmixConfig.isEnabled
+                        isEnabled: vmixConfig.isEnabled,
+                        pollingInterval: vmixConfig.pollingInterval
                     }
                 });
 
@@ -141,7 +143,8 @@ export class ProductionsService {
                 this.eventEmitter.emit('engine.connection.update', {
                     productionId,
                     type: EngineType.VMIX,
-                    url
+                    url,
+                    pollingInterval: vmixConfig.pollingInterval
                 });
             }
 
@@ -175,7 +178,7 @@ export class ProductionsService {
 
         if (existing) throw new ConflictException('User is already in this production');
 
-        return this.prisma.productionUser.create({
+        const result = await this.prisma.productionUser.create({
             data: {
                 userId: userToAssign.id,
                 productionId,
@@ -186,10 +189,19 @@ export class ProductionsService {
                 role: true
             }
         });
+
+        this.eventEmitter.emit('production.user.assigned', {
+            productionId,
+            userId: userToAssign.id,
+            userEmail: userToAssign.email,
+            roleName: roleToAssign.name
+        });
+
+        return result;
     }
 
     async removeUser(productionId: string, userIdToRemove: string) {
-        return this.prisma.productionUser.delete({
+        const result = await this.prisma.productionUser.delete({
             where: {
                 userId_productionId: {
                     userId: userIdToRemove,
@@ -197,5 +209,12 @@ export class ProductionsService {
                 }
             }
         });
+
+        this.eventEmitter.emit('production.user.removed', {
+            productionId,
+            userId: userIdToRemove
+        });
+
+        return result;
     }
 }

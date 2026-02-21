@@ -18,16 +18,18 @@ export class VmixService {
             update: {
                 url: dto.url,
                 isEnabled: dto.isEnabled ?? true,
+                pollingInterval: dto.pollingInterval ?? 500,
             },
             create: {
                 productionId,
                 url: dto.url,
                 isEnabled: dto.isEnabled ?? true,
+                pollingInterval: dto.pollingInterval ?? 500,
             }
         });
 
         if (connection.isEnabled) {
-            this.vmixManager.connectVmix(productionId, connection.url);
+            this.vmixManager.connectVmix(productionId, connection.url, connection.pollingInterval);
         } else {
             this.vmixManager.stopPolling(productionId);
         }

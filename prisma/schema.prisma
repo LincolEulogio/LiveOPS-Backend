@@ -42,10 +42,11 @@ model Role {
 }
 
 model VmixConnection {
-  id           String  @id @default(uuid()) @db.Uuid
-  productionId String  @unique @db.Uuid
-  url          String // usually http://127.0.0.1:8088
-  isEnabled    Boolean @default(true)
+  id              String  @id @default(uuid()) @db.Uuid
+  productionId    String  @unique @db.Uuid
+  url             String // usually http://127.0.0.1:8088
+  isEnabled       Boolean @default(true)
+  pollingInterval Int     @default(500)
 
   production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
 

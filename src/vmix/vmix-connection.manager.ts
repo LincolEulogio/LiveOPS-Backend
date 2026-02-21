@@ -42,11 +42,11 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
         });
 
         for (const config of vmixConnections) {
-            this.connectVmix(config.productionId, config.url);
+            this.connectVmix(config.productionId, config.url, config.pollingInterval);
         }
     }
 
-    connectVmix(productionId: string, url: string) {
+    connectVmix(productionId: string, url: string, pollingInterval?: number) {
         // Cleanup existing
         const existing = this.connections.get(productionId);
         if (existing) {
@@ -56,12 +56,13 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
         const instance: VmixInstance = { url };
         this.connections.set(productionId, instance);
 
-        this.logger.log(`Starting vMix polling for production ${productionId} at ${url}`);
+        const interval = pollingInterval || this.POLLING_RATE_MS;
+        this.logger.log(`Starting vMix polling for production ${productionId} at ${url} (${interval}ms)`);
 
         // Start Polling Loop
         instance.pollInterval = setInterval(async () => {
             await this.pollApi(productionId, instance);
-        }, this.POLLING_RATE_MS);
+        }, interval);
     }
 
     private disconnectVmix(productionId: string, instance: VmixInstance) {
@@ -123,10 +124,10 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
      * Listen for external connection updates
      */
     @OnEvent('engine.connection.update')
-    handleConnectionUpdate(payload: { productionId: string, type: EngineType, url: string }) {
+    handleConnectionUpdate(payload: { productionId: string, type: EngineType, url: string, pollingInterval?: number }) {
         if (payload.type === EngineType.VMIX) {
             this.logger.log(`Received connection update for production ${payload.productionId} (vMix)`);
-            this.connectVmix(payload.productionId, payload.url);
+            this.connectVmix(payload.productionId, payload.url, payload.pollingInterval);
         }
     }
 

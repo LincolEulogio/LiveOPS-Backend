@@ -9,6 +9,10 @@ export class SaveVmixConnectionDto {
     @IsBoolean()
     @IsOptional()
     isEnabled?: boolean;
+
+    @IsNumber()
+    @IsOptional()
+    pollingInterval?: number;
 }
 
 export class ChangeInputDto {

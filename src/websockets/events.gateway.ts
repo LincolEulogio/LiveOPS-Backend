@@ -24,7 +24,10 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
     private logger: Logger = new Logger('EventsGateway');
 
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private eventEmitter: import('@nestjs/event-emitter').EventEmitter2
+    ) { }
 
     afterInit(server: Server) {
         this.logger.log('WebSocket Gateway initialized');
@@ -37,7 +40,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         // but for initial connection metadata, we extract the user if valid.
         // We will assume WsJwtGuard will be applied to SubscribeMessage handlers.
 
-        const productionId = client.handshake.query.productionId;
+        const productionId = client.handshake.query.productionId as string;
         if (productionId) {
             client.join(`production_${productionId}`);
             this.logger.log(`Client ${client.id} joined room production_${productionId}`);
@@ -46,6 +49,12 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             this.server.to(`production_${productionId}`).emit('device.online', {
                 clientId: client.id,
                 timestamp: new Date().toISOString()
+            });
+
+            // Emit internal event for logging
+            this.eventEmitter.emit('device.online', {
+                productionId,
+                clientId: client.id
             });
 
             // Store for disconnect handler
@@ -85,6 +94,11 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             this.server.to(`production_${productionId}`).emit('device.offline', {
                 clientId: client.id,
                 timestamp: new Date().toISOString()
+            });
+
+            this.eventEmitter.emit('device.offline', {
+                productionId,
+                clientId: client.id
             });
         }
     }

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsEnum, ValidateNested, IsBoolean, IsUrl } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsEnum, ValidateNested, IsBoolean, IsUrl, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum EngineType {
@@ -29,6 +29,10 @@ export class ObsConfigDto {
     @IsBoolean()
     @IsOptional()
     isEnabled?: boolean;
+
+    @IsNumber()
+    @IsOptional()
+    pollingInterval?: number;
 }
 
 export class VmixConfigDto {
@@ -43,6 +47,10 @@ export class VmixConfigDto {
     @IsBoolean()
     @IsOptional()
     isEnabled?: boolean;
+
+    @IsNumber()
+    @IsOptional()
+    pollingInterval?: number;
 }
 
 export class CreateProductionDto {
