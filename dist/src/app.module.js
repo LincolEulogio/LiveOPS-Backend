@@ -22,6 +22,7 @@ const prisma_module_1 = require("./prisma/prisma.module");
 const production_middleware_1 = require("./common/middleware/production.middleware");
 const intercom_module_1 = require("./intercom/intercom.module");
 const obs_module_1 = require("./obs/obs.module");
+const vmix_module_1 = require("./vmix/vmix.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -54,6 +55,7 @@ exports.AppModule = AppModule = __decorate([
             prisma_module_1.PrismaModule,
             intercom_module_1.IntercomModule,
             obs_module_1.ObsModule,
+            vmix_module_1.VmixModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

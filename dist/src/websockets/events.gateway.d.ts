@@ -43,4 +43,13 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         productionId: string;
         connected: boolean;
     }): void;
+    handleVmixInputChanged(payload: {
+        productionId: string;
+        activeInput: number;
+        previewInput: number;
+    }): void;
+    handleVmixConnectionState(payload: {
+        productionId: string;
+        connected: boolean;
+    }): void;
 }

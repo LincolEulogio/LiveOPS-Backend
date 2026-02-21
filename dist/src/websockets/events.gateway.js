@@ -102,6 +102,16 @@ let EventsGateway = class EventsGateway {
             .to(`production_${payload.productionId}`)
             .emit('obs.connection.state', payload);
     }
+    handleVmixInputChanged(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('vmix.input.changed', payload);
+    }
+    handleVmixConnectionState(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('vmix.connection.state', payload);
+    }
 };
 exports.EventsGateway = EventsGateway;
 __decorate([
@@ -142,6 +152,18 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], EventsGateway.prototype, "handleObsConnectionState", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('vmix.input.changed'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleVmixInputChanged", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('vmix.connection.state'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleVmixConnectionState", null);
 exports.EventsGateway = EventsGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {

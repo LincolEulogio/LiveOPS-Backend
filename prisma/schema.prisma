@@ -46,6 +46,18 @@ model Role {
   commands  Command[]
 }
 
+model VmixConnection {
+  id           String  @id @default(uuid()) @db.Uuid
+  productionId String  @unique @db.Uuid
+  url          String // usually http://127.0.0.1:8088
+  isEnabled    Boolean @default(true)
+
+  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Permission {
   id          String  @id @default(uuid()) @db.Uuid
   action      String  @unique // e.g., 'production:create', 'scene:switch'
@@ -86,6 +98,7 @@ model Production {
   commandTemplates CommandTemplate[]
   commands         Command[]
   obsConnection    ObsConnection?
+  vmixConnection   VmixConnection?
 
   @@index([status])
   @@index([deletedAt])

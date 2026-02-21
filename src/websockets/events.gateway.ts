@@ -141,4 +141,18 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             .to(`production_${payload.productionId}`)
             .emit('obs.connection.state', payload);
     }
+
+    @OnEvent('vmix.input.changed')
+    handleVmixInputChanged(payload: { productionId: string; activeInput: number; previewInput: number }) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('vmix.input.changed', payload);
+    }
+
+    @OnEvent('vmix.connection.state')
+    handleVmixConnectionState(payload: { productionId: string; connected: boolean }) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('vmix.connection.state', payload);
+    }
 }

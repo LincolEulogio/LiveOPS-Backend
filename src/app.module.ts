@@ -13,6 +13,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ProductionMiddleware } from './common/middleware/production.middleware';
 import { IntercomModule } from './intercom/intercom.module';
 import { ObsModule } from './obs/obs.module';
+import { VmixModule } from './vmix/vmix.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ObsModule } from './obs/obs.module';
     PrismaModule,
     IntercomModule,
     ObsModule,
+    VmixModule,
   ],
   controllers: [AppController],
   providers: [
