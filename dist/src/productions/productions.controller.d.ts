@@ -5,20 +5,20 @@ export declare class ProductionsController {
     constructor(productionsService: ProductionsService);
     create(req: any, dto: CreateProductionDto): Promise<{
         description: string | null;
-        name: string;
         id: string;
+        status: string;
         createdAt: Date;
+        name: string;
         updatedAt: Date;
         deletedAt: Date | null;
-        status: string;
     }>;
     findAll(req: any): Promise<({
         users: ({
             role: {
                 description: string | null;
-                name: string;
                 id: string;
                 createdAt: Date;
+                name: string;
                 updatedAt: Date;
             };
         } & {
@@ -30,25 +30,25 @@ export declare class ProductionsController {
         })[];
     } & {
         description: string | null;
-        name: string;
         id: string;
+        status: string;
         createdAt: Date;
+        name: string;
         updatedAt: Date;
         deletedAt: Date | null;
-        status: string;
     })[]>;
     findOne(id: string, req: any): Promise<{
         users: ({
             user: {
+                id: string;
                 email: string;
                 name: string | null;
-                id: string;
             };
             role: {
                 description: string | null;
-                name: string;
                 id: string;
                 createdAt: Date;
+                name: string;
                 updatedAt: Date;
             };
         } & {
@@ -60,33 +60,33 @@ export declare class ProductionsController {
         })[];
     } & {
         description: string | null;
-        name: string;
         id: string;
+        status: string;
         createdAt: Date;
+        name: string;
         updatedAt: Date;
         deletedAt: Date | null;
-        status: string;
     }>;
     updateState(id: string, dto: UpdateProductionStateDto): Promise<{
         description: string | null;
-        name: string;
         id: string;
+        status: string;
         createdAt: Date;
+        name: string;
         updatedAt: Date;
         deletedAt: Date | null;
-        status: string;
     }>;
     assignUser(id: string, dto: AssignUserDto): Promise<{
         user: {
+            id: string;
             email: string;
             name: string | null;
-            id: string;
         };
         role: {
             description: string | null;
-            name: string;
             id: string;
             createdAt: Date;
+            name: string;
             updatedAt: Date;
         };
     } & {

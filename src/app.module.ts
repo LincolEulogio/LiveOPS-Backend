@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module';
 import { ProductionsModule } from './productions/productions.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductionMiddleware } from './common/middleware/production.middleware';
+import { IntercomModule } from './intercom/intercom.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ProductionMiddleware } from './common/middleware/production.middleware'
     AuthModule,
     ProductionsModule,
     PrismaModule,
+    IntercomModule,
   ],
   controllers: [AppController],
   providers: [

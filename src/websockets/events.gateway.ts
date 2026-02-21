@@ -4,9 +4,13 @@ import {
     OnGatewayConnection,
     OnGatewayDisconnect,
     OnGatewayInit,
+    SubscribeMessage,
+    MessageBody,
+    ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
 @WebSocketGateway({
     cors: {
@@ -18,6 +22,8 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     server: Server;
 
     private logger: Logger = new Logger('EventsGateway');
+
+    constructor(private prisma: PrismaService) { }
 
     afterInit(server: Server) {
         this.logger.log('WebSocket Gateway initialized');
@@ -56,5 +62,59 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
                 timestamp: new Date().toISOString()
             });
         }
+    }
+
+    @SubscribeMessage('command.send')
+    async handleCommandSend(
+        @MessageBody() data: { productionId: string; senderId: string; targetRoleId?: string; templateId?: string; message: string; requiresAck?: boolean },
+        @ConnectedSocket() client: Socket
+    ) {
+        // Validate payload and save to DB
+        const command = await this.prisma.command.create({
+            data: {
+                productionId: data.productionId,
+                senderId: data.senderId,
+                targetRoleId: data.targetRoleId,
+                templateId: data.templateId,
+                message: data.message,
+                requiresAck: data.requiresAck ?? true,
+                status: 'SENT'
+            },
+            include: {
+                sender: { select: { id: true, name: true } },
+                targetRole: { select: { id: true, name: true } }
+            }
+        });
+
+        // Broadcast to specific role or all
+        const room = `production_${data.productionId}`;
+        this.server.to(room).emit('command.received', command);
+
+        return { status: 'ok', commandId: command.id };
+    }
+
+    @SubscribeMessage('command.ack')
+    async handleCommandAck(
+        @MessageBody() data: { commandId: string; responderId: string; response: string; note?: string; productionId: string },
+        @ConnectedSocket() client: Socket
+    ) {
+        // Save response to DB
+        const response = await this.prisma.commandResponse.create({
+            data: {
+                commandId: data.commandId,
+                responderId: data.responderId,
+                response: data.response,
+                note: data.note,
+            },
+            include: {
+                responder: { select: { id: true, name: true } }
+            }
+        });
+
+        // Broadcast ACK back to sender / room
+        const room = `production_${data.productionId}`;
+        this.server.to(room).emit('command.ack_received', response);
+
+        return { status: 'ok', responseId: response.id };
     }
 }

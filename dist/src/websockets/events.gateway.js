@@ -8,14 +8,22 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EventsGateway = void 0;
 const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../prisma/prisma.service");
 let EventsGateway = class EventsGateway {
+    prisma;
     server;
     logger = new common_1.Logger('EventsGateway');
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
     afterInit(server) {
         this.logger.log('WebSocket Gateway initialized');
     }
@@ -42,17 +50,70 @@ let EventsGateway = class EventsGateway {
             });
         }
     }
+    async handleCommandSend(data, client) {
+        const command = await this.prisma.command.create({
+            data: {
+                productionId: data.productionId,
+                senderId: data.senderId,
+                targetRoleId: data.targetRoleId,
+                templateId: data.templateId,
+                message: data.message,
+                requiresAck: data.requiresAck ?? true,
+                status: 'SENT'
+            },
+            include: {
+                sender: { select: { id: true, name: true } },
+                targetRole: { select: { id: true, name: true } }
+            }
+        });
+        const room = `production_${data.productionId}`;
+        this.server.to(room).emit('command.received', command);
+        return { status: 'ok', commandId: command.id };
+    }
+    async handleCommandAck(data, client) {
+        const response = await this.prisma.commandResponse.create({
+            data: {
+                commandId: data.commandId,
+                responderId: data.responderId,
+                response: data.response,
+                note: data.note,
+            },
+            include: {
+                responder: { select: { id: true, name: true } }
+            }
+        });
+        const room = `production_${data.productionId}`;
+        this.server.to(room).emit('command.ack_received', response);
+        return { status: 'ok', responseId: response.id };
+    }
 };
 exports.EventsGateway = EventsGateway;
 __decorate([
     (0, websockets_1.WebSocketServer)(),
     __metadata("design:type", socket_io_1.Server)
 ], EventsGateway.prototype, "server", void 0);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('command.send'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", Promise)
+], EventsGateway.prototype, "handleCommandSend", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('command.ack'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", Promise)
+], EventsGateway.prototype, "handleCommandAck", null);
 exports.EventsGateway = EventsGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {
             origin: '*',
         },
-    })
+    }),
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
 ], EventsGateway);
 //# sourceMappingURL=events.gateway.js.map

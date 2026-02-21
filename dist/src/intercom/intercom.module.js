@@ -6,18 +6,17 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WebsocketsModule = void 0;
+exports.IntercomModule = void 0;
 const common_1 = require("@nestjs/common");
-const prisma_module_1 = require("../prisma/prisma.module");
-const events_gateway_1 = require("./events.gateway");
-let WebsocketsModule = class WebsocketsModule {
+const intercom_service_1 = require("./intercom.service");
+const intercom_controller_1 = require("./intercom.controller");
+let IntercomModule = class IntercomModule {
 };
-exports.WebsocketsModule = WebsocketsModule;
-exports.WebsocketsModule = WebsocketsModule = __decorate([
+exports.IntercomModule = IntercomModule;
+exports.IntercomModule = IntercomModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule],
-        providers: [events_gateway_1.EventsGateway],
-        exports: [events_gateway_1.EventsGateway],
+        providers: [intercom_service_1.IntercomService],
+        controllers: [intercom_controller_1.IntercomController]
     })
-], WebsocketsModule);
-//# sourceMappingURL=websockets.module.js.map
+], IntercomModule);
+//# sourceMappingURL=intercom.module.js.map

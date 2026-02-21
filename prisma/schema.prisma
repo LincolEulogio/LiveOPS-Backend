@@ -22,7 +22,10 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Soft Delete
-  deletedAt DateTime?
+  deletedAt        DateTime?
+  deviceSessions   DeviceSession[]
+  commands         Command[]         @relation("CommandSender")
+  commandResponses CommandResponse[]
 
   // Performance Indexes
   @@index([email])
@@ -38,8 +41,9 @@ model Role {
   permissions RolePermission[]
   users       ProductionUser[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  commands  Command[]
 }
 
 model Permission {
@@ -75,9 +79,12 @@ model Production {
   // Relations
   users ProductionUser[]
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  deletedAt        DateTime?
+  deviceSessions   DeviceSession[]
+  commandTemplates CommandTemplate[]
+  commands         Command[]
 
   @@index([status])
   @@index([deletedAt])
@@ -131,4 +138,77 @@ model AuditLog {
 
   @@index([userId])
   @@index([action])
+}
+
+model DeviceSession {
+  id             String    @id @default(uuid()) @db.Uuid
+  socketId       String    @unique
+  userId         String    @db.Uuid
+  productionId   String    @db.Uuid
+  isOnline       Boolean   @default(true)
+  connectedAt    DateTime  @default(now())
+  disconnectedAt DateTime?
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([productionId])
+  @@index([isOnline])
+}
+
+model CommandTemplate {
+  id           String  @id @default(uuid()) @db.Uuid
+  productionId String  @db.Uuid
+  name         String // e.g. "Standby Camera 1", "Cut to Black"
+  description  String?
+  icon         String?
+  color        String?
+
+  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  commands   Command[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productionId])
+}
+
+model Command {
+  id           String  @id @default(uuid()) @db.Uuid
+  productionId String  @db.Uuid
+  senderId     String  @db.Uuid
+  targetRoleId String? @db.Uuid // If null, it's a broadcast
+  templateId   String? @db.Uuid
+  message      String // The actual text sent
+  requiresAck  Boolean @default(true)
+  status       String  @default("SENT") // SENT, DELIVERED, COMPLETED
+
+  production Production        @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  sender     User              @relation("CommandSender", fields: [senderId], references: [id], onDelete: Cascade)
+  targetRole Role?             @relation(fields: [targetRoleId], references: [id], onDelete: SetNull)
+  template   CommandTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  responses  CommandResponse[]
+
+  createdAt DateTime @default(now())
+
+  @@index([productionId])
+  @@index([senderId])
+  @@index([targetRoleId])
+}
+
+model CommandResponse {
+  id          String  @id @default(uuid()) @db.Uuid
+  commandId   String  @db.Uuid
+  responderId String  @db.Uuid
+  response    String // e.g. "OK", "PROBLEM", "STANDBY"
+  note        String?
+
+  command   Command @relation(fields: [commandId], references: [id], onDelete: Cascade)
+  responder User    @relation(fields: [responderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([commandId])
+  @@index([responderId])
 }
