@@ -45,6 +45,14 @@ export class ObsService {
         return conn;
     }
 
+    isConnected(productionId: string): boolean {
+        return this.obsManager.getObsState(productionId).isConnected;
+    }
+
+    async getRealTimeState(productionId: string) {
+        return this.obsManager.getObsState(productionId);
+    }
+
     // --- OBS Commands --- //
 
     private getObs(productionId: string) {
@@ -84,6 +92,28 @@ export class ObsService {
             return { success: true };
         } catch (e: any) {
             this.logger.error(`Failed to stop stream: ${e.message}`);
+            throw new BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
+        }
+    }
+
+    async startRecord(productionId: string) {
+        const obs = this.getObs(productionId);
+        try {
+            await obs.call('StartRecord');
+            return { success: true };
+        } catch (e: any) {
+            this.logger.error(`Failed to start record: ${e.message}`);
+            throw new BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
+        }
+    }
+
+    async stopRecord(productionId: string) {
+        const obs = this.getObs(productionId);
+        try {
+            await obs.call('StopRecord');
+            return { success: true };
+        } catch (e: any) {
+            this.logger.error(`Failed to stop record: ${e.message}`);
             throw new BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
         }
     }

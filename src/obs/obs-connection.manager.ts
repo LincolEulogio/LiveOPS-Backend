@@ -2,10 +2,19 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import OBSWebSocket from 'obs-websocket-js';
 import { PrismaService } from '../prisma/prisma.service';
+import { OnEvent } from '@nestjs/event-emitter';
+import { EngineType } from '../productions/dto/production.dto';
 
 interface ObsInstance {
     obs: OBSWebSocket;
     reconnectTimeout?: NodeJS.Timeout;
+    isConnected: boolean;
+    lastState?: {
+        currentScene: string;
+        scenes: string[];
+        isStreaming: boolean;
+        isRecording: boolean;
+    };
 }
 
 @Injectable()
@@ -55,12 +64,13 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
         }
 
         const obs = new OBSWebSocket();
-        const instance: ObsInstance = { obs };
+        const instance: ObsInstance = { obs, isConnected: false };
         this.connections.set(productionId, instance);
 
         // Setup Event Listeners
         obs.on('ConnectionClosed', (error) => {
             this.logger.warn(`OBS connection closed for production ${productionId}: ${error?.message || 'Unknown'}`);
+            instance.isConnected = false;
             this.scheduleReconnect(productionId, url, password);
             // Emit internal event for UI updates
             this.eventEmitter.emit('obs.connection.state', { productionId, connected: false });
@@ -72,6 +82,9 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
 
         // OBS Domain Events forwarding
         obs.on('CurrentProgramSceneChanged', (data) => {
+            if (instance.lastState) {
+                instance.lastState.currentScene = data.sceneName;
+            }
             this.eventEmitter.emit('obs.scene.changed', {
                 productionId,
                 sceneName: data.sceneName
@@ -79,6 +92,9 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
         });
 
         obs.on('StreamStateChanged', (data) => {
+            if (instance.lastState) {
+                instance.lastState.isStreaming = data.outputActive;
+            }
             this.eventEmitter.emit('obs.stream.state', {
                 productionId,
                 active: data.outputActive,
@@ -86,15 +102,68 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
             });
         });
 
+        obs.on('RecordStateChanged', (data) => {
+            if (instance.lastState) {
+                instance.lastState.isRecording = data.outputActive;
+            }
+            this.eventEmitter.emit('obs.record.state', {
+                productionId,
+                active: data.outputActive,
+                state: data.outputState
+            });
+        });
+
+        obs.on('SceneListChanged', async () => {
+            try {
+                const sceneList = await obs.call('GetSceneList');
+                if (instance.lastState) {
+                    instance.lastState.scenes = sceneList.scenes.map((s: any) => s.sceneName);
+                    instance.lastState.currentScene = sceneList.currentProgramSceneName;
+                }
+                // We might want to emit a full state update here but usually scenes list is enough
+                this.eventEmitter.emit('obs.scene.changed', {
+                    productionId,
+                    sceneName: sceneList.currentProgramSceneName
+                });
+            } catch (e) {
+                this.logger.error(`Failed to refresh scene list for production ${productionId}: ${e.message}`);
+            }
+        });
+
         try {
             await obs.connect(url, password);
             this.logger.log(`Successfully connected to OBS for production ${productionId}`);
+
+            // Mark as connected IMMEDIATELY after handshake
+            instance.isConnected = true;
+
             // Clear any reconnect timeouts
             if (instance.reconnectTimeout) {
                 clearTimeout(instance.reconnectTimeout);
                 instance.reconnectTimeout = undefined;
             }
             this.eventEmitter.emit('obs.connection.state', { productionId, connected: true });
+
+            // Fetch metadata in background or before final resolution
+            const [sceneList, streamStatus, recordStatus] = await Promise.all([
+                obs.call('GetSceneList'),
+                obs.call('GetStreamStatus'),
+                obs.call('GetRecordStatus')
+            ]);
+
+            instance.lastState = {
+                currentScene: sceneList.currentProgramSceneName,
+                scenes: sceneList.scenes.map((s: any) => s.sceneName),
+                isStreaming: streamStatus.outputActive,
+                isRecording: recordStatus.outputActive,
+            };
+
+            // Re-emit scene change if we have one to populate frontend
+            this.eventEmitter.emit('obs.scene.changed', {
+                productionId,
+                sceneName: sceneList.currentProgramSceneName
+            });
+
         } catch (error: any) {
             this.logger.error(`Failed to connect to OBS for production ${productionId}: ${error.message}`);
             this.scheduleReconnect(productionId, url, password);
@@ -144,9 +213,34 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     }
 
     /**
+     * Listen for external connection updates
+     */
+    @OnEvent('engine.connection.update')
+    handleConnectionUpdate(payload: { productionId: string, type: EngineType, url: string, password?: string }) {
+        if (payload.type === EngineType.OBS) {
+            this.logger.log(`Received connection update for production ${payload.productionId} (OBS)`);
+            this.connectObs(payload.productionId, payload.url, payload.password);
+        }
+    }
+
+    /**
      * Get the underlying OBS WebSocket instance for a production.
      */
     getInstance(productionId: string): OBSWebSocket | undefined {
-        return this.connections.get(productionId)?.obs;
+        const instance = this.connections.get(productionId);
+        return instance?.isConnected ? instance.obs : undefined;
+    }
+
+    /**
+     * Get the latest known state for a production's OBS connection.
+     */
+    getObsState(productionId: string) {
+        const instance = this.connections.get(productionId);
+        if (!instance) return { isConnected: false };
+
+        return {
+            isConnected: instance.isConnected,
+            ...instance.lastState,
+        };
     }
 }

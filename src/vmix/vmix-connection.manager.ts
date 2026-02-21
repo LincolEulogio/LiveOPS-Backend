@@ -1,6 +1,8 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
+import { OnEvent } from '@nestjs/event-emitter';
+import { EngineType } from '../productions/dto/production.dto';
 import axios from 'axios';
 import { parseStringPromise } from 'xml2js';
 
@@ -112,6 +114,24 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
             // Log silently unless debugging, as this will spam if vMix is off
             this.eventEmitter.emit('vmix.connection.state', { productionId, connected: false });
         }
+    }
+
+    /**
+     * Listen for external connection updates
+     */
+    @OnEvent('engine.connection.update')
+    handleConnectionUpdate(payload: { productionId: string, type: EngineType, url: string }) {
+        if (payload.type === EngineType.VMIX) {
+            this.logger.log(`Received connection update for production ${payload.productionId} (vMix)`);
+            this.connectVmix(payload.productionId, payload.url);
+        }
+    }
+
+    /**
+     * Check if a production has an active vMix connection
+     */
+    isConnected(productionId: string): boolean {
+        return this.connections.has(productionId);
     }
 
     /**

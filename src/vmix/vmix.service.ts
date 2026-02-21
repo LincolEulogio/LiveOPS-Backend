@@ -43,6 +43,10 @@ export class VmixService {
         return conn;
     }
 
+    isConnected(productionId: string): boolean {
+        return this.vmixManager.isConnected(productionId);
+    }
+
     // --- vMix Commands --- //
 
     async changeInput(productionId: string, dto: ChangeInputDto) {

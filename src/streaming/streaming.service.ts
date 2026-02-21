@@ -19,12 +19,27 @@ export class StreamingService {
 
         if (!production) throw new NotFoundException('Production not found');
 
-        // Here we could fetch real-time state from Managers if needed
-        // For now returning basic connected info or latest known state
+        let isConnected = false;
+        let obsState = null;
+        let vmixState = null;
+
+        if (production.engineType === 'OBS') {
+            obsState = await this.obsService.getRealTimeState(productionId);
+            isConnected = obsState.isConnected;
+        } else if (production.engineType === 'VMIX') {
+            isConnected = this.vmixService.isConnected(productionId);
+            // vMix polling automatically updates the store via events, 
+            // but for initial load we might want to return last known if we had a cache.
+            // For now just returning connectivity.
+        }
+
         return {
             productionId,
             engineType: production.engineType,
             status: production.status,
+            isConnected,
+            obs: obsState,
+            vmix: vmixState,
             lastUpdate: new Date().toISOString(),
         };
     }
@@ -54,6 +69,10 @@ export class StreamingService {
                 return this.obsService.startStream(productionId);
             case 'STOP_STREAM':
                 return this.obsService.stopStream(productionId);
+            case 'START_RECORD':
+                return this.obsService.startRecord(productionId);
+            case 'STOP_RECORD':
+                return this.obsService.stopRecord(productionId);
             default:
                 throw new BadRequestException(`Unknown OBS command: ${dto.type}`);
         }

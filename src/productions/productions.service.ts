@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProductionDto, UpdateProductionDto, UpdateProductionStateDto, AssignUserDto } from './dto/production.dto';
+import { CreateProductionDto, UpdateProductionDto, UpdateProductionStateDto, AssignUserDto, EngineType } from './dto/production.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class ProductionsService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private eventEmitter: EventEmitter2
+    ) { }
 
     async create(userId: string, dto: CreateProductionDto) {
         // We assume the creator gets an 'ADMIN' role in this production
@@ -82,7 +86,13 @@ export class ProductionsService {
             });
 
             if (obsConfig) {
-                const url = `ws://${obsConfig.host || '127.0.0.1'}:${obsConfig.port || '4455'}`;
+                let host = obsConfig.host || '127.0.0.1';
+                // Wrap IPv6 in brackets if it contains colons and isn't already wrapped
+                if (host.includes(':') && !host.startsWith('[') && !host.endsWith(']')) {
+                    host = `[${host}]`;
+                }
+                const url = `ws://${host}:${obsConfig.port || '4455'}`;
+
                 await tx.obsConnection.upsert({
                     where: { productionId },
                     create: {
@@ -97,10 +107,23 @@ export class ProductionsService {
                         isEnabled: obsConfig.isEnabled
                     }
                 });
+
+                // Notify Engine to reconnect
+                this.eventEmitter.emit('engine.connection.update', {
+                    productionId,
+                    type: EngineType.OBS,
+                    url,
+                    password: obsConfig.password
+                });
             }
 
             if (vmixConfig) {
-                const url = `http://${vmixConfig.host || '127.0.0.1'}:${vmixConfig.port || '8088'}`;
+                let host = vmixConfig.host || '127.0.0.1';
+                if (host.includes(':') && !host.startsWith('[') && !host.endsWith(']')) {
+                    host = `[${host}]`;
+                }
+                const url = `http://${host}:${vmixConfig.port || '8088'}`;
+
                 await tx.vmixConnection.upsert({
                     where: { productionId },
                     create: {
@@ -112,6 +135,13 @@ export class ProductionsService {
                         url,
                         isEnabled: vmixConfig.isEnabled
                     }
+                });
+
+                // Notify Engine to reconnect
+                this.eventEmitter.emit('engine.connection.update', {
+                    productionId,
+                    type: EngineType.VMIX,
+                    url
                 });
             }
 

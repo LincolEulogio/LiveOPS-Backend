@@ -159,6 +159,13 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             .emit('obs.stream.state', payload);
     }
 
+    @OnEvent('obs.record.state')
+    handleObsRecordState(payload: { productionId: string; active: boolean; state: string }) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('obs.record.state', payload);
+    }
+
     @OnEvent('obs.connection.state')
     handleObsConnectionState(payload: { productionId: string; connected: boolean }) {
         this.server
