@@ -62,12 +62,12 @@ let UsersService = UsersService_1 = class UsersService {
         if (!adminRole)
             return;
         const adminUser = await this.prisma.user.findUnique({ where: { email: 'admin@liveops.com' } });
-        if (adminUser && !adminUser.globalRoleId) {
+        if (adminUser && adminUser.globalRoleId !== adminRole.id) {
             await this.prisma.user.update({
                 where: { id: adminUser.id },
                 data: { globalRoleId: adminRole.id }
             });
-            this.logger.log('Bootstrapped admin@liveops.com as Global ADMIN');
+            this.logger.log('Force-bootstrapped admin@liveops.com as Global ADMIN');
         }
     }
     async seedDefaultRoles() {
