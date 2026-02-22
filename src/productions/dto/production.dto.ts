@@ -119,3 +119,21 @@ export class AssignUserDto {
     @IsNotEmpty()
     roleName: string;
 }
+
+export class GetProductionsQueryDto {
+    @IsOptional()
+    @IsString()
+    page?: string;
+
+    @IsOptional()
+    @IsString()
+    limit?: string;
+
+    @IsOptional()
+    @IsString()
+    status?: string;
+
+    @IsOptional()
+    @IsString()
+    search?: string;
+}

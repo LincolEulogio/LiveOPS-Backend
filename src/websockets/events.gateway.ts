@@ -23,7 +23,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     server: Server;
 
     private logger: Logger = new Logger('EventsGateway');
-    private activeUsers: Map<string, { userId: string; userName: string; roleName: string; lastSeen: string; status: string }> = new Map();
+    private activeUsers: Map<string, { userId: string; userName: string; roleId: string; roleName: string; lastSeen: string; status: string }> = new Map();
 
     constructor(
         private prisma: PrismaService,
@@ -38,6 +38,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         const productionId = client.handshake.query.productionId as string;
         const userId = client.handshake.query.userId as string;
         const userName = client.handshake.query.userName as string;
+        const roleId = client.handshake.query.roleId as string;
         const roleName = client.handshake.query.roleName as string;
 
         if (productionId && userId) {
@@ -46,6 +47,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             this.activeUsers.set(client.id, {
                 userId,
                 userName: userName || 'User',
+                roleId: roleId || '',
                 roleName: roleName || 'Viewer',
                 lastSeen: new Date().toISOString(),
                 status: 'IDLE'
@@ -86,13 +88,14 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
     @SubscribeMessage('role.identify')
     handleRoleIdentify(
-        @MessageBody() data: { roleName: string },
+        @MessageBody() data: { roleId: string; roleName: string },
         @ConnectedSocket() client: Socket
     ) {
         const currentUser = this.activeUsers.get(client.id);
         if (currentUser) {
             this.activeUsers.set(client.id, {
                 ...currentUser,
+                roleId: data.roleId,
                 roleName: data.roleName
             });
             const productionId = client.data.productionId;
@@ -126,13 +129,16 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             }
         });
 
+        // Add targetUserId to the object for real-time filtering
+        const commandWithTarget = { ...command, targetUserId: data.targetUserId };
+
         // Broadcast to specific role or all
         const room = `production_${data.productionId}`;
         // Update status for relevant users
         for (const [sid, user] of this.activeUsers.entries()) {
             const isTargeted =
                 (data.targetUserId && user.userId === data.targetUserId) ||
-                (!data.targetUserId && (user.roleName === data.targetRoleId || !data.targetRoleId));
+                (!data.targetUserId && (user.roleId === data.targetRoleId || !data.targetRoleId));
 
             if (isTargeted) {
                 this.activeUsers.set(sid, { ...user, status: data.message });
@@ -140,7 +146,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         }
         this.broadcastPresence(data.productionId);
 
-        this.server.to(room).emit('command.received', command);
+        this.server.to(room).emit('command.received', commandWithTarget);
 
         return { status: 'ok', commandId: command.id };
     }

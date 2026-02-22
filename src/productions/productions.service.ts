@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProductionDto, UpdateProductionDto, UpdateProductionStateDto, AssignUserDto, EngineType } from './dto/production.dto';
+import { CreateProductionDto, UpdateProductionDto, UpdateProductionStateDto, AssignUserDto, EngineType, GetProductionsQueryDto } from './dto/production.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
@@ -69,29 +69,62 @@ export class ProductionsService {
         });
     }
 
-    async findAllForUser(userId: string) {
-        return this.prisma.production.findMany({
-            where: {
-                deletedAt: null,
-                users: {
-                    some: { userId }
-                }
-            },
-            include: {
-                users: {
-                    where: { userId },
-                    include: {
-                        role: {
-                            include: {
-                                permissions: {
-                                    include: { permission: true }
+    async findAllForUser(userId: string, query: GetProductionsQueryDto) {
+        const page = parseInt(query.page || '1', 10);
+        const limit = parseInt(query.limit || '10', 10);
+        const skip = (page - 1) * limit;
+
+        const where: any = {
+            deletedAt: null,
+            users: {
+                some: { userId }
+            }
+        };
+
+        if (query.status) {
+            where.status = query.status;
+        }
+
+        if (query.search) {
+            where.OR = [
+                { name: { contains: query.search, mode: 'insensitive' } },
+                { description: { contains: query.search, mode: 'insensitive' } }
+            ];
+        }
+
+        const [data, total] = await Promise.all([
+            this.prisma.production.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    users: {
+                        where: { userId },
+                        include: {
+                            role: {
+                                include: {
+                                    permissions: {
+                                        include: { permission: true }
+                                    }
                                 }
                             }
                         }
                     }
                 }
+            }),
+            this.prisma.production.count({ where })
+        ]);
+
+        return {
+            data,
+            meta: {
+                total,
+                page,
+                limit,
+                lastPage: Math.ceil(total / limit)
             }
-        });
+        };
     }
 
     async findOne(productionId: string, userId: string) {
@@ -257,5 +290,12 @@ export class ProductionsService {
         });
 
         return result;
+    }
+
+    async remove(productionId: string) {
+        return this.prisma.production.update({
+            where: { id: productionId },
+            data: { deletedAt: new Date() }
+        });
     }
 }

@@ -38,9 +38,9 @@ export declare class ProductionsController {
         } & {
             productionId: string;
             userId: string;
+            roleId: string;
             createdAt: Date;
             updatedAt: Date;
-            roleId: string;
         })[];
     } & {
         description: string | null;
@@ -87,9 +87,9 @@ export declare class ProductionsController {
         } & {
             productionId: string;
             userId: string;
+            roleId: string;
             createdAt: Date;
             updatedAt: Date;
-            roleId: string;
         })[];
     } & {
         description: string | null;
@@ -137,15 +137,15 @@ export declare class ProductionsController {
     } & {
         productionId: string;
         userId: string;
+        roleId: string;
         createdAt: Date;
         updatedAt: Date;
-        roleId: string;
     }>;
     removeUser(id: string, userId: string): Promise<{
         productionId: string;
         userId: string;
+        roleId: string;
         createdAt: Date;
         updatedAt: Date;
-        roleId: string;
     }>;
 }

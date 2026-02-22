@@ -1,13 +1,15 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Req, Query, Logger } from '@nestjs/common';
 import { ProductionsService } from './productions.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { Permissions } from '../common/decorators/permissions.decorator';
-import { CreateProductionDto, UpdateProductionDto, UpdateProductionStateDto, AssignUserDto } from './dto/production.dto';
+import { CreateProductionDto, UpdateProductionDto, UpdateProductionStateDto, AssignUserDto, GetProductionsQueryDto } from './dto/production.dto';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions')
 export class ProductionsController {
+    private readonly logger = new Logger(ProductionsController.name);
+
     constructor(private readonly productionsService: ProductionsService) { }
 
     @Post()
@@ -17,8 +19,8 @@ export class ProductionsController {
     }
 
     @Get()
-    findAll(@Req() req: any) {
-        return this.productionsService.findAllForUser(req.user.userId);
+    findAll(@Req() req: any, @Query() query: GetProductionsQueryDto) {
+        return this.productionsService.findAllForUser(req.user.userId, query);
     }
 
     @Get(':id')
@@ -48,5 +50,12 @@ export class ProductionsController {
     @Permissions('production:manage')
     removeUser(@Param('id') id: string, @Param('userId') userId: string) {
         return this.productionsService.removeUser(id, userId);
+    }
+
+    @Delete(':id')
+    @Permissions('production:manage')
+    remove(@Param('id') id: string) {
+        this.logger.log(`Handling delete request for production: ${id}`);
+        return this.productionsService.remove(id);
     }
 }

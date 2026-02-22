@@ -35,12 +35,14 @@ let EventsGateway = class EventsGateway {
         const productionId = client.handshake.query.productionId;
         const userId = client.handshake.query.userId;
         const userName = client.handshake.query.userName;
+        const roleId = client.handshake.query.roleId;
         const roleName = client.handshake.query.roleName;
         if (productionId && userId) {
             client.join(`production_${productionId}`);
             this.activeUsers.set(client.id, {
                 userId,
                 userName: userName || 'User',
+                roleId: roleId || '',
                 roleName: roleName || 'Viewer',
                 lastSeen: new Date().toISOString(),
                 status: 'IDLE'
@@ -76,6 +78,7 @@ let EventsGateway = class EventsGateway {
         if (currentUser) {
             this.activeUsers.set(client.id, {
                 ...currentUser,
+                roleId: data.roleId,
                 roleName: data.roleName
             });
             const productionId = client.data.productionId;
@@ -102,16 +105,17 @@ let EventsGateway = class EventsGateway {
                 template: true
             }
         });
+        const commandWithTarget = { ...command, targetUserId: data.targetUserId };
         const room = `production_${data.productionId}`;
         for (const [sid, user] of this.activeUsers.entries()) {
             const isTargeted = (data.targetUserId && user.userId === data.targetUserId) ||
-                (!data.targetUserId && (user.roleName === data.targetRoleId || !data.targetRoleId));
+                (!data.targetUserId && (user.roleId === data.targetRoleId || !data.targetRoleId));
             if (isTargeted) {
                 this.activeUsers.set(sid, { ...user, status: data.message });
             }
         }
         this.broadcastPresence(data.productionId);
-        this.server.to(room).emit('command.received', command);
+        this.server.to(room).emit('command.received', commandWithTarget);
         return { status: 'ok', commandId: command.id };
     }
     async handleCommandAck(data, client) {
