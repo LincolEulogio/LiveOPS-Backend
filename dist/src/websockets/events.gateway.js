@@ -52,9 +52,7 @@ let EventsGateway = class EventsGateway {
     }
     async handleScriptSync(data, client) {
         const script = await this.scriptService.getScriptState(data.productionId);
-        if (script) {
-            client.emit('script.sync_response', { content: script.content });
-        }
+        client.emit('script.sync_response', { content: script?.content || null });
     }
     async handleScriptUpdate(data, client) {
         const updateArray = new Uint8Array(data.update);

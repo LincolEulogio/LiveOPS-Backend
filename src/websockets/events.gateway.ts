@@ -69,9 +69,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         @ConnectedSocket() client: Socket
     ) {
         const script = await this.scriptService.getScriptState(data.productionId);
-        if (script) {
-            client.emit('script.sync_response', { content: script.content });
-        }
+        client.emit('script.sync_response', { content: script?.content || null });
     }
 
     @SubscribeMessage('script.update')
