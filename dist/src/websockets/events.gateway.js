@@ -61,6 +61,11 @@ let EventsGateway = class EventsGateway {
         client.to(`production_${data.productionId}`).emit('script.update_received', { update: updateArray });
         await this.scriptService.updateScriptState(data.productionId, Buffer.from(updateArray));
     }
+    handleAwarenessUpdate(data, client) {
+        client.to(`production_${data.productionId}`).emit('script.awareness_received', {
+            update: data.update
+        });
+    }
     async handleConnection(client, ...args) {
         const productionId = client.handshake.query.productionId;
         const userId = client.handshake.query.userId;
@@ -249,6 +254,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
     __metadata("design:returntype", Promise)
 ], EventsGateway.prototype, "handleScriptUpdate", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('script.awareness_update'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleAwarenessUpdate", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('role.identify'),
     __param(0, (0, websockets_1.MessageBody)()),
