@@ -68,6 +68,29 @@ let EventsGateway = class EventsGateway {
             update: data.update,
         });
     }
+    handleWebRTCSignal(data, client) {
+        const senderUserId = client.handshake.query.userId;
+        this.logger.debug(`WebRTC Signal from ${senderUserId} to ${data.targetUserId} in production ${data.productionId}`);
+        const room = `production_${data.productionId}`;
+        const socketsInRoom = this.server.sockets.adapter.rooms.get(room);
+        if (socketsInRoom) {
+            for (const socketId of socketsInRoom) {
+                const socket = this.server.sockets.sockets.get(socketId);
+                if (socket && socket.handshake.query.userId === data.targetUserId) {
+                    socket.emit('webrtc.signal_received', {
+                        senderUserId,
+                        signal: data.signal
+                    });
+                    break;
+                }
+            }
+        }
+    }
+    handleSocialOverlay(data, client) {
+        this.server
+            .to(`production_${data.productionId}`)
+            .emit('social.overlay_update', { comment: data.comment });
+    }
     handleScriptScrollSync(data, client) {
         client
             .to(`production_${data.productionId}`)
@@ -241,6 +264,11 @@ let EventsGateway = class EventsGateway {
             .to(`production_${payload.productionId}`)
             .emit('production.health.stats', payload);
     }
+    handleSocialOverlayUpdate(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('social.overlay_update', payload);
+    }
 };
 exports.EventsGateway = EventsGateway;
 __decorate([
@@ -287,6 +315,22 @@ __decorate([
     __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
     __metadata("design:returntype", void 0)
 ], EventsGateway.prototype, "handleAwarenessUpdate", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('webrtc.signal'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleWebRTCSignal", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('social.overlay'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleSocialOverlay", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('script.scroll_sync'),
     __param(0, (0, websockets_1.MessageBody)()),
@@ -373,6 +417,12 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], EventsGateway.prototype, "handleProductionHealthStats", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('social.overlay_update'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleSocialOverlayUpdate", null);
 exports.EventsGateway = EventsGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {

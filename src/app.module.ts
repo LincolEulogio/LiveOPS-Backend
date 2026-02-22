@@ -21,6 +21,8 @@ import { StreamingModule } from './streaming/streaming.module';
 import { UsersModule } from './users/users.module';
 import { ChatModule } from './chat/chat.module';
 import { ScriptModule } from './script/script.module';
+import { SocialModule } from './social/social.module';
+import { MediaModule } from './media/media.module';
 
 @Module({
   imports: [
@@ -56,6 +58,8 @@ import { ScriptModule } from './script/script.module';
     UsersModule,
     ChatModule,
     ScriptModule,
+    SocialModule,
+    MediaModule,
   ],
   controllers: [AppController],
   providers: [

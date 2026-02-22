@@ -22,8 +22,7 @@ import { ScriptService } from '../script/script.service';
   },
 })
 export class EventsGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
@@ -46,7 +45,7 @@ export class EventsGateway
     private intercomService: IntercomService,
     private chatService: ChatService,
     private scriptService: ScriptService,
-  ) {}
+  ) { }
 
   afterInit(server: Server) {
     this.logger.log('WebSocket Gateway initialized');
@@ -127,6 +126,53 @@ export class EventsGateway
       .emit('script.awareness_received', {
         update: data.update,
       });
+  }
+
+  @SubscribeMessage('webrtc.signal')
+  handleWebRTCSignal(
+    @MessageBody()
+    data: {
+      productionId: string;
+      targetUserId: string;
+      signal: any;
+    },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const senderUserId = client.handshake.query.userId as string;
+
+    this.logger.debug(`WebRTC Signal from ${senderUserId} to ${data.targetUserId} in production ${data.productionId}`);
+
+    // Forward the signal to the specific target user within the production room
+    // Note: We search among connected sockets in the room for the targetUserId
+    const room = `production_${data.productionId}`;
+    const socketsInRoom = this.server.sockets.adapter.rooms.get(room);
+
+    if (socketsInRoom) {
+      for (const socketId of socketsInRoom) {
+        const socket = this.server.sockets.sockets.get(socketId);
+        if (socket && socket.handshake.query.userId === data.targetUserId) {
+          socket.emit('webrtc.signal_received', {
+            senderUserId,
+            signal: data.signal
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  @SubscribeMessage('social.overlay')
+  handleSocialOverlay(
+    @MessageBody()
+    data: {
+      productionId: string;
+      comment: any | null;
+    },
+    @ConnectedSocket() client: Socket,
+  ) {
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('social.overlay_update', { comment: data.comment });
   }
 
   @SubscribeMessage('script.scroll_sync')
@@ -434,5 +480,15 @@ export class EventsGateway
     this.server
       .to(`production_${payload.productionId}`)
       .emit('production.health.stats', payload);
+  }
+
+  @OnEvent('social.overlay_update')
+  handleSocialOverlayUpdate(payload: {
+    productionId: string;
+    comment: any | null;
+  }) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('social.overlay_update', payload);
   }
 }

@@ -41,6 +41,15 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         productionId: string;
         update: number[];
     }, client: Socket): void;
+    handleWebRTCSignal(data: {
+        productionId: string;
+        targetUserId: string;
+        signal: any;
+    }, client: Socket): void;
+    handleSocialOverlay(data: {
+        productionId: string;
+        comment: any | null;
+    }, client: Socket): void;
     handleScriptScrollSync(data: {
         productionId: string;
         scrollPercentage: number;
@@ -119,4 +128,8 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         command: any;
     }): void;
     handleProductionHealthStats(payload: any): void;
+    handleSocialOverlayUpdate(payload: {
+        productionId: string;
+        comment: any | null;
+    }): void;
 }
