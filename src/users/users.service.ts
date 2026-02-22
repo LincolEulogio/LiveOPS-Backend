@@ -66,18 +66,6 @@ export class UsersService implements OnModuleInit {
 
     const defaultRoles = [
       { name: 'SUPERADMIN', description: 'Global System Administrator' },
-      { name: 'ADMIN', description: 'Full access to production' },
-      {
-        name: 'OPERATOR',
-        description: 'Can operate engines and execute commands',
-      },
-      { name: 'VIEWER', description: 'Read-only access to production status' },
-      { name: 'CÁMARA 1', description: 'Camera 1 operator' },
-      { name: 'CÁMARA 2', description: 'Camera 2 operator' },
-      { name: 'CÁMARA 3', description: 'Camera 3 operator' },
-      { name: 'CÁMARA 4', description: 'Camera 4 operator' },
-      { name: 'SONIDO', description: 'Sound technician' },
-      { name: 'PISO', description: 'Floor manager' },
     ];
 
     for (const roleData of defaultRoles) {
@@ -92,22 +80,8 @@ export class UsersService implements OnModuleInit {
       // Sync permissions for default roles
       const allPerms = await this.prisma.permission.findMany();
 
-      if (role.name === 'SUPERADMIN' || role.name === 'ADMIN') {
+      if (role.name === 'SUPERADMIN') {
         for (const p of allPerms) {
-          await this.prisma.rolePermission.upsert({
-            where: {
-              roleId_permissionId: { roleId: role.id, permissionId: p.id },
-            },
-            create: { roleId: role.id, permissionId: p.id },
-            update: {},
-          });
-        }
-      } else if (role.name === 'OPERATOR') {
-        const operatorPermActions = ['production:create', 'production:manage'];
-        const operatorPerms = allPerms.filter((p) =>
-          operatorPermActions.includes(p.action),
-        );
-        for (const p of operatorPerms) {
           await this.prisma.rolePermission.upsert({
             where: {
               roleId_permissionId: { roleId: role.id, permissionId: p.id },

@@ -11,28 +11,28 @@ export declare class UsersService implements OnModuleInit {
     updateRolePermissions(roleId: string, permissionIds: string[]): Promise<({
         permissions: ({
             permission: {
+                action: string;
                 id: string;
+                description: string | null;
                 createdAt: Date;
                 updatedAt: Date;
-                description: string | null;
-                action: string;
             };
         } & {
             roleId: string;
             permissionId: string;
         })[];
     } & {
+        name: string;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        description: string | null;
     }) | null>;
     findAllUsers(): Promise<{
+        name: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string | null;
         email: string;
         globalRoleId: string | null;
         globalRole: {
@@ -40,9 +40,9 @@ export declare class UsersService implements OnModuleInit {
         } | null;
     }[]>;
     createUser(dto: CreateUserDto): Promise<{
+        name: string | null;
         id: string;
         createdAt: Date;
-        name: string | null;
         email: string;
         globalRoleId: string | null;
         globalRole: {
@@ -50,9 +50,9 @@ export declare class UsersService implements OnModuleInit {
         } | null;
     }>;
     updateUser(id: string, dto: UpdateUserDto): Promise<{
+        name: string | null;
         id: string;
         updatedAt: Date;
-        name: string | null;
         email: string;
         globalRoleId: string | null;
         globalRole: {
@@ -66,49 +66,49 @@ export declare class UsersService implements OnModuleInit {
     findAllRoles(): Promise<({
         permissions: ({
             permission: {
+                action: string;
                 id: string;
+                description: string | null;
                 createdAt: Date;
                 updatedAt: Date;
-                description: string | null;
-                action: string;
             };
         } & {
             roleId: string;
             permissionId: string;
         })[];
     } & {
+        name: string;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        description: string | null;
     })[]>;
     createRole(dto: CreateRoleDto): Promise<{
+        name: string;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        description: string | null;
     }>;
     updateRole(id: string, dto: UpdateRoleDto): Promise<{
+        name: string;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        description: string | null;
     }>;
     deleteRole(id: string): Promise<{
+        name: string;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        description: string | null;
     }>;
     findAllPermissions(): Promise<{
+        action: string;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
-        action: string;
     }[]>;
 }
