@@ -23,6 +23,7 @@ export declare class IntercomService {
         icon: string | null;
         color: string | null;
     }[]>;
+    private seedDefaultTemplates;
     deleteTemplate(id: string, productionId: string): Promise<{
         description: string | null;
         productionId: string;

@@ -19,10 +19,49 @@ export class IntercomService {
     }
 
     async getTemplates(productionId: string) {
-        return this.prisma.commandTemplate.findMany({
+        const templates = await this.prisma.commandTemplate.findMany({
             where: { productionId },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'asc' }
         });
+
+        if (templates.length === 0) {
+            await this.seedDefaultTemplates(productionId);
+            return this.prisma.commandTemplate.findMany({
+                where: { productionId },
+                orderBy: { createdAt: 'asc' }
+            });
+        }
+
+        return templates;
+    }
+
+    private async seedDefaultTemplates(productionId: string) {
+        const defaults = [
+            { name: 'Prevenido', color: '#eab308' }, // Yellow
+            { name: 'Al Aire', color: '#ef4444' }, // Red
+            { name: 'Libre', color: '#22c55e' }, // Green
+            { name: 'Más zoom', color: '#3b82f6' }, // Blue
+            { name: 'Menos zoom', color: '#3b82f6' },
+            { name: 'Plano general', color: '#8b5cf6' }, // Purple
+            { name: 'Close up', color: '#8b5cf6' },
+            { name: 'Foco', color: '#3b82f6' },
+            { name: 'Silencio', color: '#ef4444' },
+            { name: 'Hablando', color: '#f97316' }, // Orange
+            { name: 'Subir', color: '#22c55e' },
+            { name: 'Bajar', color: '#ef4444' },
+            { name: 'Pausa', color: '#64748b' }, // Slate
+            { name: 'Check', color: '#22c55e' },
+        ];
+
+        for (const t of defaults) {
+            await this.prisma.commandTemplate.create({
+                data: {
+                    productionId,
+                    name: t.name,
+                    color: t.color,
+                }
+            });
+        }
     }
 
     async deleteTemplate(id: string, productionId: string) {

@@ -23,6 +23,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     server: Server;
 
     private logger: Logger = new Logger('EventsGateway');
+    private activeUsers: Map<string, { userId: string; userName: string; roleName: string; lastSeen: string; status: string }> = new Map();
 
     constructor(
         private prisma: PrismaService,
@@ -34,78 +35,77 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     }
 
     async handleConnection(client: Socket, ...args: any[]) {
-        this.logger.log(`Client connected: ${client.id}`);
-
-        // JWT token extraction is handled by WsJwtGuard for specific events,
-        // but for initial connection metadata, we extract the user if valid.
-        // We will assume WsJwtGuard will be applied to SubscribeMessage handlers.
-
         const productionId = client.handshake.query.productionId as string;
-        if (productionId) {
+        const userId = client.handshake.query.userId as string;
+        const userName = client.handshake.query.userName as string;
+        const roleName = client.handshake.query.roleName as string;
+
+        if (productionId && userId) {
             client.join(`production_${productionId}`);
-            this.logger.log(`Client ${client.id} joined room production_${productionId}`);
 
-            // Emit presence event to room
-            this.server.to(`production_${productionId}`).emit('device.online', {
-                clientId: client.id,
-                timestamp: new Date().toISOString()
+            this.activeUsers.set(client.id, {
+                userId,
+                userName: userName || 'User',
+                roleName: roleName || 'Viewer',
+                lastSeen: new Date().toISOString(),
+                status: 'IDLE'
             });
 
-            // Emit internal event for logging
-            this.eventEmitter.emit('device.online', {
-                productionId,
-                clientId: client.id
-            });
-
-            // Store for disconnect handler
             client.data.productionId = productionId;
+            this.logger.log(`User ${userId} (${roleName}) joined production_${productionId}`);
+
+            this.broadcastPresence(productionId);
         }
     }
 
-    @SubscribeMessage('production.join')
-    handleJoinRoom(
-        @MessageBody() data: { productionId: string },
-        @ConnectedSocket() client: Socket
-    ) {
-        const room = `production_${data.productionId}`;
-        client.join(room);
-        client.data.productionId = data.productionId; // Track for disconnect
-        this.logger.log(`Client ${client.id} manually joined room ${room}`);
-        return { status: 'joined', room };
-    }
+    private broadcastPresence(productionId: string) {
+        const room = `production_${productionId}`;
+        const socketIds = this.server.sockets.adapter.rooms.get(room);
+        const members = [];
 
-    @SubscribeMessage('production.leave')
-    handleLeaveRoom(
-        @MessageBody() data: { productionId: string },
-        @ConnectedSocket() client: Socket
-    ) {
-        const room = `production_${data.productionId}`;
-        client.leave(room);
-        delete client.data.productionId;
-        this.logger.log(`Client ${client.id} manually left room ${room}`);
-        return { status: 'left', room };
+        if (socketIds) {
+            for (const socketId of socketIds) {
+                const data = this.activeUsers.get(socketId);
+                if (data) members.push(data);
+            }
+        }
+
+        this.server.to(room).emit('presence.update', { members });
     }
 
     handleDisconnect(client: Socket) {
         this.logger.log(`Client disconnected: ${client.id}`);
         const productionId = client.data.productionId;
 
-        if (productionId) {
-            this.server.to(`production_${productionId}`).emit('device.offline', {
-                clientId: client.id,
-                timestamp: new Date().toISOString()
-            });
+        this.activeUsers.delete(client.id);
 
-            this.eventEmitter.emit('device.offline', {
-                productionId,
-                clientId: client.id
-            });
+        if (productionId) {
+            this.broadcastPresence(productionId);
         }
+    }
+
+    @SubscribeMessage('role.identify')
+    handleRoleIdentify(
+        @MessageBody() data: { roleName: string },
+        @ConnectedSocket() client: Socket
+    ) {
+        const currentUser = this.activeUsers.get(client.id);
+        if (currentUser) {
+            this.activeUsers.set(client.id, {
+                ...currentUser,
+                roleName: data.roleName
+            });
+            const productionId = client.data.productionId;
+            if (productionId) {
+                this.broadcastPresence(productionId);
+            }
+        }
+        return { status: 'ok', role: data.roleName };
     }
 
     @SubscribeMessage('command.send')
     async handleCommandSend(
-        @MessageBody() data: { productionId: string; senderId: string; targetRoleId?: string; templateId?: string; message: string; requiresAck?: boolean },
+        @MessageBody() data: { productionId: string; senderId: string; targetUserId?: string; targetRoleId?: string; templateId?: string; message: string; requiresAck?: boolean },
         @ConnectedSocket() client: Socket
     ) {
         // Validate payload and save to DB
@@ -121,12 +121,25 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             },
             include: {
                 sender: { select: { id: true, name: true } },
-                targetRole: { select: { id: true, name: true } }
+                targetRole: { select: { id: true, name: true } },
+                template: true
             }
         });
 
         // Broadcast to specific role or all
         const room = `production_${data.productionId}`;
+        // Update status for relevant users
+        for (const [sid, user] of this.activeUsers.entries()) {
+            const isTargeted =
+                (data.targetUserId && user.userId === data.targetUserId) ||
+                (!data.targetUserId && (user.roleName === data.targetRoleId || !data.targetRoleId));
+
+            if (isTargeted) {
+                this.activeUsers.set(sid, { ...user, status: data.message });
+            }
+        }
+        this.broadcastPresence(data.productionId);
+
         this.server.to(room).emit('command.received', command);
 
         return { status: 'ok', commandId: command.id };
@@ -134,7 +147,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
     @SubscribeMessage('command.ack')
     async handleCommandAck(
-        @MessageBody() data: { commandId: string; responderId: string; response: string; note?: string; productionId: string },
+        @MessageBody() data: { commandId: string; responderId: string; response: string; note?: string; productionId: string; responseType?: string },
         @ConnectedSocket() client: Socket
     ) {
         // Save response to DB
@@ -152,6 +165,14 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
         // Broadcast ACK back to sender / room
         const room = `production_${data.productionId}`;
+        // Update status to ACKNOWLEDGED for the specific responder
+        const user = this.activeUsers.get(client.id);
+        if (user) {
+            this.activeUsers.set(client.id, { ...user, status: `OK: ${data.responseType}` });
+            const productionId = client.data.productionId;
+            if (productionId) this.broadcastPresence(productionId);
+        }
+
         this.server.to(room).emit('command.ack_received', response);
 
         return { status: 'ok', responseId: response.id };

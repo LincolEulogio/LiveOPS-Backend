@@ -87,7 +87,13 @@ let UsersService = UsersService_1 = class UsersService {
         const defaultRoles = [
             { name: 'ADMIN', description: 'Full access to production' },
             { name: 'OPERATOR', description: 'Can operate engines and execute commands' },
-            { name: 'VIEWER', description: 'Read-only access to production status' }
+            { name: 'VIEWER', description: 'Read-only access to production status' },
+            { name: 'CÁMARA 1', description: 'Camera 1 operator' },
+            { name: 'CÁMARA 2', description: 'Camera 2 operator' },
+            { name: 'CÁMARA 3', description: 'Camera 3 operator' },
+            { name: 'CÁMARA 4', description: 'Camera 4 operator' },
+            { name: 'SONIDO', description: 'Sound technician' },
+            { name: 'PISO', description: 'Floor manager' }
         ];
         for (const roleData of defaultRoles) {
             let role = await this.prisma.role.findUnique({ where: { name: roleData.name } });

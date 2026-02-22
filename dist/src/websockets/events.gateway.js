@@ -23,6 +23,7 @@ let EventsGateway = class EventsGateway {
     eventEmitter;
     server;
     logger = new common_1.Logger('EventsGateway');
+    activeUsers = new Map();
     constructor(prisma, eventEmitter) {
         this.prisma = prisma;
         this.eventEmitter = eventEmitter;
@@ -31,49 +32,58 @@ let EventsGateway = class EventsGateway {
         this.logger.log('WebSocket Gateway initialized');
     }
     async handleConnection(client, ...args) {
-        this.logger.log(`Client connected: ${client.id}`);
         const productionId = client.handshake.query.productionId;
-        if (productionId) {
+        const userId = client.handshake.query.userId;
+        const userName = client.handshake.query.userName;
+        const roleName = client.handshake.query.roleName;
+        if (productionId && userId) {
             client.join(`production_${productionId}`);
-            this.logger.log(`Client ${client.id} joined room production_${productionId}`);
-            this.server.to(`production_${productionId}`).emit('device.online', {
-                clientId: client.id,
-                timestamp: new Date().toISOString()
-            });
-            this.eventEmitter.emit('device.online', {
-                productionId,
-                clientId: client.id
+            this.activeUsers.set(client.id, {
+                userId,
+                userName: userName || 'User',
+                roleName: roleName || 'Viewer',
+                lastSeen: new Date().toISOString(),
+                status: 'IDLE'
             });
             client.data.productionId = productionId;
+            this.logger.log(`User ${userId} (${roleName}) joined production_${productionId}`);
+            this.broadcastPresence(productionId);
         }
     }
-    handleJoinRoom(data, client) {
-        const room = `production_${data.productionId}`;
-        client.join(room);
-        client.data.productionId = data.productionId;
-        this.logger.log(`Client ${client.id} manually joined room ${room}`);
-        return { status: 'joined', room };
-    }
-    handleLeaveRoom(data, client) {
-        const room = `production_${data.productionId}`;
-        client.leave(room);
-        delete client.data.productionId;
-        this.logger.log(`Client ${client.id} manually left room ${room}`);
-        return { status: 'left', room };
+    broadcastPresence(productionId) {
+        const room = `production_${productionId}`;
+        const socketIds = this.server.sockets.adapter.rooms.get(room);
+        const members = [];
+        if (socketIds) {
+            for (const socketId of socketIds) {
+                const data = this.activeUsers.get(socketId);
+                if (data)
+                    members.push(data);
+            }
+        }
+        this.server.to(room).emit('presence.update', { members });
     }
     handleDisconnect(client) {
         this.logger.log(`Client disconnected: ${client.id}`);
         const productionId = client.data.productionId;
+        this.activeUsers.delete(client.id);
         if (productionId) {
-            this.server.to(`production_${productionId}`).emit('device.offline', {
-                clientId: client.id,
-                timestamp: new Date().toISOString()
-            });
-            this.eventEmitter.emit('device.offline', {
-                productionId,
-                clientId: client.id
-            });
+            this.broadcastPresence(productionId);
         }
+    }
+    handleRoleIdentify(data, client) {
+        const currentUser = this.activeUsers.get(client.id);
+        if (currentUser) {
+            this.activeUsers.set(client.id, {
+                ...currentUser,
+                roleName: data.roleName
+            });
+            const productionId = client.data.productionId;
+            if (productionId) {
+                this.broadcastPresence(productionId);
+            }
+        }
+        return { status: 'ok', role: data.roleName };
     }
     async handleCommandSend(data, client) {
         const command = await this.prisma.command.create({
@@ -88,10 +98,19 @@ let EventsGateway = class EventsGateway {
             },
             include: {
                 sender: { select: { id: true, name: true } },
-                targetRole: { select: { id: true, name: true } }
+                targetRole: { select: { id: true, name: true } },
+                template: true
             }
         });
         const room = `production_${data.productionId}`;
+        for (const [sid, user] of this.activeUsers.entries()) {
+            const isTargeted = (data.targetUserId && user.userId === data.targetUserId) ||
+                (!data.targetUserId && (user.roleName === data.targetRoleId || !data.targetRoleId));
+            if (isTargeted) {
+                this.activeUsers.set(sid, { ...user, status: data.message });
+            }
+        }
+        this.broadcastPresence(data.productionId);
         this.server.to(room).emit('command.received', command);
         return { status: 'ok', commandId: command.id };
     }
@@ -108,6 +127,13 @@ let EventsGateway = class EventsGateway {
             }
         });
         const room = `production_${data.productionId}`;
+        const user = this.activeUsers.get(client.id);
+        if (user) {
+            this.activeUsers.set(client.id, { ...user, status: `OK: ${data.responseType}` });
+            const productionId = client.data.productionId;
+            if (productionId)
+                this.broadcastPresence(productionId);
+        }
         this.server.to(room).emit('command.ack_received', response);
         return { status: 'ok', responseId: response.id };
     }
@@ -157,21 +183,13 @@ __decorate([
     __metadata("design:type", socket_io_1.Server)
 ], EventsGateway.prototype, "server", void 0);
 __decorate([
-    (0, websockets_1.SubscribeMessage)('production.join'),
+    (0, websockets_1.SubscribeMessage)('role.identify'),
     __param(0, (0, websockets_1.MessageBody)()),
     __param(1, (0, websockets_1.ConnectedSocket)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
     __metadata("design:returntype", void 0)
-], EventsGateway.prototype, "handleJoinRoom", null);
-__decorate([
-    (0, websockets_1.SubscribeMessage)('production.leave'),
-    __param(0, (0, websockets_1.MessageBody)()),
-    __param(1, (0, websockets_1.ConnectedSocket)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
-    __metadata("design:returntype", void 0)
-], EventsGateway.prototype, "handleLeaveRoom", null);
+], EventsGateway.prototype, "handleRoleIdentify", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('command.send'),
     __param(0, (0, websockets_1.MessageBody)()),

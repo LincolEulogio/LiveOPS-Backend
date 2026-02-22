@@ -7,25 +7,22 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
     private eventEmitter;
     server: Server;
     private logger;
+    private activeUsers;
     constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
     afterInit(server: Server): void;
     handleConnection(client: Socket, ...args: any[]): Promise<void>;
-    handleJoinRoom(data: {
-        productionId: string;
-    }, client: Socket): {
-        status: string;
-        room: string;
-    };
-    handleLeaveRoom(data: {
-        productionId: string;
-    }, client: Socket): {
-        status: string;
-        room: string;
-    };
+    private broadcastPresence;
     handleDisconnect(client: Socket): void;
+    handleRoleIdentify(data: {
+        roleName: string;
+    }, client: Socket): {
+        status: string;
+        role: string;
+    };
     handleCommandSend(data: {
         productionId: string;
         senderId: string;
+        targetUserId?: string;
         targetRoleId?: string;
         templateId?: string;
         message: string;
@@ -40,6 +37,7 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         response: string;
         note?: string;
         productionId: string;
+        responseType?: string;
     }, client: Socket): Promise<{
         status: string;
         responseId: string;

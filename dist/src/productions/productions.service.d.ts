@@ -39,10 +39,10 @@ export declare class ProductionsService {
             };
         } & {
             productionId: string;
+            userId: string;
             createdAt: Date;
             updatedAt: Date;
             roleId: string;
-            userId: string;
         })[];
     } & {
         description: string | null;
@@ -88,10 +88,10 @@ export declare class ProductionsService {
             };
         } & {
             productionId: string;
+            userId: string;
             createdAt: Date;
             updatedAt: Date;
             roleId: string;
-            userId: string;
         })[];
     } & {
         description: string | null;
@@ -138,16 +138,16 @@ export declare class ProductionsService {
         };
     } & {
         productionId: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
         roleId: string;
-        userId: string;
     }>;
     removeUser(productionId: string, userIdToRemove: string): Promise<{
         productionId: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
         roleId: string;
-        userId: string;
     }>;
 }
