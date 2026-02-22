@@ -4,3 +4,5 @@ export declare class CreateCommandTemplateDto {
     icon?: string;
     color?: string;
 }
+export declare class UpdateCommandTemplateDto extends CreateCommandTemplateDto {
+}

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, Req, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Delete, UseGuards, Req, Request } from '@nestjs/common';
 import { IntercomService } from './intercom.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CreateCommandTemplateDto } from './dto/intercom.dto';
@@ -20,6 +20,15 @@ export class IntercomController {
     @Get('templates')
     getTemplates(@Param('productionId') productionId: string) {
         return this.intercomService.getTemplates(productionId);
+    }
+
+    @Put('templates/:id')
+    updateTemplate(
+        @Param('productionId') productionId: string,
+        @Param('id') id: string,
+        @Body() dto: CreateCommandTemplateDto
+    ) {
+        return this.intercomService.updateTemplate(id, productionId, dto);
     }
 
     @Delete('templates/:id')

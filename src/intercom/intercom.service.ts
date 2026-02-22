@@ -64,6 +64,23 @@ export class IntercomService {
         }
     }
 
+    async updateTemplate(id: string, productionId: string, dto: CreateCommandTemplateDto) {
+        const template = await this.prisma.commandTemplate.findFirst({
+            where: { id, productionId }
+        });
+        if (!template) throw new NotFoundException('Template not found in this production');
+
+        return this.prisma.commandTemplate.update({
+            where: { id },
+            data: {
+                name: dto.name,
+                description: dto.description,
+                icon: dto.icon,
+                color: dto.color,
+            }
+        });
+    }
+
     async deleteTemplate(id: string, productionId: string) {
         const template = await this.prisma.commandTemplate.findFirst({
             where: { id, productionId }

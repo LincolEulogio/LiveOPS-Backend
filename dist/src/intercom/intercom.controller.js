@@ -29,6 +29,9 @@ let IntercomController = class IntercomController {
     getTemplates(productionId) {
         return this.intercomService.getTemplates(productionId);
     }
+    updateTemplate(productionId, id, dto) {
+        return this.intercomService.updateTemplate(id, productionId, dto);
+    }
     deleteTemplate(productionId, id) {
         return this.intercomService.deleteTemplate(id, productionId);
     }
@@ -52,6 +55,15 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], IntercomController.prototype, "getTemplates", null);
+__decorate([
+    (0, common_1.Put)('templates/:id'),
+    __param(0, (0, common_1.Param)('productionId')),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, intercom_dto_1.CreateCommandTemplateDto]),
+    __metadata("design:returntype", void 0)
+], IntercomController.prototype, "updateTemplate", null);
 __decorate([
     (0, common_1.Delete)('templates/:id'),
     __param(0, (0, common_1.Param)('productionId')),

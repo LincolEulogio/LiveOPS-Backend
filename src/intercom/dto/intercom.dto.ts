@@ -17,3 +17,5 @@ export class CreateCommandTemplateDto {
     @IsOptional()
     color?: string;
 }
+
+export class UpdateCommandTemplateDto extends CreateCommandTemplateDto { }

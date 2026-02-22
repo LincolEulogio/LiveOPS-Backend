@@ -69,6 +69,22 @@ let IntercomService = class IntercomService {
             });
         }
     }
+    async updateTemplate(id, productionId, dto) {
+        const template = await this.prisma.commandTemplate.findFirst({
+            where: { id, productionId }
+        });
+        if (!template)
+            throw new common_1.NotFoundException('Template not found in this production');
+        return this.prisma.commandTemplate.update({
+            where: { id },
+            data: {
+                name: dto.name,
+                description: dto.description,
+                icon: dto.icon,
+                color: dto.color,
+            }
+        });
+    }
     async deleteTemplate(id, productionId) {
         const template = await this.prisma.commandTemplate.findFirst({
             where: { id, productionId }
