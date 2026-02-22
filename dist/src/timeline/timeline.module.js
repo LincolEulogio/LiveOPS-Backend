@@ -18,7 +18,7 @@ exports.TimelineModule = TimelineModule = __decorate([
     (0, common_1.Module)({
         imports: [prisma_module_1.PrismaModule],
         providers: [timeline_service_1.TimelineService],
-        controllers: [timeline_controller_1.TimelineController]
+        controllers: [timeline_controller_1.TimelineController],
     })
 ], TimelineModule);
 //# sourceMappingURL=timeline.module.js.map

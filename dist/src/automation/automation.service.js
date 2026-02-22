@@ -22,8 +22,8 @@ let AutomationService = class AutomationService {
             where: { productionId },
             include: {
                 triggers: true,
-                actions: { orderBy: { order: 'asc' } }
-            }
+                actions: { orderBy: { order: 'asc' } },
+            },
         });
     }
     async getRule(id, productionId) {
@@ -32,8 +32,8 @@ let AutomationService = class AutomationService {
             include: {
                 triggers: true,
                 actions: { orderBy: { order: 'asc' } },
-                logs: { orderBy: { createdAt: 'desc' }, take: 20 }
-            }
+                logs: { orderBy: { createdAt: 'desc' }, take: 20 },
+            },
         });
         if (!rule)
             throw new common_1.NotFoundException('Rule not found');
@@ -47,26 +47,33 @@ let AutomationService = class AutomationService {
                 description: dto.description,
                 isEnabled: dto.isEnabled ?? true,
                 triggers: {
-                    create: dto.triggers
+                    create: dto.triggers,
                 },
                 actions: {
-                    create: dto.actions.map((a, idx) => ({ ...a, order: a.order ?? idx }))
-                }
+                    create: dto.actions.map((a, idx) => ({
+                        ...a,
+                        order: a.order ?? idx,
+                    })),
+                },
             },
-            include: { triggers: true, actions: true }
+            include: { triggers: true, actions: true },
         });
     }
     async updateRule(id, productionId, dto) {
-        const rule = await this.prisma.rule.findFirst({ where: { id, productionId } });
+        const rule = await this.prisma.rule.findFirst({
+            where: { id, productionId },
+        });
         if (!rule)
             throw new common_1.NotFoundException('Rule not found');
         return this.prisma.rule.update({
             where: { id },
-            data: dto
+            data: dto,
         });
     }
     async deleteRule(id, productionId) {
-        const rule = await this.prisma.rule.findFirst({ where: { id, productionId } });
+        const rule = await this.prisma.rule.findFirst({
+            where: { id, productionId },
+        });
         if (!rule)
             throw new common_1.NotFoundException('Rule not found');
         await this.prisma.rule.delete({ where: { id } });
@@ -77,7 +84,7 @@ let AutomationService = class AutomationService {
             where: { productionId },
             include: { rule: { select: { name: true } } },
             orderBy: { createdAt: 'desc' },
-            take: 100
+            take: 100,
         });
     }
 };

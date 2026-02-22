@@ -20,7 +20,7 @@ exports.ObsModule = ObsModule = __decorate([
         imports: [prisma_module_1.PrismaModule],
         providers: [obs_service_1.ObsService, obs_connection_manager_1.ObsConnectionManager],
         controllers: [obs_controller_1.ObsController],
-        exports: [obs_service_1.ObsService, obs_connection_manager_1.ObsConnectionManager]
+        exports: [obs_service_1.ObsService, obs_connection_manager_1.ObsConnectionManager],
     })
 ], ObsModule);
 //# sourceMappingURL=obs.module.js.map

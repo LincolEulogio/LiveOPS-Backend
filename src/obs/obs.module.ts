@@ -8,6 +8,6 @@ import { ObsController } from './obs.controller';
   imports: [PrismaModule],
   providers: [ObsService, ObsConnectionManager],
   controllers: [ObsController],
-  exports: [ObsService, ObsConnectionManager]
+  exports: [ObsService, ObsConnectionManager],
 })
-export class ObsModule { }
+export class ObsModule {}

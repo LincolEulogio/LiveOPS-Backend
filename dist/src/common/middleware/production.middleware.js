@@ -20,7 +20,9 @@ let ProductionMiddleware = class ProductionMiddleware {
     async use(req, res, next) {
         const productionId = req.headers['x-production-id'];
         if (productionId) {
-            const prod = await this.prisma.production.findUnique({ where: { id: productionId } });
+            const prod = await this.prisma.production.findUnique({
+                where: { id: productionId },
+            });
             if (!prod) {
                 throw new common_1.BadRequestException('Invalid x-production-id header');
             }

@@ -22,12 +22,12 @@ export declare class AutomationController {
             ruleId: string;
         }[];
     } & {
-        id: string;
         name: string;
         description: string | null;
+        productionId: string;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isEnabled: boolean;
     })[]>;
     createRule(productionId: string, dto: CreateRuleDto): Promise<{
@@ -49,19 +49,19 @@ export declare class AutomationController {
             ruleId: string;
         }[];
     } & {
-        id: string;
         name: string;
         description: string | null;
+        productionId: string;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isEnabled: boolean;
     }>;
     getRule(productionId: string, id: string): Promise<{
         logs: {
+            productionId: string;
             id: string;
             createdAt: Date;
-            productionId: string;
             status: string;
             details: string | null;
             ruleId: string;
@@ -84,21 +84,21 @@ export declare class AutomationController {
             ruleId: string;
         }[];
     } & {
-        id: string;
         name: string;
         description: string | null;
+        productionId: string;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isEnabled: boolean;
     }>;
     updateRule(productionId: string, id: string, dto: UpdateRuleDto): Promise<{
-        id: string;
         name: string;
         description: string | null;
+        productionId: string;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isEnabled: boolean;
     }>;
     deleteRule(productionId: string, id: string): Promise<{
@@ -109,9 +109,9 @@ export declare class AutomationController {
             name: string;
         };
     } & {
+        productionId: string;
         id: string;
         createdAt: Date;
-        productionId: string;
         status: string;
         details: string | null;
         ruleId: string;

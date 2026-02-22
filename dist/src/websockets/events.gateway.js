@@ -56,17 +56,23 @@ let EventsGateway = class EventsGateway {
     }
     async handleScriptUpdate(data, client) {
         const updateArray = new Uint8Array(data.update);
-        client.to(`production_${data.productionId}`).emit('script.update_received', { update: updateArray });
+        client
+            .to(`production_${data.productionId}`)
+            .emit('script.update_received', { update: updateArray });
         await this.scriptService.updateScriptState(data.productionId, Buffer.from(updateArray));
     }
     handleAwarenessUpdate(data, client) {
-        client.to(`production_${data.productionId}`).emit('script.awareness_received', {
-            update: data.update
+        client
+            .to(`production_${data.productionId}`)
+            .emit('script.awareness_received', {
+            update: data.update,
         });
     }
     handleScriptScrollSync(data, client) {
-        client.to(`production_${data.productionId}`).emit('script.scroll_received', {
-            scrollPercentage: data.scrollPercentage
+        client
+            .to(`production_${data.productionId}`)
+            .emit('script.scroll_received', {
+            scrollPercentage: data.scrollPercentage,
         });
     }
     async handleConnection(client, ...args) {
@@ -83,7 +89,7 @@ let EventsGateway = class EventsGateway {
                 roleId: roleId || '',
                 roleName: roleName || 'Viewer',
                 lastSeen: new Date().toISOString(),
-                status: 'IDLE'
+                status: 'IDLE',
             });
             client.data.productionId = productionId;
             this.logger.log(`User ${userId} (${roleName}) joined production_${productionId}`);
@@ -117,7 +123,7 @@ let EventsGateway = class EventsGateway {
             this.activeUsers.set(client.id, {
                 ...currentUser,
                 roleId: data.roleId,
-                roleName: data.roleName
+                roleName: data.roleName,
             });
             const productionId = client.data.productionId;
             if (productionId) {
@@ -130,7 +136,8 @@ let EventsGateway = class EventsGateway {
         const command = await this.intercomService.sendCommand(data);
         for (const [sid, user] of this.activeUsers.entries()) {
             const isTargeted = (data.targetUserId && user.userId === data.targetUserId) ||
-                (!data.targetUserId && (user.roleId === data.targetRoleId || !data.targetRoleId));
+                (!data.targetUserId &&
+                    (user.roleId === data.targetRoleId || !data.targetRoleId));
             if (isTargeted) {
                 this.activeUsers.set(sid, { ...user, status: data.message });
             }
@@ -147,13 +154,16 @@ let EventsGateway = class EventsGateway {
                 note: data.note,
             },
             include: {
-                responder: { select: { id: true, name: true } }
-            }
+                responder: { select: { id: true, name: true } },
+            },
         });
         const room = `production_${data.productionId}`;
         const user = this.activeUsers.get(client.id);
         if (user) {
-            this.activeUsers.set(client.id, { ...user, status: `OK: ${data.responseType}` });
+            this.activeUsers.set(client.id, {
+                ...user,
+                status: `OK: ${data.responseType}`,
+            });
             const productionId = client.data.productionId;
             if (productionId)
                 this.broadcastPresence(productionId);
@@ -167,31 +177,43 @@ let EventsGateway = class EventsGateway {
             .emit('obs.scene.changed', {
             sceneName: payload.sceneName,
             cpuUsage: payload.cpuUsage,
-            fps: payload.fps
+            fps: payload.fps,
         });
         const msg = await this.chatService.saveMessage(payload.productionId, null, `🎬 Escena cambiada a: ${payload.sceneName}`);
-        this.server.to(`production_${payload.productionId}`).emit('chat.received', msg);
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('chat.received', msg);
     }
     async handleObsStreamState(payload) {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('obs.stream.state', payload);
-        const msg = await this.chatService.saveMessage(payload.productionId, null, payload.active ? `🔴 EMISIÓN INICIADA (${payload.state})` : `⚪ EMISIÓN DETENIDA (${payload.state})`);
-        this.server.to(`production_${payload.productionId}`).emit('chat.received', msg);
+        const msg = await this.chatService.saveMessage(payload.productionId, null, payload.active
+            ? `🔴 EMISIÓN INICIADA (${payload.state})`
+            : `⚪ EMISIÓN DETENIDA (${payload.state})`);
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('chat.received', msg);
     }
     async handleObsRecordState(payload) {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('obs.record.state', payload);
-        const msg = await this.chatService.saveMessage(payload.productionId, null, payload.active ? `⏺️ GRABACIÓN INICIADA (${payload.state})` : `⏹️ GRABACIÓN DETENIDA (${payload.state})`);
-        this.server.to(`production_${payload.productionId}`).emit('chat.received', msg);
+        const msg = await this.chatService.saveMessage(payload.productionId, null, payload.active
+            ? `⏺️ GRABACIÓN INICIADA (${payload.state})`
+            : `⏹️ GRABACIÓN DETENIDA (${payload.state})`);
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('chat.received', msg);
     }
     async handleObsConnectionState(payload) {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('obs.connection.state', payload);
         const msg = await this.chatService.saveMessage(payload.productionId, null, payload.connected ? `🔗 OBS CONECTADO` : `❌ OBS DESCONECTADO`);
-        this.server.to(`production_${payload.productionId}`).emit('chat.received', msg);
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('chat.received', msg);
     }
     handleVmixInputChanged(payload) {
         this.server

@@ -22,10 +22,7 @@ let PermissionsGuard = class PermissionsGuard {
         this.prisma = prisma;
     }
     async canActivate(context) {
-        const requiredPermissions = this.reflector.getAllAndOverride(permissions_decorator_1.PERMISSIONS_KEY, [
-            context.getHandler(),
-            context.getClass(),
-        ]);
+        const requiredPermissions = this.reflector.getAllAndOverride(permissions_decorator_1.PERMISSIONS_KEY, [context.getHandler(), context.getClass()]);
         if (!requiredPermissions || requiredPermissions.length === 0) {
             return true;
         }
@@ -39,39 +36,43 @@ let PermissionsGuard = class PermissionsGuard {
             include: {
                 globalRole: {
                     include: {
-                        permissions: { include: { permission: true } }
-                    }
-                }
-            }
+                        permissions: { include: { permission: true } },
+                    },
+                },
+            },
         });
         if (!dbUser) {
             throw new common_1.ForbiddenException('User record not found');
         }
-        const globalPermissions = dbUser.globalRole?.permissions.map(rp => rp.permission.action) || [];
-        const hasGlobalPermission = requiredPermissions.every(perm => globalPermissions.includes(perm));
+        const globalPermissions = dbUser.globalRole?.permissions.map((rp) => rp.permission.action) || [];
+        const hasGlobalPermission = requiredPermissions.every((perm) => globalPermissions.includes(perm));
         if (hasGlobalPermission) {
             return true;
         }
-        const productionId = request.params.productionId || request.params.id || request.body.productionId;
-        if (productionId && typeof productionId === 'string' && productionId.length > 20) {
+        const productionId = request.params.productionId ||
+            request.params.id ||
+            request.body.productionId;
+        if (productionId &&
+            typeof productionId === 'string' &&
+            productionId.length > 20) {
             const productionUser = await this.prisma.productionUser.findUnique({
                 where: {
                     userId_productionId: {
                         userId: user.userId,
-                        productionId: productionId
-                    }
+                        productionId: productionId,
+                    },
                 },
                 include: {
                     role: {
                         include: {
-                            permissions: { include: { permission: true } }
-                        }
-                    }
-                }
+                            permissions: { include: { permission: true } },
+                        },
+                    },
+                },
             });
             if (productionUser) {
-                const productionPermissions = productionUser.role.permissions.map(rp => rp.permission.action);
-                const hasProdPermission = requiredPermissions.every(perm => productionPermissions.includes(perm));
+                const productionPermissions = productionUser.role.permissions.map((rp) => rp.permission.action);
+                const hasProdPermission = requiredPermissions.every((perm) => productionPermissions.includes(perm));
                 if (hasProdPermission) {
                     return true;
                 }

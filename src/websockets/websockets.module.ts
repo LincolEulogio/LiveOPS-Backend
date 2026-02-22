@@ -6,8 +6,8 @@ import { ScriptModule } from '../script/script.module';
 import { EventsGateway } from './events.gateway';
 
 @Module({
-    imports: [PrismaModule, IntercomModule, ChatModule, ScriptModule],
-    providers: [EventsGateway],
-    exports: [EventsGateway],
+  imports: [PrismaModule, IntercomModule, ChatModule, ScriptModule],
+  providers: [EventsGateway],
+  exports: [EventsGateway],
 })
-export class WebsocketsModule { }
+export class WebsocketsModule {}

@@ -1,44 +1,51 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+} from 'class-validator';
 
 export class CreateTimelineBlockDto {
-    @IsString()
-    @IsNotEmpty()
-    title: string;
+  @IsString()
+  @IsNotEmpty()
+  title: string;
 
-    @IsString()
-    @IsOptional()
-    description?: string;
+  @IsString()
+  @IsOptional()
+  description?: string;
 
-    @IsInt()
-    @Min(0)
-    @IsOptional()
-    durationMs?: number;
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  durationMs?: number;
 
-    @IsInt()
-    @Min(0)
-    @IsOptional()
-    order?: number;
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  order?: number;
 
-    @IsString()
-    @IsOptional()
-    linkedScene?: string;
+  @IsString()
+  @IsOptional()
+  linkedScene?: string;
 
-    @IsString()
-    @IsOptional()
-    source?: string;
+  @IsString()
+  @IsOptional()
+  source?: string;
 
-    @IsString()
-    @IsOptional()
-    notes?: string;
+  @IsString()
+  @IsOptional()
+  notes?: string;
 
-    @IsUUID()
-    @IsOptional()
-    intercomTemplateId?: string;
+  @IsUUID()
+  @IsOptional()
+  intercomTemplateId?: string;
 }
 
-export class UpdateTimelineBlockDto extends CreateTimelineBlockDto { }
+export class UpdateTimelineBlockDto extends CreateTimelineBlockDto {}
 
 export class ReorderBlocksDto {
-    @IsUUID(4, { each: true })
-    blockIds: string[];
+  @IsUUID(4, { each: true })
+  blockIds: string[];
 }

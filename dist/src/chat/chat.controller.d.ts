@@ -4,14 +4,14 @@ export declare class ChatController {
     constructor(chatService: ChatService);
     getHistory(productionId: string, limit?: number): Promise<({
         user: {
-            id: string;
             name: string | null;
+            id: string;
         } | null;
     } & {
-        id: string;
-        createdAt: Date;
         productionId: string;
         message: string;
+        id: string;
+        createdAt: Date;
         userId: string | null;
     })[]>;
 }

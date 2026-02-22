@@ -8,39 +8,41 @@ import { Parser } from 'json2csv';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions/:productionId/analytics')
 export class AnalyticsController {
-    constructor(private readonly analyticsService: AnalyticsService) { }
+  constructor(private readonly analyticsService: AnalyticsService) {}
 
-    @Get('dashboard')
-    getDashboardMetrics(@Param('productionId') productionId: string) {
-        return this.analyticsService.getDashboardMetrics(productionId);
-    }
+  @Get('dashboard')
+  getDashboardMetrics(@Param('productionId') productionId: string) {
+    return this.analyticsService.getDashboardMetrics(productionId);
+  }
 
-    @Get('logs')
-    getLogs(@Param('productionId') productionId: string) {
-        return this.analyticsService.getProductionLogs(productionId);
-    }
+  @Get('logs')
+  getLogs(@Param('productionId') productionId: string) {
+    return this.analyticsService.getProductionLogs(productionId);
+  }
 
-    @Get('export')
-    async exportCsv(
-        @Param('productionId') productionId: string,
-        @Res() res: Response
-    ) {
-        const logs = await this.analyticsService.getAllLogsForExport(productionId);
+  @Get('export')
+  async exportCsv(
+    @Param('productionId') productionId: string,
+    @Res() res: Response,
+  ) {
+    const logs = await this.analyticsService.getAllLogsForExport(productionId);
 
-        // Simple CSV generation
-        const header = 'id,productionId,eventType,createdAt,details\n';
-        const csvData = logs.map((log: any) => ({
-            id: log.id,
-            timestamp: log.createdAt.toISOString(),
-            eventType: log.eventType,
-            details: JSON.stringify(log.details)
-        }));
+    // Simple CSV generation
+    const header = 'id,productionId,eventType,createdAt,details\n';
+    const csvData = logs.map((log: any) => ({
+      id: log.id,
+      timestamp: log.createdAt.toISOString(),
+      eventType: log.eventType,
+      details: JSON.stringify(log.details),
+    }));
 
-        const parser = new Parser({ fields: ['id', 'timestamp', 'eventType', 'details'] });
-        const csv = await parser.parse(csvData);
+    const parser = new Parser({
+      fields: ['id', 'timestamp', 'eventType', 'details'],
+    });
+    const csv = await parser.parse(csvData);
 
-        res.header('Content-Type', 'text/csv');
-        res.attachment(`production_${productionId}_log.csv`);
-        return res.send(csv);
-    }
+    res.header('Content-Type', 'text/csv');
+    res.attachment(`production_${productionId}_log.csv`);
+    return res.send(csv);
+  }
 }

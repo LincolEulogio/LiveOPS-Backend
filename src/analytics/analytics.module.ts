@@ -7,6 +7,6 @@ import { AnalyticsController } from './analytics.controller';
   imports: [PrismaModule],
   providers: [AnalyticsService],
   controllers: [AnalyticsController],
-  exports: [AnalyticsService]
+  exports: [AnalyticsService],
 })
-export class AnalyticsModule { }
+export class AnalyticsModule {}

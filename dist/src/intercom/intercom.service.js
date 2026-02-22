@@ -28,19 +28,19 @@ let IntercomService = class IntercomService {
                 description: dto.description,
                 icon: dto.icon,
                 color: dto.color,
-            }
+            },
         });
     }
     async getTemplates(productionId) {
         const templates = await this.prisma.commandTemplate.findMany({
             where: { productionId },
-            orderBy: { createdAt: 'asc' }
+            orderBy: { createdAt: 'asc' },
         });
         if (templates.length === 0) {
             await this.seedDefaultTemplates(productionId);
             return this.prisma.commandTemplate.findMany({
                 where: { productionId },
-                orderBy: { createdAt: 'asc' }
+                orderBy: { createdAt: 'asc' },
             });
         }
         return templates;
@@ -68,13 +68,13 @@ let IntercomService = class IntercomService {
                     productionId,
                     name: t.name,
                     color: t.color,
-                }
+                },
             });
         }
     }
     async updateTemplate(id, productionId, dto) {
         const template = await this.prisma.commandTemplate.findFirst({
-            where: { id, productionId }
+            where: { id, productionId },
         });
         if (!template)
             throw new common_1.NotFoundException('Template not found in this production');
@@ -85,12 +85,12 @@ let IntercomService = class IntercomService {
                 description: dto.description,
                 icon: dto.icon,
                 color: dto.color,
-            }
+            },
         });
     }
     async deleteTemplate(id, productionId) {
         const template = await this.prisma.commandTemplate.findFirst({
-            where: { id, productionId }
+            where: { id, productionId },
         });
         if (!template)
             throw new common_1.NotFoundException('Template not found in this production');
@@ -105,8 +105,8 @@ let IntercomService = class IntercomService {
                 template: true,
                 responses: {
                     include: {
-                        responder: { select: { id: true, name: true } }
-                    }
+                        responder: { select: { id: true, name: true } },
+                    },
                 },
             },
             orderBy: { createdAt: 'desc' },
@@ -122,17 +122,17 @@ let IntercomService = class IntercomService {
                 templateId: dto.templateId,
                 message: dto.message,
                 requiresAck: dto.requiresAck ?? true,
-                status: 'SENT'
+                status: 'SENT',
             },
             include: {
                 sender: { select: { id: true, name: true } },
                 targetRole: { select: { id: true, name: true } },
-                template: true
-            }
+                template: true,
+            },
         });
         this.eventEmitter.emit('command.created', {
             productionId: dto.productionId,
-            command
+            command,
         });
         return command;
     }

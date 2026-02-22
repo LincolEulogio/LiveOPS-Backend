@@ -1,139 +1,149 @@
-import { IsNotEmpty, IsOptional, IsString, IsEnum, ValidateNested, IsBoolean, IsUrl, IsNumber, IsArray } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsEnum,
+  ValidateNested,
+  IsBoolean,
+  IsUrl,
+  IsNumber,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum EngineType {
-    OBS = 'OBS',
-    VMIX = 'VMIX',
+  OBS = 'OBS',
+  VMIX = 'VMIX',
 }
 
 export enum ProductionStatus {
-    SETUP = 'SETUP',
-    ACTIVE = 'ACTIVE',
-    ARCHIVED = 'ARCHIVED',
-    DRAFT = 'DRAFT',
+  SETUP = 'SETUP',
+  ACTIVE = 'ACTIVE',
+  ARCHIVED = 'ARCHIVED',
+  DRAFT = 'DRAFT',
 }
 
 export class ObsConfigDto {
-    @IsString()
-    @IsOptional()
-    host?: string;
+  @IsString()
+  @IsOptional()
+  host?: string;
 
-    @IsString()
-    @IsOptional()
-    port?: string;
+  @IsString()
+  @IsOptional()
+  port?: string;
 
-    @IsString()
-    @IsOptional()
-    password?: string;
+  @IsString()
+  @IsOptional()
+  password?: string;
 
-    @IsBoolean()
-    @IsOptional()
-    isEnabled?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  isEnabled?: boolean;
 
-    @IsNumber()
-    @IsOptional()
-    pollingInterval?: number;
+  @IsNumber()
+  @IsOptional()
+  pollingInterval?: number;
 }
 
 export class VmixConfigDto {
-    @IsString()
-    @IsOptional()
-    host?: string;
+  @IsString()
+  @IsOptional()
+  host?: string;
 
-    @IsString()
-    @IsOptional()
-    port?: string;
+  @IsString()
+  @IsOptional()
+  port?: string;
 
-    @IsBoolean()
-    @IsOptional()
-    isEnabled?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  isEnabled?: boolean;
 
-    @IsNumber()
-    @IsOptional()
-    pollingInterval?: number;
+  @IsNumber()
+  @IsOptional()
+  pollingInterval?: number;
 }
 
 export class CreateProductionDto {
-    @IsString()
-    @IsNotEmpty()
-    name: string;
+  @IsString()
+  @IsNotEmpty()
+  name: string;
 
-    @IsString()
-    @IsOptional()
-    description?: string;
+  @IsString()
+  @IsOptional()
+  description?: string;
 
-    @IsEnum(EngineType)
-    @IsOptional()
-    engineType?: EngineType;
+  @IsEnum(EngineType)
+  @IsOptional()
+  engineType?: EngineType;
 
-    @IsEnum(ProductionStatus)
-    @IsOptional()
-    status?: ProductionStatus;
+  @IsEnum(ProductionStatus)
+  @IsOptional()
+  status?: ProductionStatus;
 
-    @IsArray()
-    @IsOptional()
-    @ValidateNested({ each: true })
-    @Type(() => AssignUserDto)
-    initialMembers?: AssignUserDto[];
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => AssignUserDto)
+  initialMembers?: AssignUserDto[];
 }
 
 export class UpdateProductionDto {
-    @IsString()
-    @IsOptional()
-    name?: string;
+  @IsString()
+  @IsOptional()
+  name?: string;
 
-    @IsString()
-    @IsOptional()
-    description?: string;
+  @IsString()
+  @IsOptional()
+  description?: string;
 
-    @IsEnum(EngineType)
-    @IsOptional()
-    engineType?: EngineType;
+  @IsEnum(EngineType)
+  @IsOptional()
+  engineType?: EngineType;
 
-    @IsEnum(ProductionStatus)
-    @IsOptional()
-    status?: ProductionStatus;
+  @IsEnum(ProductionStatus)
+  @IsOptional()
+  status?: ProductionStatus;
 
-    @IsOptional()
-    @ValidateNested()
-    @Type(() => ObsConfigDto)
-    obsConfig?: ObsConfigDto;
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ObsConfigDto)
+  obsConfig?: ObsConfigDto;
 
-    @IsOptional()
-    @ValidateNested()
-    @Type(() => VmixConfigDto)
-    vmixConfig?: VmixConfigDto;
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => VmixConfigDto)
+  vmixConfig?: VmixConfigDto;
 }
 
 export class UpdateProductionStateDto {
-    @IsEnum(ProductionStatus)
-    status: ProductionStatus;
+  @IsEnum(ProductionStatus)
+  status: ProductionStatus;
 }
 
 export class AssignUserDto {
-    @IsString()
-    @IsNotEmpty()
-    email: string;
+  @IsString()
+  @IsNotEmpty()
+  email: string;
 
-    @IsString()
-    @IsNotEmpty()
-    roleName: string;
+  @IsString()
+  @IsNotEmpty()
+  roleName: string;
 }
 
 export class GetProductionsQueryDto {
-    @IsOptional()
-    @IsString()
-    page?: string;
+  @IsOptional()
+  @IsString()
+  page?: string;
 
-    @IsOptional()
-    @IsString()
-    limit?: string;
+  @IsOptional()
+  @IsString()
+  limit?: string;
 
-    @IsOptional()
-    @IsString()
-    status?: string;
+  @IsOptional()
+  @IsString()
+  status?: string;
 
-    @IsOptional()
-    @IsString()
-    search?: string;
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

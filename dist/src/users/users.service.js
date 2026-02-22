@@ -58,14 +58,18 @@ let UsersService = UsersService_1 = class UsersService {
         await this.bootstrapAdmin();
     }
     async bootstrapAdmin() {
-        const adminRole = await this.prisma.role.findUnique({ where: { name: 'ADMIN' } });
+        const adminRole = await this.prisma.role.findUnique({
+            where: { name: 'ADMIN' },
+        });
         if (!adminRole)
             return;
-        const adminUser = await this.prisma.user.findUnique({ where: { email: 'admin@liveops.com' } });
+        const adminUser = await this.prisma.user.findUnique({
+            where: { email: 'admin@liveops.com' },
+        });
         if (adminUser && adminUser.globalRoleId !== adminRole.id) {
             await this.prisma.user.update({
                 where: { id: adminUser.id },
-                data: { globalRoleId: adminRole.id }
+                data: { globalRoleId: adminRole.id },
             });
             this.logger.log('Force-bootstrapped admin@liveops.com as Global ADMIN');
         }
@@ -73,7 +77,10 @@ let UsersService = UsersService_1 = class UsersService {
     async seedDefaultRoles() {
         const permissions = [
             { action: 'production:create', description: 'Create new productions' },
-            { action: 'production:manage', description: 'Full control over a production' },
+            {
+                action: 'production:manage',
+                description: 'Full control over a production',
+            },
             { action: 'user:manage', description: 'Manage global users' },
             { action: 'role:manage', description: 'Manage roles and permissions' },
         ];
@@ -81,22 +88,27 @@ let UsersService = UsersService_1 = class UsersService {
             await this.prisma.permission.upsert({
                 where: { action: p.action },
                 update: {},
-                create: p
+                create: p,
             });
         }
         const defaultRoles = [
             { name: 'ADMIN', description: 'Full access to production' },
-            { name: 'OPERATOR', description: 'Can operate engines and execute commands' },
+            {
+                name: 'OPERATOR',
+                description: 'Can operate engines and execute commands',
+            },
             { name: 'VIEWER', description: 'Read-only access to production status' },
             { name: 'CÁMARA 1', description: 'Camera 1 operator' },
             { name: 'CÁMARA 2', description: 'Camera 2 operator' },
             { name: 'CÁMARA 3', description: 'Camera 3 operator' },
             { name: 'CÁMARA 4', description: 'Camera 4 operator' },
             { name: 'SONIDO', description: 'Sound technician' },
-            { name: 'PISO', description: 'Floor manager' }
+            { name: 'PISO', description: 'Floor manager' },
         ];
         for (const roleData of defaultRoles) {
-            let role = await this.prisma.role.findUnique({ where: { name: roleData.name } });
+            let role = await this.prisma.role.findUnique({
+                where: { name: roleData.name },
+            });
             if (!role) {
                 role = await this.prisma.role.create({ data: roleData });
                 this.logger.log(`Created default role: ${roleData.name}`);
@@ -105,20 +117,24 @@ let UsersService = UsersService_1 = class UsersService {
             if (role.name === 'ADMIN') {
                 for (const p of allPerms) {
                     await this.prisma.rolePermission.upsert({
-                        where: { roleId_permissionId: { roleId: role.id, permissionId: p.id } },
+                        where: {
+                            roleId_permissionId: { roleId: role.id, permissionId: p.id },
+                        },
                         create: { roleId: role.id, permissionId: p.id },
-                        update: {}
+                        update: {},
                     });
                 }
             }
             else if (role.name === 'OPERATOR') {
                 const operatorPermActions = ['production:create', 'production:manage'];
-                const operatorPerms = allPerms.filter(p => operatorPermActions.includes(p.action));
+                const operatorPerms = allPerms.filter((p) => operatorPermActions.includes(p.action));
                 for (const p of operatorPerms) {
                     await this.prisma.rolePermission.upsert({
-                        where: { roleId_permissionId: { roleId: role.id, permissionId: p.id } },
+                        where: {
+                            roleId_permissionId: { roleId: role.id, permissionId: p.id },
+                        },
                         create: { roleId: role.id, permissionId: p.id },
-                        update: {}
+                        update: {},
                     });
                 }
             }
@@ -129,12 +145,12 @@ let UsersService = UsersService_1 = class UsersService {
             await tx.rolePermission.deleteMany({ where: { roleId } });
             if (permissionIds.length > 0) {
                 await tx.rolePermission.createMany({
-                    data: permissionIds.map(pid => ({ roleId, permissionId: pid }))
+                    data: permissionIds.map((pid) => ({ roleId, permissionId: pid })),
                 });
             }
             return tx.role.findUnique({
                 where: { id: roleId },
-                include: { permissions: { include: { permission: true } } }
+                include: { permissions: { include: { permission: true } } },
             });
         });
     }
@@ -149,13 +165,15 @@ let UsersService = UsersService_1 = class UsersService {
                 updatedAt: true,
                 globalRoleId: true,
                 globalRole: {
-                    select: { name: true }
-                }
-            }
+                    select: { name: true },
+                },
+            },
         });
     }
     async createUser(dto) {
-        const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+        const existing = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+        });
         if (existing)
             throw new common_1.ConflictException('Email already exists');
         const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -164,7 +182,7 @@ let UsersService = UsersService_1 = class UsersService {
                 email: dto.email,
                 name: dto.name,
                 password: hashedPassword,
-                globalRoleId: dto.globalRoleId || null
+                globalRoleId: dto.globalRoleId || null,
             },
             select: {
                 id: true,
@@ -172,8 +190,8 @@ let UsersService = UsersService_1 = class UsersService {
                 name: true,
                 createdAt: true,
                 globalRoleId: true,
-                globalRole: { select: { name: true } }
-            }
+                globalRole: { select: { name: true } },
+            },
         });
     }
     async updateUser(id, dto) {
@@ -184,7 +202,7 @@ let UsersService = UsersService_1 = class UsersService {
         if (dto.password) {
             data.password = await bcrypt.hash(dto.password, 10);
         }
-        if (data.globalRoleId === "") {
+        if (data.globalRoleId === '') {
             data.globalRoleId = null;
         }
         return this.prisma.user.update({
@@ -196,31 +214,33 @@ let UsersService = UsersService_1 = class UsersService {
                 name: true,
                 updatedAt: true,
                 globalRoleId: true,
-                globalRole: { select: { name: true } }
-            }
+                globalRole: { select: { name: true } },
+            },
         });
     }
     async deleteUser(id) {
         return this.prisma.user.update({
             where: { id },
             data: { deletedAt: new Date() },
-            select: { id: true, email: true }
+            select: { id: true, email: true },
         });
     }
     async findAllRoles() {
         return this.prisma.role.findMany({
-            include: { permissions: { include: { permission: true } } }
+            include: { permissions: { include: { permission: true } } },
         });
     }
     async createRole(dto) {
-        const existing = await this.prisma.role.findUnique({ where: { name: dto.name } });
+        const existing = await this.prisma.role.findUnique({
+            where: { name: dto.name },
+        });
         if (existing)
             throw new common_1.ConflictException('Role already exists');
         return this.prisma.role.create({
             data: {
                 name: dto.name,
-                description: dto.description
-            }
+                description: dto.description,
+            },
         });
     }
     async updateRole(id, dto) {
@@ -229,7 +249,7 @@ let UsersService = UsersService_1 = class UsersService {
             throw new common_1.NotFoundException('Role not found');
         return this.prisma.role.update({
             where: { id },
-            data: dto
+            data: dto,
         });
     }
     async deleteRole(id) {

@@ -7,22 +7,22 @@ export declare class VmixService {
     private readonly logger;
     constructor(prisma: PrismaService, vmixManager: VmixConnectionManager);
     saveConnection(productionId: string, dto: SaveVmixConnectionDto): Promise<{
+        productionId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
-        url: string;
         isEnabled: boolean;
         pollingInterval: number;
+        url: string;
     }>;
     getConnection(productionId: string): Promise<{
+        productionId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
-        url: string;
         isEnabled: boolean;
         pollingInterval: number;
+        url: string;
     }>;
     isConnected(productionId: string): boolean;
     changeInput(productionId: string, dto: ChangeInputDto): Promise<{

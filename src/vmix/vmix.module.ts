@@ -8,6 +8,6 @@ import { VmixController } from './vmix.controller';
   imports: [PrismaModule],
   providers: [VmixService, VmixConnectionManager],
   controllers: [VmixController],
-  exports: [VmixService, VmixConnectionManager]
+  exports: [VmixService, VmixConnectionManager],
 })
-export class VmixModule { }
+export class VmixModule {}

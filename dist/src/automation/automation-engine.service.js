@@ -36,8 +36,8 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
             where: {
                 status: 'ACTIVE',
                 durationMs: { gt: 0 },
-                startTime: { not: null }
-            }
+                startTime: { not: null },
+            },
         });
         for (const block of activeBlocks) {
             if (!block.startTime)
@@ -50,13 +50,13 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
                     productionId: block.productionId,
                     isEnabled: true,
                     triggers: {
-                        some: { eventType: 'timeline.before_end' }
-                    }
+                        some: { eventType: 'timeline.before_end' },
+                    },
                 },
                 include: {
                     triggers: true,
-                    actions: { orderBy: { order: 'asc' } }
-                }
+                    actions: { orderBy: { order: 'asc' } },
+                },
             });
             for (const rule of rules) {
                 for (const trigger of rule.triggers) {
@@ -69,8 +69,8 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
                             where: {
                                 ruleId: rule.id,
                                 details: { contains: `Block: ${block.id}` },
-                                createdAt: { gt: block.startTime }
-                            }
+                                createdAt: { gt: block.startTime },
+                            },
                         });
                         if (!alreadyLogged) {
                             this.logger.log(`Time-trigger hit! Rule "${rule.name}" triggered ${triggerSeconds}s before block end.`);
@@ -90,13 +90,13 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
                 productionId,
                 isEnabled: true,
                 triggers: {
-                    some: { eventType: eventPrefix }
-                }
+                    some: { eventType: eventPrefix },
+                },
             },
             include: {
                 triggers: true,
-                actions: { orderBy: { order: 'asc' } }
-            }
+                actions: { orderBy: { order: 'asc' } },
+            },
         });
         for (const rule of rules) {
             const match = this.evaluateTriggers(rule.triggers, eventPrefix, payload);
@@ -107,7 +107,7 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
         }
     }
     evaluateTriggers(triggers, eventPrefix, payload) {
-        const matchingTriggers = triggers.filter(t => t.eventType === eventPrefix);
+        const matchingTriggers = triggers.filter((t) => t.eventType === eventPrefix);
         for (const t of matchingTriggers) {
             if (!t.condition)
                 return true;
@@ -132,25 +132,33 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
                 switch (action.actionType) {
                     case 'obs.changeScene':
                         if (payload?.sceneName) {
-                            await this.obsService.changeScene(rule.productionId, { sceneName: payload.sceneName });
+                            await this.obsService.changeScene(rule.productionId, {
+                                sceneName: payload.sceneName,
+                            });
                         }
                         break;
                     case 'vmix.cut':
                         await this.vmixService.cut(rule.productionId);
                         break;
                     case 'vmix.fade':
-                        await this.vmixService.fade(rule.productionId, { duration: payload?.duration || 500 });
+                        await this.vmixService.fade(rule.productionId, {
+                            duration: payload?.duration || 500,
+                        });
                         break;
                     case 'vmix.changeInput':
                         if (payload?.input) {
-                            await this.vmixService.changeInput(rule.productionId, { input: payload.input });
+                            await this.vmixService.changeInput(rule.productionId, {
+                                input: payload.input,
+                            });
                         }
                         break;
                     case 'intercom.send':
                         if (payload?.templateId || payload?.message) {
                             let message = payload.message;
                             if (!message && payload.templateId) {
-                                const template = await this.prisma.commandTemplate.findUnique({ where: { id: payload.templateId } });
+                                const template = await this.prisma.commandTemplate.findUnique({
+                                    where: { id: payload.templateId },
+                                });
                                 message = template?.name || 'Automation Alert';
                             }
                             await this.intercomService.sendCommand({
@@ -159,7 +167,7 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
                                 targetRoleId: payload?.targetRoleId,
                                 templateId: payload?.templateId,
                                 message: message,
-                                requiresAck: payload?.requiresAck ?? true
+                                requiresAck: payload?.requiresAck ?? true,
                             });
                         }
                         break;
@@ -170,7 +178,9 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
                         this.logger.warn(`Unknown action type: ${action.actionType}`);
                 }
             }
-            const context = eventPayload?.id ? `Block: ${eventPayload.id}` : 'Generic event';
+            const context = eventPayload?.id
+                ? `Block: ${eventPayload.id}`
+                : 'Generic event';
             await this.logExecution(rule.id, rule.productionId, 'SUCCESS', `Executed for ${context}`);
         }
         catch (error) {
@@ -184,8 +194,8 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
                 ruleId,
                 productionId,
                 status,
-                details: details.length > 500 ? details.substring(0, 500) : details
-            }
+                details: details.length > 500 ? details.substring(0, 500) : details,
+            },
         });
     }
 };

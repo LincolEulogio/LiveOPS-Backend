@@ -14,10 +14,10 @@ import { AutomationEngineService } from './automation-engine.service';
     PrismaModule,
     ObsModule,
     VmixModule,
-    IntercomModule
+    IntercomModule,
   ],
   providers: [AutomationService, AutomationEngineService],
   controllers: [AutomationController],
-  exports: [AutomationService, AutomationEngineService]
+  exports: [AutomationService, AutomationEngineService],
 })
-export class AutomationModule { }
+export class AutomationModule {}

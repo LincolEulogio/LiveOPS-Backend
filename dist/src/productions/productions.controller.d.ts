@@ -5,9 +5,9 @@ export declare class ProductionsController {
     private readonly logger;
     constructor(productionsService: ProductionsService);
     create(req: any, dto: CreateProductionDto): Promise<{
-        id: string;
         name: string;
         description: string | null;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.ProductionStatus;
@@ -21,8 +21,8 @@ export declare class ProductionsController {
                     permissions: ({
                         permission: {
                             action: string;
-                            id: string;
                             description: string | null;
+                            id: string;
                             createdAt: Date;
                             updatedAt: Date;
                         };
@@ -31,23 +31,23 @@ export declare class ProductionsController {
                         permissionId: string;
                     })[];
                 } & {
-                    id: string;
                     name: string;
                     description: string | null;
+                    id: string;
                     createdAt: Date;
                     updatedAt: Date;
                 };
             } & {
+                productionId: string;
                 createdAt: Date;
                 updatedAt: Date;
-                productionId: string;
                 roleId: string;
                 userId: string;
             })[];
         } & {
-            id: string;
             name: string;
             description: string | null;
+            id: string;
             createdAt: Date;
             updatedAt: Date;
             status: import("@prisma/client").$Enums.ProductionStatus;
@@ -63,47 +63,47 @@ export declare class ProductionsController {
     }>;
     findOne(id: string, req: any): Promise<{
         vmixConnection: {
+            productionId: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            productionId: string;
-            url: string;
             isEnabled: boolean;
             pollingInterval: number;
+            url: string;
         } | null;
         obsConnection: {
+            productionId: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            productionId: string;
             password: string | null;
-            url: string;
             isEnabled: boolean;
+            url: string;
         } | null;
         users: ({
             user: {
-                id: string;
                 name: string | null;
+                id: string;
                 email: string;
             };
             role: {
-                id: string;
                 name: string;
                 description: string | null;
+                id: string;
                 createdAt: Date;
                 updatedAt: Date;
             };
         } & {
+            productionId: string;
             createdAt: Date;
             updatedAt: Date;
-            productionId: string;
             roleId: string;
             userId: string;
         })[];
     } & {
-        id: string;
         name: string;
         description: string | null;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.ProductionStatus;
@@ -111,9 +111,9 @@ export declare class ProductionsController {
         engineType: import("@prisma/client").$Enums.EngineType;
     }>;
     update(id: string, dto: UpdateProductionDto): Promise<{
-        id: string;
         name: string;
         description: string | null;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.ProductionStatus;
@@ -121,9 +121,9 @@ export declare class ProductionsController {
         engineType: import("@prisma/client").$Enums.EngineType;
     }>;
     updateState(id: string, dto: UpdateProductionStateDto): Promise<{
-        id: string;
         name: string;
         description: string | null;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.ProductionStatus;
@@ -132,35 +132,35 @@ export declare class ProductionsController {
     }>;
     assignUser(id: string, dto: AssignUserDto): Promise<{
         user: {
-            id: string;
             name: string | null;
+            id: string;
             email: string;
         };
         role: {
-            id: string;
             name: string;
             description: string | null;
+            id: string;
             createdAt: Date;
             updatedAt: Date;
         };
     } & {
+        productionId: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         roleId: string;
         userId: string;
     }>;
     removeUser(id: string, userId: string): Promise<{
+        productionId: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         roleId: string;
         userId: string;
     }>;
     remove(id: string): Promise<{
-        id: string;
         name: string;
         description: string | null;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.ProductionStatus;

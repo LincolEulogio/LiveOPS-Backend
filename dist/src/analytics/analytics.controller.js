@@ -36,9 +36,11 @@ let AnalyticsController = class AnalyticsController {
             id: log.id,
             timestamp: log.createdAt.toISOString(),
             eventType: log.eventType,
-            details: JSON.stringify(log.details)
+            details: JSON.stringify(log.details),
         }));
-        const parser = new json2csv_1.Parser({ fields: ['id', 'timestamp', 'eventType', 'details'] });
+        const parser = new json2csv_1.Parser({
+            fields: ['id', 'timestamp', 'eventType', 'details'],
+        });
         const csv = await parser.parse(csvData);
         res.header('Content-Type', 'text/csv');
         res.attachment(`production_${productionId}_log.csv`);

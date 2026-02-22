@@ -35,7 +35,7 @@ let ObsService = ObsService_1 = class ObsService {
                 url: dto.url,
                 password: dto.password,
                 isEnabled: dto.isEnabled ?? true,
-            }
+            },
         });
         if (connection.isEnabled) {
             this.obsManager.connectObs(productionId, connection.url, connection.password || undefined);
@@ -47,7 +47,7 @@ let ObsService = ObsService_1 = class ObsService {
     }
     async getConnection(productionId) {
         const conn = await this.prisma.obsConnection.findUnique({
-            where: { productionId }
+            where: { productionId },
         });
         if (!conn)
             throw new common_1.NotFoundException('OBS Connection not configured for this production');

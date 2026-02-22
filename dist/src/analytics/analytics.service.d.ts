@@ -14,16 +14,16 @@ export declare class AnalyticsService {
         totalOperatorActions: number;
     }>;
     getProductionLogs(productionId: string): Promise<{
+        productionId: string;
         id: string;
         createdAt: Date;
-        productionId: string;
         details: import("@prisma/client/runtime/client").JsonValue | null;
         eventType: string;
     }[]>;
     getAllLogsForExport(productionId: string): Promise<{
+        productionId: string;
         id: string;
         createdAt: Date;
-        productionId: string;
         details: import("@prisma/client/runtime/client").JsonValue | null;
         eventType: string;
     }[]>;

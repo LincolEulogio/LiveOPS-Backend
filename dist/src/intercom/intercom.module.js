@@ -17,7 +17,7 @@ exports.IntercomModule = IntercomModule = __decorate([
     (0, common_1.Module)({
         providers: [intercom_service_1.IntercomService],
         controllers: [intercom_controller_1.IntercomController],
-        exports: [intercom_service_1.IntercomService]
+        exports: [intercom_service_1.IntercomService],
     })
 ], IntercomModule);
 //# sourceMappingURL=intercom.module.js.map

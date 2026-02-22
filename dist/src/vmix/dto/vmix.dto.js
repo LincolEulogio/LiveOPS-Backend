@@ -20,7 +20,9 @@ exports.SaveVmixConnectionDto = SaveVmixConnectionDto;
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.Matches)(/^https?:\/\//, { message: 'URL must start with http:// or https://' }),
+    (0, class_validator_1.Matches)(/^https?:\/\//, {
+        message: 'URL must start with http:// or https://',
+    }),
     __metadata("design:type", String)
 ], SaveVmixConnectionDto.prototype, "url", void 0);
 __decorate([

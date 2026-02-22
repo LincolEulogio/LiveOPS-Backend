@@ -32,9 +32,7 @@ const chat_module_1 = require("./chat/chat.module");
 const script_module_1 = require("./script/script.module");
 let AppModule = class AppModule {
     configure(consumer) {
-        consumer
-            .apply(production_middleware_1.ProductionMiddleware)
-            .forRoutes('*');
+        consumer.apply(production_middleware_1.ProductionMiddleware).forRoutes('*');
     }
 };
 exports.AppModule = AppModule;
@@ -51,10 +49,12 @@ exports.AppModule = AppModule = __decorate([
                         : undefined,
                 },
             }),
-            throttler_1.ThrottlerModule.forRoot([{
+            throttler_1.ThrottlerModule.forRoot([
+                {
                     ttl: 60000,
                     limit: 100,
-                }]),
+                },
+            ]),
             event_emitter_1.EventEmitterModule.forRoot({ wildcard: true }),
             websockets_module_1.WebsocketsModule,
             auth_module_1.AuthModule,
@@ -77,7 +77,7 @@ exports.AppModule = AppModule = __decorate([
             {
                 provide: core_1.APP_GUARD,
                 useClass: throttler_1.ThrottlerGuard,
-            }
+            },
         ],
     })
 ], AppModule);

@@ -43,7 +43,7 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
     }
     async loadAllConnections() {
         const vmixConnections = await this.prisma.vmixConnection.findMany({
-            where: { isEnabled: true }
+            where: { isEnabled: true },
         });
         for (const config of vmixConnections) {
             this.connectVmix(config.productionId, config.url, config.pollingInterval);
@@ -66,7 +66,10 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
         if (instance.pollInterval)
             clearInterval(instance.pollInterval);
         this.connections.delete(productionId);
-        this.eventEmitter.emit('vmix.connection.state', { productionId, connected: false });
+        this.eventEmitter.emit('vmix.connection.state', {
+            productionId,
+            connected: false,
+        });
     }
     async stopPolling(productionId) {
         const instance = this.connections.get(productionId);
@@ -76,7 +79,9 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
     }
     async pollApi(productionId, instance) {
         try {
-            const apiUrl = instance.url.endsWith('/') ? `${instance.url}api` : `${instance.url}/api`;
+            const apiUrl = instance.url.endsWith('/')
+                ? `${instance.url}api`
+                : `${instance.url}/api`;
             const response = await axios_1.default.get(apiUrl, { timeout: 800 });
             const xml = response.data;
             const parsed = await (0, xml2js_1.parseStringPromise)(xml, { explicitArray: false });
@@ -97,7 +102,10 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
                 isExternal,
                 isMultiCorder,
             });
-            this.eventEmitter.emit('vmix.connection.state', { productionId, connected: true });
+            this.eventEmitter.emit('vmix.connection.state', {
+                productionId,
+                connected: true,
+            });
             this.eventEmitter.emit('production.health.stats', {
                 productionId,
                 engineType: production_dto_1.EngineType.VMIX,
@@ -107,11 +115,14 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
                 skippedFrames: 0,
                 isStreaming,
                 isRecording,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             });
         }
         catch (error) {
-            this.eventEmitter.emit('vmix.connection.state', { productionId, connected: false });
+            this.eventEmitter.emit('vmix.connection.state', {
+                productionId,
+                connected: false,
+            });
         }
     }
     handleConnectionUpdate(payload) {
@@ -127,8 +138,13 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
         const instance = this.connections.get(productionId);
         if (!instance)
             throw new Error('vMix connection is not active or enabled');
-        const apiUrl = instance.url.endsWith('/') ? `${instance.url}api` : `${instance.url}/api`;
-        const query = new URLSearchParams({ Function: command, ...params }).toString();
+        const apiUrl = instance.url.endsWith('/')
+            ? `${instance.url}api`
+            : `${instance.url}/api`;
+        const query = new URLSearchParams({
+            Function: command,
+            ...params,
+        }).toString();
         await axios_1.default.get(`${apiUrl}?${query}`);
     }
 };

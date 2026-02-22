@@ -26,32 +26,36 @@ let TimelineService = TimelineService_1 = class TimelineService {
         return this.prisma.timelineBlock.findMany({
             where: { productionId },
             orderBy: { order: 'asc' },
-            include: { intercomTemplate: true }
+            include: { intercomTemplate: true },
         });
     }
     async createBlock(productionId, dto) {
         const block = await this.prisma.timelineBlock.create({
             data: {
                 productionId,
-                ...dto
-            }
+                ...dto,
+            },
         });
         this.emitTimelineUpdated(productionId);
         return block;
     }
     async updateBlock(id, productionId, dto) {
-        const block = await this.prisma.timelineBlock.findFirst({ where: { id, productionId } });
+        const block = await this.prisma.timelineBlock.findFirst({
+            where: { id, productionId },
+        });
         if (!block)
             throw new common_1.NotFoundException('Block not found');
         const updated = await this.prisma.timelineBlock.update({
             where: { id },
-            data: dto
+            data: dto,
         });
         this.emitTimelineUpdated(productionId);
         return updated;
     }
     async deleteBlock(id, productionId) {
-        const block = await this.prisma.timelineBlock.findFirst({ where: { id, productionId } });
+        const block = await this.prisma.timelineBlock.findFirst({
+            where: { id, productionId },
+        });
         if (!block)
             throw new common_1.NotFoundException('Block not found');
         await this.prisma.timelineBlock.delete({ where: { id } });
@@ -61,7 +65,7 @@ let TimelineService = TimelineService_1 = class TimelineService {
     async reorderBlocks(productionId, blockIds) {
         await this.prisma.$transaction(blockIds.map((id, index) => this.prisma.timelineBlock.update({
             where: { id },
-            data: { order: index }
+            data: { order: index },
         })));
         this.emitTimelineUpdated(productionId);
         return { success: true };
@@ -69,7 +73,7 @@ let TimelineService = TimelineService_1 = class TimelineService {
     async startBlock(id, productionId) {
         const block = await this.prisma.timelineBlock.findFirst({
             where: { id, productionId },
-            include: { intercomTemplate: true }
+            include: { intercomTemplate: true },
         });
         if (!block)
             throw new common_1.NotFoundException('Block not found');
@@ -77,42 +81,44 @@ let TimelineService = TimelineService_1 = class TimelineService {
             throw new common_1.BadRequestException('Block is already active');
         await this.prisma.timelineBlock.updateMany({
             where: { productionId, status: 'ACTIVE' },
-            data: { status: 'COMPLETED', endTime: new Date() }
+            data: { status: 'COMPLETED', endTime: new Date() },
         });
         const updated = await this.prisma.timelineBlock.update({
             where: { id },
             data: {
                 status: 'ACTIVE',
                 startTime: new Date(),
-                endTime: null
-            }
+                endTime: null,
+            },
         });
-        if (block.intercomTemplateId) {
-            this.logger.log(`Auto-triggering intercom command from timeline block ${block.id}`);
-            this.eventEmitter.emit('timeline.intercom.trigger', {
-                productionId,
-                templateId: block.intercomTemplateId,
-            });
-        }
+        this.eventEmitter.emit('timeline.block.started', {
+            productionId,
+            blockId: block.id,
+            linkedScene: block.linkedScene,
+        });
         this.emitTimelineUpdated(productionId);
         return updated;
     }
     async completeBlock(id, productionId) {
-        const block = await this.prisma.timelineBlock.findFirst({ where: { id, productionId } });
+        const block = await this.prisma.timelineBlock.findFirst({
+            where: { id, productionId },
+        });
         if (!block)
             throw new common_1.NotFoundException('Block not found');
         const updated = await this.prisma.timelineBlock.update({
             where: { id },
             data: {
                 status: 'COMPLETED',
-                endTime: new Date()
-            }
+                endTime: new Date(),
+            },
         });
         this.emitTimelineUpdated(productionId);
         return updated;
     }
     async resetBlock(id, productionId) {
-        const block = await this.prisma.timelineBlock.findFirst({ where: { id, productionId } });
+        const block = await this.prisma.timelineBlock.findFirst({
+            where: { id, productionId },
+        });
         if (!block)
             throw new common_1.NotFoundException('Block not found');
         const updated = await this.prisma.timelineBlock.update({
@@ -120,8 +126,8 @@ let TimelineService = TimelineService_1 = class TimelineService {
             data: {
                 status: 'PENDING',
                 startTime: null,
-                endTime: null
-            }
+                endTime: null,
+            },
         });
         this.emitTimelineUpdated(productionId);
         return updated;

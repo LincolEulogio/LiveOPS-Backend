@@ -26,11 +26,11 @@ exports.AutomationModule = AutomationModule = __decorate([
             prisma_module_1.PrismaModule,
             obs_module_1.ObsModule,
             vmix_module_1.VmixModule,
-            intercom_module_1.IntercomModule
+            intercom_module_1.IntercomModule,
         ],
         providers: [automation_service_1.AutomationService, automation_engine_service_1.AutomationEngineService],
         controllers: [automation_controller_1.AutomationController],
-        exports: [automation_service_1.AutomationService, automation_engine_service_1.AutomationEngineService]
+        exports: [automation_service_1.AutomationService, automation_engine_service_1.AutomationEngineService],
     })
 ], AutomationModule);
 //# sourceMappingURL=automation.module.js.map

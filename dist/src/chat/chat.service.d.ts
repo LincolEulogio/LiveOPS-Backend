@@ -4,26 +4,26 @@ export declare class ChatService {
     constructor(prisma: PrismaService);
     saveMessage(productionId: string, userId: string | null, message: string): Promise<{
         user: {
-            id: string;
             name: string | null;
+            id: string;
         } | null;
     } & {
-        id: string;
-        createdAt: Date;
         productionId: string;
         message: string;
+        id: string;
+        createdAt: Date;
         userId: string | null;
     }>;
     getChatHistory(productionId: string, limit?: number): Promise<({
         user: {
-            id: string;
             name: string | null;
+            id: string;
         } | null;
     } & {
-        id: string;
-        createdAt: Date;
         productionId: string;
         message: string;
+        id: string;
+        createdAt: Date;
         userId: string | null;
     })[]>;
 }

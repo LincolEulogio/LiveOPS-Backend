@@ -31,7 +31,7 @@ let StreamingService = class StreamingService {
             throw new common_1.NotFoundException('Production not found');
         let isConnected = false;
         let obsState = null;
-        let vmixState = null;
+        const vmixState = null;
         if (production.engineType === 'OBS') {
             obsState = await this.obsService.getRealTimeState(productionId);
             isConnected = obsState.isConnected;
@@ -70,7 +70,9 @@ let StreamingService = class StreamingService {
             case 'CHANGE_SCENE':
                 if (!dto.sceneName)
                     throw new common_1.BadRequestException('sceneName is required');
-                return this.obsService.changeScene(productionId, { sceneName: dto.sceneName });
+                return this.obsService.changeScene(productionId, {
+                    sceneName: dto.sceneName,
+                });
             case 'START_STREAM':
                 return this.obsService.startStream(productionId);
             case 'STOP_STREAM':
@@ -92,7 +94,9 @@ let StreamingService = class StreamingService {
             case 'VMIX_SELECT_INPUT':
                 if (!dto.payload?.input)
                     throw new common_1.BadRequestException('input is required in payload');
-                return this.vmixService.changeInput(productionId, { input: dto.payload.input });
+                return this.vmixService.changeInput(productionId, {
+                    input: dto.payload.input,
+                });
             default:
                 throw new common_1.BadRequestException(`Unknown vMix command: ${dto.type}`);
         }

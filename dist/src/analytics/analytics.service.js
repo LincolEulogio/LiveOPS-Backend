@@ -31,8 +31,8 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
                 data: {
                     productionId,
                     eventType: eventPrefix,
-                    details: payload
-                }
+                    details: payload,
+                },
             });
         }
         catch (error) {
@@ -50,8 +50,8 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
                     productionId,
                     userId,
                     action: eventPrefix,
-                    details: payload
-                }
+                    details: payload,
+                },
             });
         }
         catch (error) {
@@ -59,31 +59,35 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
         }
     }
     async getDashboardMetrics(productionId) {
-        const totalLogs = await this.prisma.productionLog.count({ where: { productionId } });
+        const totalLogs = await this.prisma.productionLog.count({
+            where: { productionId },
+        });
         const eventCounts = await this.prisma.productionLog.groupBy({
             by: ['eventType'],
             where: { productionId },
-            _count: true
+            _count: true,
         });
-        const operatorActions = await this.prisma.operatorActivity.count({ where: { productionId } });
+        const operatorActions = await this.prisma.operatorActivity.count({
+            where: { productionId },
+        });
         return {
             productionId,
             totalEvents: totalLogs,
             breakdown: eventCounts,
-            totalOperatorActions: operatorActions
+            totalOperatorActions: operatorActions,
         };
     }
     async getProductionLogs(productionId) {
         return this.prisma.productionLog.findMany({
             where: { productionId },
             orderBy: { createdAt: 'desc' },
-            take: 500
+            take: 500,
         });
     }
     async getAllLogsForExport(productionId) {
         return this.prisma.productionLog.findMany({
             where: { productionId },
-            orderBy: { createdAt: 'asc' }
+            orderBy: { createdAt: 'asc' },
         });
     }
 };

@@ -29,15 +29,18 @@ import { ScriptModule } from './script/script.module';
     }),
     LoggerModule.forRoot({
       pinoHttp: {
-        transport: process.env.NODE_ENV !== 'production'
-          ? { target: 'pino-pretty' }
-          : undefined,
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty' }
+            : undefined,
       },
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 100,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     EventEmitterModule.forRoot({ wildcard: true }),
     WebsocketsModule,
     AuthModule,
@@ -60,13 +63,11 @@ import { ScriptModule } from './script/script.module';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
-    }
+    },
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(ProductionMiddleware)
-      .forRoutes('*');
+    consumer.apply(ProductionMiddleware).forRoutes('*');
   }
 }

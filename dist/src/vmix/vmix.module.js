@@ -20,7 +20,7 @@ exports.VmixModule = VmixModule = __decorate([
         imports: [prisma_module_1.PrismaModule],
         providers: [vmix_service_1.VmixService, vmix_connection_manager_1.VmixConnectionManager],
         controllers: [vmix_controller_1.VmixController],
-        exports: [vmix_service_1.VmixService, vmix_connection_manager_1.VmixConnectionManager]
+        exports: [vmix_service_1.VmixService, vmix_connection_manager_1.VmixConnectionManager],
     })
 ], VmixModule);
 //# sourceMappingURL=vmix.module.js.map

@@ -5,136 +5,142 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class IntercomService {
-    constructor(
-        private prisma: PrismaService,
-        private eventEmitter: EventEmitter2
-    ) { }
+  constructor(
+    private prisma: PrismaService,
+    private eventEmitter: EventEmitter2,
+  ) {}
 
-    async createTemplate(productionId: string, dto: CreateCommandTemplateDto) {
-        return this.prisma.commandTemplate.create({
-            data: {
-                productionId,
-                name: dto.name,
-                description: dto.description,
-                icon: dto.icon,
-                color: dto.color,
-            }
-        });
+  async createTemplate(productionId: string, dto: CreateCommandTemplateDto) {
+    return this.prisma.commandTemplate.create({
+      data: {
+        productionId,
+        name: dto.name,
+        description: dto.description,
+        icon: dto.icon,
+        color: dto.color,
+      },
+    });
+  }
+
+  async getTemplates(productionId: string) {
+    const templates = await this.prisma.commandTemplate.findMany({
+      where: { productionId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (templates.length === 0) {
+      await this.seedDefaultTemplates(productionId);
+      return this.prisma.commandTemplate.findMany({
+        where: { productionId },
+        orderBy: { createdAt: 'asc' },
+      });
     }
 
-    async getTemplates(productionId: string) {
-        const templates = await this.prisma.commandTemplate.findMany({
-            where: { productionId },
-            orderBy: { createdAt: 'asc' }
-        });
+    return templates;
+  }
 
-        if (templates.length === 0) {
-            await this.seedDefaultTemplates(productionId);
-            return this.prisma.commandTemplate.findMany({
-                where: { productionId },
-                orderBy: { createdAt: 'asc' }
-            });
-        }
+  private async seedDefaultTemplates(productionId: string) {
+    const defaults = [
+      { name: 'Prevenido', color: '#eab308' }, // Yellow
+      { name: 'Al Aire', color: '#ef4444' }, // Red
+      { name: 'Libre', color: '#22c55e' }, // Green
+      { name: 'Más zoom', color: '#3b82f6' }, // Blue
+      { name: 'Menos zoom', color: '#3b82f6' },
+      { name: 'Plano general', color: '#8b5cf6' }, // Purple
+      { name: 'Close up', color: '#8b5cf6' },
+      { name: 'Foco', color: '#3b82f6' },
+      { name: 'Silencio', color: '#ef4444' },
+      { name: 'Hablando', color: '#f97316' }, // Orange
+      { name: 'Subir', color: '#22c55e' },
+      { name: 'Bajar', color: '#ef4444' },
+      { name: 'Pausa', color: '#64748b' }, // Slate
+      { name: 'Check', color: '#22c55e' },
+    ];
 
-        return templates;
+    for (const t of defaults) {
+      await this.prisma.commandTemplate.create({
+        data: {
+          productionId,
+          name: t.name,
+          color: t.color,
+        },
+      });
     }
+  }
 
-    private async seedDefaultTemplates(productionId: string) {
-        const defaults = [
-            { name: 'Prevenido', color: '#eab308' }, // Yellow
-            { name: 'Al Aire', color: '#ef4444' }, // Red
-            { name: 'Libre', color: '#22c55e' }, // Green
-            { name: 'Más zoom', color: '#3b82f6' }, // Blue
-            { name: 'Menos zoom', color: '#3b82f6' },
-            { name: 'Plano general', color: '#8b5cf6' }, // Purple
-            { name: 'Close up', color: '#8b5cf6' },
-            { name: 'Foco', color: '#3b82f6' },
-            { name: 'Silencio', color: '#ef4444' },
-            { name: 'Hablando', color: '#f97316' }, // Orange
-            { name: 'Subir', color: '#22c55e' },
-            { name: 'Bajar', color: '#ef4444' },
-            { name: 'Pausa', color: '#64748b' }, // Slate
-            { name: 'Check', color: '#22c55e' },
-        ];
+  async updateTemplate(
+    id: string,
+    productionId: string,
+    dto: CreateCommandTemplateDto,
+  ) {
+    const template = await this.prisma.commandTemplate.findFirst({
+      where: { id, productionId },
+    });
+    if (!template)
+      throw new NotFoundException('Template not found in this production');
 
-        for (const t of defaults) {
-            await this.prisma.commandTemplate.create({
-                data: {
-                    productionId,
-                    name: t.name,
-                    color: t.color,
-                }
-            });
-        }
-    }
+    return this.prisma.commandTemplate.update({
+      where: { id },
+      data: {
+        name: dto.name,
+        description: dto.description,
+        icon: dto.icon,
+        color: dto.color,
+      },
+    });
+  }
 
-    async updateTemplate(id: string, productionId: string, dto: CreateCommandTemplateDto) {
-        const template = await this.prisma.commandTemplate.findFirst({
-            where: { id, productionId }
-        });
-        if (!template) throw new NotFoundException('Template not found in this production');
+  async deleteTemplate(id: string, productionId: string) {
+    const template = await this.prisma.commandTemplate.findFirst({
+      where: { id, productionId },
+    });
+    if (!template)
+      throw new NotFoundException('Template not found in this production');
 
-        return this.prisma.commandTemplate.update({
-            where: { id },
-            data: {
-                name: dto.name,
-                description: dto.description,
-                icon: dto.icon,
-                color: dto.color,
-            }
-        });
-    }
+    return this.prisma.commandTemplate.delete({ where: { id } });
+  }
 
-    async deleteTemplate(id: string, productionId: string) {
-        const template = await this.prisma.commandTemplate.findFirst({
-            where: { id, productionId }
-        });
-        if (!template) throw new NotFoundException('Template not found in this production');
+  async getCommandHistory(productionId: string, limit: number = 50) {
+    return this.prisma.command.findMany({
+      where: { productionId },
+      include: {
+        sender: { select: { id: true, name: true } },
+        targetRole: { select: { id: true, name: true } },
+        template: true,
+        responses: {
+          include: {
+            responder: { select: { id: true, name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
 
-        return this.prisma.commandTemplate.delete({ where: { id } });
-    }
+  async sendCommand(dto: SendCommandDto) {
+    const command = await this.prisma.command.create({
+      data: {
+        productionId: dto.productionId,
+        senderId: dto.senderId,
+        targetRoleId: dto.targetRoleId,
+        templateId: dto.templateId,
+        message: dto.message,
+        requiresAck: dto.requiresAck ?? true,
+        status: 'SENT',
+      },
+      include: {
+        sender: { select: { id: true, name: true } },
+        targetRole: { select: { id: true, name: true } },
+        template: true,
+      },
+    });
 
-    async getCommandHistory(productionId: string, limit: number = 50) {
-        return this.prisma.command.findMany({
-            where: { productionId },
-            include: {
-                sender: { select: { id: true, name: true } },
-                targetRole: { select: { id: true, name: true } },
-                template: true,
-                responses: {
-                    include: {
-                        responder: { select: { id: true, name: true } }
-                    }
-                },
-            },
-            orderBy: { createdAt: 'desc' },
-            take: limit,
-        });
-    }
+    this.eventEmitter.emit('command.created', {
+      productionId: dto.productionId,
+      command,
+    });
 
-    async sendCommand(dto: SendCommandDto) {
-        const command = await this.prisma.command.create({
-            data: {
-                productionId: dto.productionId,
-                senderId: dto.senderId,
-                targetRoleId: dto.targetRoleId,
-                templateId: dto.templateId,
-                message: dto.message,
-                requiresAck: dto.requiresAck ?? true,
-                status: 'SENT'
-            },
-            include: {
-                sender: { select: { id: true, name: true } },
-                targetRole: { select: { id: true, name: true } },
-                template: true
-            }
-        });
-
-        this.eventEmitter.emit('command.created', {
-            productionId: dto.productionId,
-            command
-        });
-
-        return command;
-    }
+    return command;
+  }
 }

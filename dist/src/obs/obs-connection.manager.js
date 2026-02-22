@@ -41,7 +41,7 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
     }
     async loadAllConnections() {
         const obsConnections = await this.prisma.obsConnection.findMany({
-            where: { isEnabled: true }
+            where: { isEnabled: true },
         });
         for (const config of obsConnections) {
             this.connectObs(config.productionId, config.url, config.password || undefined);
@@ -59,7 +59,10 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
             this.logger.warn(`OBS connection closed for production ${productionId}: ${error?.message || 'Unknown'}`);
             instance.isConnected = false;
             this.scheduleReconnect(productionId, url, password);
-            this.eventEmitter.emit('obs.connection.state', { productionId, connected: false });
+            this.eventEmitter.emit('obs.connection.state', {
+                productionId,
+                connected: false,
+            });
         });
         obs.on('ConnectionError', (error) => {
             this.logger.error(`OBS connection error for production ${productionId}`, error);
@@ -70,7 +73,7 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
             }
             this.eventEmitter.emit('obs.scene.changed', {
                 productionId,
-                sceneName: data.sceneName
+                sceneName: data.sceneName,
             });
         });
         obs.on('StreamStateChanged', (data) => {
@@ -86,7 +89,7 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
             this.eventEmitter.emit('obs.stream.state', {
                 productionId,
                 active: data.outputActive,
-                state: data.outputState
+                state: data.outputState,
             });
         });
         obs.on('RecordStateChanged', (data) => {
@@ -96,7 +99,7 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
             this.eventEmitter.emit('obs.record.state', {
                 productionId,
                 active: data.outputActive,
-                state: data.outputState
+                state: data.outputState,
             });
         });
         obs.on('SceneListChanged', async () => {
@@ -108,7 +111,7 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
                 }
                 this.eventEmitter.emit('obs.scene.changed', {
                     productionId,
-                    sceneName: sceneList.currentProgramSceneName
+                    sceneName: sceneList.currentProgramSceneName,
                 });
             }
             catch (e) {
@@ -123,13 +126,16 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
                 clearTimeout(instance.reconnectTimeout);
                 instance.reconnectTimeout = undefined;
             }
-            this.eventEmitter.emit('obs.connection.state', { productionId, connected: true });
+            this.eventEmitter.emit('obs.connection.state', {
+                productionId,
+                connected: true,
+            });
             const [sceneList, streamStatus, recordStatus, stats, videoSettings] = await Promise.all([
                 obs.call('GetSceneList'),
                 obs.call('GetStreamStatus'),
                 obs.call('GetRecordStatus'),
                 obs.call('GetStats'),
-                obs.call('GetVideoSettings')
+                obs.call('GetVideoSettings'),
             ]);
             const fps = Math.round(videoSettings.fpsNumerator / videoSettings.fpsDenominator);
             instance.lastState = {
@@ -139,7 +145,7 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
                 isRecording: recordStatus.outputActive,
                 cpuUsage: stats.cpuUsage,
                 fps: fps,
-                bitrate: streamStatus.outputSkippedFrames !== undefined ? 0 : undefined
+                bitrate: streamStatus.outputSkippedFrames !== undefined ? 0 : undefined,
             };
             if (streamStatus.outputActive) {
                 this.startStatsPolling(productionId, instance);
@@ -164,7 +170,10 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
         instance.obs.removeAllListeners();
         instance.obs.disconnect().catch(() => { });
         this.connections.delete(productionId);
-        this.eventEmitter.emit('obs.connection.state', { productionId, connected: false });
+        this.eventEmitter.emit('obs.connection.state', {
+            productionId,
+            connected: false,
+        });
     }
     async disconnectObs(productionId) {
         const instance = this.connections.get(productionId);
@@ -199,11 +208,12 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
                     return;
                 const [stats, streamStatus] = await Promise.all([
                     instance.obs.call('GetStats'),
-                    instance.obs.call('GetStreamStatus')
+                    instance.obs.call('GetStreamStatus'),
                 ]);
                 if (instance.lastState) {
                     instance.lastState.cpuUsage = stats.cpuUsage;
-                    instance.lastState.outputSkippedFrames = streamStatus.outputSkippedFrames;
+                    instance.lastState.outputSkippedFrames =
+                        streamStatus.outputSkippedFrames;
                     instance.lastState.outputTotalFrames = streamStatus.outputTotalFrames;
                 }
                 this.eventEmitter.emit('production.health.stats', {
@@ -215,7 +225,7 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
                     skippedFrames: streamStatus.outputSkippedFrames || 0,
                     totalFrames: streamStatus.outputTotalFrames || 0,
                     memoryUsage: stats.memoryUsage,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
                 });
             }
             catch (e) {

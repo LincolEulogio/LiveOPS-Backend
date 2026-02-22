@@ -12,15 +12,18 @@ const streaming_controller_1 = require("./streaming.controller");
 const streaming_service_1 = require("./streaming.service");
 const obs_module_1 = require("../obs/obs.module");
 const vmix_module_1 = require("../vmix/vmix.module");
+const websockets_module_1 = require("../websockets/websockets.module");
+const tally_service_1 = require("./tally.service");
+const automation_service_1 = require("./automation.service");
 let StreamingModule = class StreamingModule {
 };
 exports.StreamingModule = StreamingModule;
 exports.StreamingModule = StreamingModule = __decorate([
     (0, common_1.Module)({
-        imports: [obs_module_1.ObsModule, vmix_module_1.VmixModule],
+        imports: [obs_module_1.ObsModule, vmix_module_1.VmixModule, websockets_module_1.WebsocketsModule],
         controllers: [streaming_controller_1.StreamingController],
-        providers: [streaming_service_1.StreamingService],
-        exports: [streaming_service_1.StreamingService],
+        providers: [streaming_service_1.StreamingService, tally_service_1.TallyService, automation_service_1.AutomationService],
+        exports: [streaming_service_1.StreamingService, tally_service_1.TallyService, automation_service_1.AutomationService],
     })
 ], StreamingModule);
 //# sourceMappingURL=streaming.module.js.map

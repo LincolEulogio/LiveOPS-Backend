@@ -66,10 +66,12 @@ let AuthService = class AuthService {
                     select: {
                         id: true,
                         name: true,
-                        permissions: { select: { permission: { select: { action: true } } } }
-                    }
-                }
-            }
+                        permissions: {
+                            select: { permission: { select: { action: true } } },
+                        },
+                    },
+                },
+            },
         });
     }
     async updateProfile(userId, data) {
@@ -90,15 +92,17 @@ let AuthService = class AuthService {
                     select: {
                         id: true,
                         name: true,
-                        permissions: { select: { permission: { select: { action: true } } } }
-                    }
-                }
-            }
+                        permissions: {
+                            select: { permission: { select: { action: true } } },
+                        },
+                    },
+                },
+            },
         });
     }
     async register(dto) {
         const existing = await this.prisma.user.findUnique({
-            where: { email: dto.email }
+            where: { email: dto.email },
         });
         if (existing) {
             throw new common_1.ConflictException('Email already in use');
@@ -107,7 +111,9 @@ let AuthService = class AuthService {
         const userCount = await this.prisma.user.count();
         let globalRoleId;
         if (userCount === 0) {
-            const adminRole = await this.prisma.role.findUnique({ where: { name: 'ADMIN' } });
+            const adminRole = await this.prisma.role.findUnique({
+                where: { name: 'ADMIN' },
+            });
             if (adminRole) {
                 globalRoleId = adminRole.id;
             }
@@ -118,7 +124,7 @@ let AuthService = class AuthService {
                 password: hashedPassword,
                 name: dto.name,
                 globalRoleId: globalRoleId,
-            }
+            },
         });
         const tokens = await this.generateTokens(user.id);
         const fullUser = await this.prisma.user.findUnique({
@@ -132,16 +138,18 @@ let AuthService = class AuthService {
                     select: {
                         id: true,
                         name: true,
-                        permissions: { select: { permission: { select: { action: true } } } }
-                    }
-                }
-            }
+                        permissions: {
+                            select: { permission: { select: { action: true } } },
+                        },
+                    },
+                },
+            },
         });
         return { user: fullUser, ...tokens };
     }
     async login(dto, ipAddress) {
         const user = await this.prisma.user.findUnique({
-            where: { email: dto.email }
+            where: { email: dto.email },
         });
         if (!user || user.deletedAt) {
             throw new common_1.UnauthorizedException('Invalid credentials');
@@ -150,13 +158,15 @@ let AuthService = class AuthService {
         if (!isMatch) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
-        await this.prisma.auditLog.create({
+        await this.prisma.auditLog
+            .create({
             data: {
                 userId: user.id,
                 action: 'login',
                 ipAddress,
-            }
-        }).catch((e) => console.error('Failed to write audit log', e));
+            },
+        })
+            .catch((e) => console.error('Failed to write audit log', e));
         const tokens = await this.generateTokens(user.id);
         const fullUser = await this.prisma.user.findUnique({
             where: { id: user.id },
@@ -169,16 +179,18 @@ let AuthService = class AuthService {
                     select: {
                         id: true,
                         name: true,
-                        permissions: { select: { permission: { select: { action: true } } } }
-                    }
-                }
-            }
+                        permissions: {
+                            select: { permission: { select: { action: true } } },
+                        },
+                    },
+                },
+            },
         });
         return { user: fullUser, ...tokens };
     }
     async refresh(refreshToken) {
         const session = await this.prisma.session.findUnique({
-            where: { refreshToken }
+            where: { refreshToken },
         });
         if (!session || session.isRevoked || session.expiresAt < new Date()) {
             throw new common_1.UnauthorizedException('Invalid refresh token');
@@ -186,14 +198,14 @@ let AuthService = class AuthService {
         const tokens = await this.generateTokens(session.userId);
         await this.prisma.session.update({
             where: { id: session.id },
-            data: { isRevoked: true }
+            data: { isRevoked: true },
         });
         return tokens;
     }
     async logout(refreshToken) {
         await this.prisma.session.updateMany({
             where: { refreshToken },
-            data: { isRevoked: true }
+            data: { isRevoked: true },
         });
         return { success: true };
     }
@@ -208,11 +220,11 @@ let AuthService = class AuthService {
                 userId,
                 refreshToken,
                 expiresAt,
-            }
+            },
         });
         return {
             accessToken,
-            refreshToken
+            refreshToken,
         };
     }
 };

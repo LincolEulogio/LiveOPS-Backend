@@ -6,6 +6,6 @@ import { TimelineController } from './timeline.controller';
 @Module({
   imports: [PrismaModule],
   providers: [TimelineService],
-  controllers: [TimelineController]
+  controllers: [TimelineController],
 })
-export class TimelineModule { }
+export class TimelineModule {}

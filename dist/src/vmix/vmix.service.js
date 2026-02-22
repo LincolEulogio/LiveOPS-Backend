@@ -35,7 +35,7 @@ let VmixService = VmixService_1 = class VmixService {
                 url: dto.url,
                 isEnabled: dto.isEnabled ?? true,
                 pollingInterval: dto.pollingInterval ?? 500,
-            }
+            },
         });
         if (connection.isEnabled) {
             this.vmixManager.connectVmix(productionId, connection.url, connection.pollingInterval);
@@ -47,7 +47,7 @@ let VmixService = VmixService_1 = class VmixService {
     }
     async getConnection(productionId) {
         const conn = await this.prisma.vmixConnection.findUnique({
-            where: { productionId }
+            where: { productionId },
         });
         if (!conn)
             throw new common_1.NotFoundException('vMix Connection not configured for this production');
@@ -58,7 +58,9 @@ let VmixService = VmixService_1 = class VmixService {
     }
     async changeInput(productionId, dto) {
         try {
-            await this.vmixManager.sendCommand(productionId, 'Cut', { Input: dto.input });
+            await this.vmixManager.sendCommand(productionId, 'Cut', {
+                Input: dto.input,
+            });
             return { success: true, input: dto.input, action: 'cut' };
         }
         catch (e) {

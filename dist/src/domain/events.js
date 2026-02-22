@@ -4,7 +4,7 @@ exports.DeviceOnlineEvent = exports.ProductionCreatedEvent = exports.DomainEvent
 exports.DomainEvents = {
     PRODUCTION_CREATED: 'production.created',
     DEVICE_ONLINE: 'device.online',
-    DEVICE_OFFLINE: 'device.offline'
+    DEVICE_OFFLINE: 'device.offline',
 };
 class ProductionCreatedEvent {
     productionId;
