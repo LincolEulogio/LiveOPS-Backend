@@ -98,6 +98,17 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
                 isMultiCorder,
             });
             this.eventEmitter.emit('vmix.connection.state', { productionId, connected: true });
+            this.eventEmitter.emit('production.health.stats', {
+                productionId,
+                engineType: production_dto_1.EngineType.VMIX,
+                cpuUsage: 0,
+                fps: 0,
+                bitrate: 0,
+                skippedFrames: 0,
+                isStreaming,
+                isRecording,
+                timestamp: new Date().toISOString()
+            });
         }
         catch (error) {
             this.eventEmitter.emit('vmix.connection.state', { productionId, connected: false });

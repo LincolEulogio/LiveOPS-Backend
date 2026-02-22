@@ -2,14 +2,41 @@ import { OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit } from '@nestjs
 import { Server, Socket } from 'socket.io';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
+import { IntercomService } from '../intercom/intercom.service';
+import { ChatService } from '../chat/chat.service';
+import { ScriptService } from '../script/script.service';
 export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     private prisma;
     private eventEmitter;
+    private intercomService;
+    private chatService;
+    private scriptService;
     server: Server;
     private logger;
     private activeUsers;
-    constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
+    constructor(prisma: PrismaService, eventEmitter: EventEmitter2, intercomService: IntercomService, chatService: ChatService, scriptService: ScriptService);
     afterInit(server: Server): void;
+    handleChatSend(data: {
+        productionId: string;
+        userId: string;
+        message: string;
+    }, client: Socket): Promise<{
+        status: string;
+        messageId: string;
+    }>;
+    handleChatTyping(data: {
+        productionId: string;
+        userId: string;
+        userName: string;
+        isTyping: boolean;
+    }, client: Socket): void;
+    handleScriptSync(data: {
+        productionId: string;
+    }, client: Socket): Promise<void>;
+    handleScriptUpdate(data: {
+        productionId: string;
+        update: number[];
+    }, client: Socket): Promise<void>;
     handleConnection(client: Socket, ...args: any[]): Promise<void>;
     private broadcastPresence;
     handleDisconnect(client: Socket): void;
@@ -48,21 +75,21 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         sceneName: string;
         cpuUsage?: number;
         fps?: number;
-    }): void;
+    }): Promise<void>;
     handleObsStreamState(payload: {
         productionId: string;
         active: boolean;
         state: string;
-    }): void;
+    }): Promise<void>;
     handleObsRecordState(payload: {
         productionId: string;
         active: boolean;
         state: string;
-    }): void;
+    }): Promise<void>;
     handleObsConnectionState(payload: {
         productionId: string;
         connected: boolean;
-    }): void;
+    }): Promise<void>;
     handleVmixInputChanged(payload: {
         productionId: string;
         activeInput: number;
@@ -79,4 +106,9 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
     handleTimelineUpdated(payload: {
         productionId: string;
     }): void;
+    handleCommandCreated(payload: {
+        productionId: string;
+        command: any;
+    }): void;
+    handleProductionHealthStats(payload: any): void;
 }

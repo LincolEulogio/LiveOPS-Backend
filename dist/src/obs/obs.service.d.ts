@@ -11,8 +11,8 @@ export declare class ObsService {
         productionId: string;
         id: string;
         createdAt: Date;
-        password: string | null;
         updatedAt: Date;
+        password: string | null;
         isEnabled: boolean;
     }>;
     getConnection(productionId: string): Promise<{
@@ -20,8 +20,8 @@ export declare class ObsService {
         productionId: string;
         id: string;
         createdAt: Date;
-        password: string | null;
         updatedAt: Date;
+        password: string | null;
         isEnabled: boolean;
     }>;
     isConnected(productionId: string): boolean;
@@ -32,6 +32,9 @@ export declare class ObsService {
         isRecording?: boolean | undefined;
         cpuUsage?: number | undefined;
         fps?: number | undefined;
+        bitrate?: number;
+        outputSkippedFrames?: number;
+        outputTotalFrames?: number;
         isConnected: boolean;
     }>;
     private getObs;

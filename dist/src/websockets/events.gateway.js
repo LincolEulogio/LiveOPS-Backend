@@ -18,18 +18,48 @@ const socket_io_1 = require("socket.io");
 const common_1 = require("@nestjs/common");
 const event_emitter_1 = require("@nestjs/event-emitter");
 const prisma_service_1 = require("../prisma/prisma.service");
+const intercom_service_1 = require("../intercom/intercom.service");
+const chat_service_1 = require("../chat/chat.service");
+const script_service_1 = require("../script/script.service");
 let EventsGateway = class EventsGateway {
     prisma;
     eventEmitter;
+    intercomService;
+    chatService;
+    scriptService;
     server;
     logger = new common_1.Logger('EventsGateway');
     activeUsers = new Map();
-    constructor(prisma, eventEmitter) {
+    constructor(prisma, eventEmitter, intercomService, chatService, scriptService) {
         this.prisma = prisma;
         this.eventEmitter = eventEmitter;
+        this.intercomService = intercomService;
+        this.chatService = chatService;
+        this.scriptService = scriptService;
     }
     afterInit(server) {
         this.logger.log('WebSocket Gateway initialized');
+    }
+    async handleChatSend(data, client) {
+        const message = await this.chatService.saveMessage(data.productionId, data.userId, data.message);
+        this.server
+            .to(`production_${data.productionId}`)
+            .emit('chat.received', message);
+        return { status: 'ok', messageId: message.id };
+    }
+    handleChatTyping(data, client) {
+        client.to(`production_${data.productionId}`).emit('chat.typing', data);
+    }
+    async handleScriptSync(data, client) {
+        const script = await this.scriptService.getScriptState(data.productionId);
+        if (script) {
+            client.emit('script.sync_response', { content: script.content });
+        }
+    }
+    async handleScriptUpdate(data, client) {
+        const updateArray = new Uint8Array(data.update);
+        client.to(`production_${data.productionId}`).emit('script.update_received', { update: updateArray });
+        await this.scriptService.updateScriptState(data.productionId, Buffer.from(updateArray));
     }
     async handleConnection(client, ...args) {
         const productionId = client.handshake.query.productionId;
@@ -89,24 +119,7 @@ let EventsGateway = class EventsGateway {
         return { status: 'ok', role: data.roleName };
     }
     async handleCommandSend(data, client) {
-        const command = await this.prisma.command.create({
-            data: {
-                productionId: data.productionId,
-                senderId: data.senderId,
-                targetRoleId: data.targetRoleId,
-                templateId: data.templateId,
-                message: data.message,
-                requiresAck: data.requiresAck ?? true,
-                status: 'SENT'
-            },
-            include: {
-                sender: { select: { id: true, name: true } },
-                targetRole: { select: { id: true, name: true } },
-                template: true
-            }
-        });
-        const commandWithTarget = { ...command, targetUserId: data.targetUserId };
-        const room = `production_${data.productionId}`;
+        const command = await this.intercomService.sendCommand(data);
         for (const [sid, user] of this.activeUsers.entries()) {
             const isTargeted = (data.targetUserId && user.userId === data.targetUserId) ||
                 (!data.targetUserId && (user.roleId === data.targetRoleId || !data.targetRoleId));
@@ -115,7 +128,6 @@ let EventsGateway = class EventsGateway {
             }
         }
         this.broadcastPresence(data.productionId);
-        this.server.to(room).emit('command.received', commandWithTarget);
         return { status: 'ok', commandId: command.id };
     }
     async handleCommandAck(data, client) {
@@ -141,7 +153,7 @@ let EventsGateway = class EventsGateway {
         this.server.to(room).emit('command.ack_received', response);
         return { status: 'ok', responseId: response.id };
     }
-    handleObsSceneChanged(payload) {
+    async handleObsSceneChanged(payload) {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('obs.scene.changed', {
@@ -149,21 +161,29 @@ let EventsGateway = class EventsGateway {
             cpuUsage: payload.cpuUsage,
             fps: payload.fps
         });
+        const msg = await this.chatService.saveMessage(payload.productionId, null, `🎬 Escena cambiada a: ${payload.sceneName}`);
+        this.server.to(`production_${payload.productionId}`).emit('chat.received', msg);
     }
-    handleObsStreamState(payload) {
+    async handleObsStreamState(payload) {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('obs.stream.state', payload);
+        const msg = await this.chatService.saveMessage(payload.productionId, null, payload.active ? `🔴 EMISIÓN INICIADA (${payload.state})` : `⚪ EMISIÓN DETENIDA (${payload.state})`);
+        this.server.to(`production_${payload.productionId}`).emit('chat.received', msg);
     }
-    handleObsRecordState(payload) {
+    async handleObsRecordState(payload) {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('obs.record.state', payload);
+        const msg = await this.chatService.saveMessage(payload.productionId, null, payload.active ? `⏺️ GRABACIÓN INICIADA (${payload.state})` : `⏹️ GRABACIÓN DETENIDA (${payload.state})`);
+        this.server.to(`production_${payload.productionId}`).emit('chat.received', msg);
     }
-    handleObsConnectionState(payload) {
+    async handleObsConnectionState(payload) {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('obs.connection.state', payload);
+        const msg = await this.chatService.saveMessage(payload.productionId, null, payload.connected ? `🔗 OBS CONECTADO` : `❌ OBS DESCONECTADO`);
+        this.server.to(`production_${payload.productionId}`).emit('chat.received', msg);
     }
     handleVmixInputChanged(payload) {
         this.server
@@ -180,12 +200,55 @@ let EventsGateway = class EventsGateway {
             .to(`production_${payload.productionId}`)
             .emit('timeline.updated', payload);
     }
+    handleCommandCreated(payload) {
+        this.logger.log(`Broadcasting new command for production ${payload.productionId}`);
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('command.received', payload.command);
+    }
+    handleProductionHealthStats(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('production.health.stats', payload);
+    }
 };
 exports.EventsGateway = EventsGateway;
 __decorate([
     (0, websockets_1.WebSocketServer)(),
     __metadata("design:type", socket_io_1.Server)
 ], EventsGateway.prototype, "server", void 0);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('chat.send'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", Promise)
+], EventsGateway.prototype, "handleChatSend", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('script.typing'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleChatTyping", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('script.sync'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", Promise)
+], EventsGateway.prototype, "handleScriptSync", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('script.update'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", Promise)
+], EventsGateway.prototype, "handleScriptUpdate", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('role.identify'),
     __param(0, (0, websockets_1.MessageBody)()),
@@ -214,25 +277,25 @@ __decorate([
     (0, event_emitter_1.OnEvent)('obs.scene.changed'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], EventsGateway.prototype, "handleObsSceneChanged", null);
 __decorate([
     (0, event_emitter_1.OnEvent)('obs.stream.state'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], EventsGateway.prototype, "handleObsStreamState", null);
 __decorate([
     (0, event_emitter_1.OnEvent)('obs.record.state'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], EventsGateway.prototype, "handleObsRecordState", null);
 __decorate([
     (0, event_emitter_1.OnEvent)('obs.connection.state'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], EventsGateway.prototype, "handleObsConnectionState", null);
 __decorate([
     (0, event_emitter_1.OnEvent)('vmix.input.changed'),
@@ -252,6 +315,18 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], EventsGateway.prototype, "handleTimelineUpdated", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('command.created'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleCommandCreated", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('production.health.stats'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleProductionHealthStats", null);
 exports.EventsGateway = EventsGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {
@@ -259,6 +334,9 @@ exports.EventsGateway = EventsGateway = __decorate([
         },
     }),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        event_emitter_1.EventEmitter2])
+        event_emitter_1.EventEmitter2,
+        intercom_service_1.IntercomService,
+        chat_service_1.ChatService,
+        script_service_1.ScriptService])
 ], EventsGateway);
 //# sourceMappingURL=events.gateway.js.map

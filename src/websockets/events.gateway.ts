@@ -14,6 +14,7 @@ import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { IntercomService } from '../intercom/intercom.service';
 import { ChatService } from '../chat/chat.service';
+import { ScriptService } from '../script/script.service';
 
 @WebSocketGateway({
     cors: {
@@ -31,7 +32,8 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         private prisma: PrismaService,
         private eventEmitter: EventEmitter2,
         private intercomService: IntercomService,
-        private chatService: ChatService
+        private chatService: ChatService,
+        private scriptService: ScriptService
     ) { }
 
     afterInit(server: Server) {
@@ -53,12 +55,39 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         return { status: 'ok', messageId: message.id };
     }
 
-    @SubscribeMessage('chat.typing')
+    @SubscribeMessage('script.typing')
     handleChatTyping(
         @MessageBody() data: { productionId: string; userId: string; userName: string; isTyping: boolean },
         @ConnectedSocket() client: Socket
     ) {
         client.to(`production_${data.productionId}`).emit('chat.typing', data);
+    }
+
+    @SubscribeMessage('script.sync')
+    async handleScriptSync(
+        @MessageBody() data: { productionId: string },
+        @ConnectedSocket() client: Socket
+    ) {
+        const script = await this.scriptService.getScriptState(data.productionId);
+        if (script) {
+            client.emit('script.sync_response', { content: script.content });
+        }
+    }
+
+    @SubscribeMessage('script.update')
+    async handleScriptUpdate(
+        @MessageBody() data: { productionId: string; update: number[] },
+        @ConnectedSocket() client: Socket
+    ) {
+        const updateArray = new Uint8Array(data.update);
+
+        // Broadcast update to others in the room immediately
+        client.to(`production_${data.productionId}`).emit('script.update_received', { update: updateArray });
+
+        // Persist to DB
+        // In a high-traffic production, we'd throttle this or use a Yjs provider on the server
+        // For now, we'll save it to ensure consistency on refresh
+        await this.scriptService.updateScriptState(data.productionId, Buffer.from(updateArray));
     }
 
     async handleConnection(client: Socket, ...args: any[]) {

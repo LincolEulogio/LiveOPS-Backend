@@ -8,8 +8,8 @@ export declare class ObsController {
         productionId: string;
         id: string;
         createdAt: Date;
-        password: string | null;
         updatedAt: Date;
+        password: string | null;
         isEnabled: boolean;
     }>;
     getConnection(productionId: string): Promise<{
@@ -17,8 +17,8 @@ export declare class ObsController {
         productionId: string;
         id: string;
         createdAt: Date;
-        password: string | null;
         updatedAt: Date;
+        password: string | null;
         isEnabled: boolean;
     }>;
     changeScene(productionId: string, dto: ChangeSceneDto): Promise<{

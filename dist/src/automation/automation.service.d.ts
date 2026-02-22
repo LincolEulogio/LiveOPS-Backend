@@ -22,11 +22,11 @@ export declare class AutomationService {
             ruleId: string;
         }[];
     } & {
+        name: string;
         description: string | null;
         productionId: string;
         id: string;
         createdAt: Date;
-        name: string;
         updatedAt: Date;
         isEnabled: boolean;
     })[]>;
@@ -34,8 +34,8 @@ export declare class AutomationService {
         logs: {
             productionId: string;
             id: string;
-            status: string;
             createdAt: Date;
+            status: string;
             details: string | null;
             ruleId: string;
         }[];
@@ -57,11 +57,11 @@ export declare class AutomationService {
             ruleId: string;
         }[];
     } & {
+        name: string;
         description: string | null;
         productionId: string;
         id: string;
         createdAt: Date;
-        name: string;
         updatedAt: Date;
         isEnabled: boolean;
     }>;
@@ -84,20 +84,20 @@ export declare class AutomationService {
             ruleId: string;
         }[];
     } & {
+        name: string;
         description: string | null;
         productionId: string;
         id: string;
         createdAt: Date;
-        name: string;
         updatedAt: Date;
         isEnabled: boolean;
     }>;
     updateRule(id: string, productionId: string, dto: UpdateRuleDto): Promise<{
+        name: string;
         description: string | null;
         productionId: string;
         id: string;
         createdAt: Date;
-        name: string;
         updatedAt: Date;
         isEnabled: boolean;
     }>;
@@ -111,8 +111,8 @@ export declare class AutomationService {
     } & {
         productionId: string;
         id: string;
-        status: string;
         createdAt: Date;
+        status: string;
         details: string | null;
         ruleId: string;
     })[]>;

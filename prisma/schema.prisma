@@ -238,6 +238,7 @@ model Production {
   rules            Rule[]
   logs             ProductionLog[]
   chatMessages     ChatMessage[]
+  script           ProductionScript?
 
   @@index([status])
   @@index([deletedAt])
@@ -380,6 +381,15 @@ model ChatMessage {
   @@index([productionId])
   @@index([userId])
   @@index([createdAt])
+}
+
+model ProductionScript {
+  id           String   @id @default(uuid()) @db.Uuid
+  productionId String   @unique @db.Uuid
+  content      Bytes // Yjs binary document state
+  updatedAt    DateTime @updatedAt
+
+  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
 }
 
 model ObsConnection {

@@ -6,21 +6,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WebsocketsModule = void 0;
+exports.ChatModule = void 0;
 const common_1 = require("@nestjs/common");
+const chat_service_1 = require("./chat.service");
+const chat_controller_1 = require("./chat.controller");
 const prisma_module_1 = require("../prisma/prisma.module");
-const intercom_module_1 = require("../intercom/intercom.module");
-const chat_module_1 = require("../chat/chat.module");
-const script_module_1 = require("../script/script.module");
-const events_gateway_1 = require("./events.gateway");
-let WebsocketsModule = class WebsocketsModule {
+let ChatModule = class ChatModule {
 };
-exports.WebsocketsModule = WebsocketsModule;
-exports.WebsocketsModule = WebsocketsModule = __decorate([
+exports.ChatModule = ChatModule;
+exports.ChatModule = ChatModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule, intercom_module_1.IntercomModule, chat_module_1.ChatModule, script_module_1.ScriptModule],
-        providers: [events_gateway_1.EventsGateway],
-        exports: [events_gateway_1.EventsGateway],
+        imports: [prisma_module_1.PrismaModule],
+        controllers: [chat_controller_1.ChatController],
+        providers: [chat_service_1.ChatService],
+        exports: [chat_service_1.ChatService],
     })
-], WebsocketsModule);
-//# sourceMappingURL=websockets.module.js.map
+], ChatModule);
+//# sourceMappingURL=chat.module.js.map

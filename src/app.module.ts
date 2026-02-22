@@ -20,6 +20,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { StreamingModule } from './streaming/streaming.module';
 import { UsersModule } from './users/users.module';
 import { ChatModule } from './chat/chat.module';
+import { ScriptModule } from './script/script.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { ChatModule } from './chat/chat.module';
     StreamingModule,
     UsersModule,
     ChatModule,
+    ScriptModule,
   ],
   controllers: [AppController],
   providers: [

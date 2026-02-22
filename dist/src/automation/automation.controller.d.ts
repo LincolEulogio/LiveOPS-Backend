@@ -22,11 +22,11 @@ export declare class AutomationController {
             ruleId: string;
         }[];
     } & {
+        name: string;
         description: string | null;
         productionId: string;
         id: string;
         createdAt: Date;
-        name: string;
         updatedAt: Date;
         isEnabled: boolean;
     })[]>;
@@ -49,11 +49,11 @@ export declare class AutomationController {
             ruleId: string;
         }[];
     } & {
+        name: string;
         description: string | null;
         productionId: string;
         id: string;
         createdAt: Date;
-        name: string;
         updatedAt: Date;
         isEnabled: boolean;
     }>;
@@ -61,8 +61,8 @@ export declare class AutomationController {
         logs: {
             productionId: string;
             id: string;
-            status: string;
             createdAt: Date;
+            status: string;
             details: string | null;
             ruleId: string;
         }[];
@@ -84,20 +84,20 @@ export declare class AutomationController {
             ruleId: string;
         }[];
     } & {
+        name: string;
         description: string | null;
         productionId: string;
         id: string;
         createdAt: Date;
-        name: string;
         updatedAt: Date;
         isEnabled: boolean;
     }>;
     updateRule(productionId: string, id: string, dto: UpdateRuleDto): Promise<{
+        name: string;
         description: string | null;
         productionId: string;
         id: string;
         createdAt: Date;
-        name: string;
         updatedAt: Date;
         isEnabled: boolean;
     }>;
@@ -111,8 +111,8 @@ export declare class AutomationController {
     } & {
         productionId: string;
         id: string;
-        status: string;
         createdAt: Date;
+        status: string;
         details: string | null;
         ruleId: string;
     })[]>;

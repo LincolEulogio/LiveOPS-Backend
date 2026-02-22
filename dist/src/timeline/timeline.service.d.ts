@@ -8,22 +8,22 @@ export declare class TimelineService {
     constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
     getBlocks(productionId: string): Promise<({
         intercomTemplate: {
+            name: string;
             description: string | null;
+            icon: string | null;
+            color: string | null;
             productionId: string;
             id: string;
             createdAt: Date;
-            name: string;
             updatedAt: Date;
-            icon: string | null;
-            color: string | null;
         } | null;
     } & {
         description: string | null;
         productionId: string;
         id: string;
-        status: import("@prisma/client").$Enums.BlockStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.BlockStatus;
         title: string;
         durationMs: number;
         order: number;
@@ -36,9 +36,9 @@ export declare class TimelineService {
         description: string | null;
         productionId: string;
         id: string;
-        status: import("@prisma/client").$Enums.BlockStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.BlockStatus;
         title: string;
         durationMs: number;
         order: number;
@@ -51,9 +51,9 @@ export declare class TimelineService {
         description: string | null;
         productionId: string;
         id: string;
-        status: import("@prisma/client").$Enums.BlockStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.BlockStatus;
         title: string;
         durationMs: number;
         order: number;
@@ -72,9 +72,9 @@ export declare class TimelineService {
         description: string | null;
         productionId: string;
         id: string;
-        status: import("@prisma/client").$Enums.BlockStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.BlockStatus;
         title: string;
         durationMs: number;
         order: number;
@@ -87,9 +87,9 @@ export declare class TimelineService {
         description: string | null;
         productionId: string;
         id: string;
-        status: import("@prisma/client").$Enums.BlockStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.BlockStatus;
         title: string;
         durationMs: number;
         order: number;
@@ -102,9 +102,9 @@ export declare class TimelineService {
         description: string | null;
         productionId: string;
         id: string;
-        status: import("@prisma/client").$Enums.BlockStatus;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.BlockStatus;
         title: string;
         durationMs: number;
         order: number;

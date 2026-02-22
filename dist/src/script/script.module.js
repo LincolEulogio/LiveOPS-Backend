@@ -6,18 +6,16 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IntercomModule = void 0;
+exports.ScriptModule = void 0;
 const common_1 = require("@nestjs/common");
-const intercom_service_1 = require("./intercom.service");
-const intercom_controller_1 = require("./intercom.controller");
-let IntercomModule = class IntercomModule {
+const script_service_1 = require("./script.service");
+let ScriptModule = class ScriptModule {
 };
-exports.IntercomModule = IntercomModule;
-exports.IntercomModule = IntercomModule = __decorate([
+exports.ScriptModule = ScriptModule;
+exports.ScriptModule = ScriptModule = __decorate([
     (0, common_1.Module)({
-        providers: [intercom_service_1.IntercomService],
-        controllers: [intercom_controller_1.IntercomController],
-        exports: [intercom_service_1.IntercomService]
+        providers: [script_service_1.ScriptService],
+        exports: [script_service_1.ScriptService],
     })
-], IntercomModule);
-//# sourceMappingURL=intercom.module.js.map
+], ScriptModule);
+//# sourceMappingURL=script.module.js.map

@@ -77,6 +77,12 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
             if (instance.lastState) {
                 instance.lastState.isStreaming = data.outputActive;
             }
+            if (data.outputActive) {
+                this.startStatsPolling(productionId, instance);
+            }
+            else {
+                this.stopStatsPolling(instance);
+            }
             this.eventEmitter.emit('obs.stream.state', {
                 productionId,
                 active: data.outputActive,
@@ -133,7 +139,11 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
                 isRecording: recordStatus.outputActive,
                 cpuUsage: stats.cpuUsage,
                 fps: fps,
+                bitrate: streamStatus.outputSkippedFrames !== undefined ? 0 : undefined
             };
+            if (streamStatus.outputActive) {
+                this.startStatsPolling(productionId, instance);
+            }
             this.eventEmitter.emit('obs.scene.changed', {
                 productionId,
                 sceneName: sceneList.currentProgramSceneName,
@@ -150,6 +160,7 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
         if (instance.reconnectTimeout) {
             clearTimeout(instance.reconnectTimeout);
         }
+        this.stopStatsPolling(instance);
         instance.obs.removeAllListeners();
         instance.obs.disconnect().catch(() => { });
         this.connections.delete(productionId);
@@ -177,6 +188,45 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
         if (payload.type === production_dto_1.EngineType.OBS) {
             this.logger.log(`Received connection update for production ${payload.productionId} (OBS)`);
             this.connectObs(payload.productionId, payload.url, payload.password);
+        }
+    }
+    startStatsPolling(productionId, instance) {
+        this.stopStatsPolling(instance);
+        this.logger.log(`Starting Technical Stats Polling for production ${productionId} (OBS)`);
+        instance.statsInterval = setInterval(async () => {
+            try {
+                if (!instance.isConnected)
+                    return;
+                const [stats, streamStatus] = await Promise.all([
+                    instance.obs.call('GetStats'),
+                    instance.obs.call('GetStreamStatus')
+                ]);
+                if (instance.lastState) {
+                    instance.lastState.cpuUsage = stats.cpuUsage;
+                    instance.lastState.outputSkippedFrames = streamStatus.outputSkippedFrames;
+                    instance.lastState.outputTotalFrames = streamStatus.outputTotalFrames;
+                }
+                this.eventEmitter.emit('production.health.stats', {
+                    productionId,
+                    engineType: production_dto_1.EngineType.OBS,
+                    cpuUsage: stats.cpuUsage,
+                    fps: stats.activeFps,
+                    bitrate: 0,
+                    skippedFrames: streamStatus.outputSkippedFrames || 0,
+                    totalFrames: streamStatus.outputTotalFrames || 0,
+                    memoryUsage: stats.memoryUsage,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            catch (e) {
+                this.logger.error(`Error polling OBS stats for ${productionId}: ${e.message}`);
+            }
+        }, 2000);
+    }
+    stopStatsPolling(instance) {
+        if (instance.statsInterval) {
+            clearInterval(instance.statsInterval);
+            instance.statsInterval = undefined;
         }
     }
     getInstance(productionId) {

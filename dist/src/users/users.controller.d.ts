@@ -4,31 +4,31 @@ export declare class UsersController {
     private readonly usersService;
     constructor(usersService: UsersService);
     findAllUsers(): Promise<{
+        name: string | null;
         id: string;
         createdAt: Date;
-        email: string;
-        name: string | null;
         updatedAt: Date;
+        email: string;
         globalRoleId: string | null;
         globalRole: {
             name: string;
         } | null;
     }[]>;
     createUser(dto: CreateUserDto): Promise<{
+        name: string | null;
         id: string;
         createdAt: Date;
         email: string;
-        name: string | null;
         globalRoleId: string | null;
         globalRole: {
             name: string;
         } | null;
     }>;
     updateUser(id: string, dto: UpdateUserDto): Promise<{
-        id: string;
-        email: string;
         name: string | null;
+        id: string;
         updatedAt: Date;
+        email: string;
         globalRoleId: string | null;
         globalRole: {
             name: string;
@@ -52,24 +52,24 @@ export declare class UsersController {
             permissionId: string;
         })[];
     } & {
+        name: string;
         description: string | null;
         id: string;
         createdAt: Date;
-        name: string;
         updatedAt: Date;
     })[]>;
     createRole(dto: CreateRoleDto): Promise<{
+        name: string;
         description: string | null;
         id: string;
         createdAt: Date;
-        name: string;
         updatedAt: Date;
     }>;
     updateRole(id: string, dto: UpdateRoleDto): Promise<{
+        name: string;
         description: string | null;
         id: string;
         createdAt: Date;
-        name: string;
         updatedAt: Date;
     }>;
     updateRolePermissions(id: string, data: {
@@ -88,17 +88,17 @@ export declare class UsersController {
             permissionId: string;
         })[];
     } & {
+        name: string;
         description: string | null;
         id: string;
         createdAt: Date;
-        name: string;
         updatedAt: Date;
     }) | null>;
     deleteRole(id: string): Promise<{
+        name: string;
         description: string | null;
         id: string;
         createdAt: Date;
-        name: string;
         updatedAt: Date;
     }>;
     findAllPermissions(): Promise<{

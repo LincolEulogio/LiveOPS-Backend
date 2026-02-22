@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateCommandTemplateDto = exports.CreateCommandTemplateDto = void 0;
+exports.SendCommandDto = exports.UpdateCommandTemplateDto = exports.CreateCommandTemplateDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateCommandTemplateDto {
     name;
@@ -41,4 +41,42 @@ __decorate([
 class UpdateCommandTemplateDto extends CreateCommandTemplateDto {
 }
 exports.UpdateCommandTemplateDto = UpdateCommandTemplateDto;
+class SendCommandDto {
+    productionId;
+    senderId;
+    targetRoleId;
+    templateId;
+    message;
+    requiresAck;
+}
+exports.SendCommandDto = SendCommandDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], SendCommandDto.prototype, "productionId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], SendCommandDto.prototype, "senderId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], SendCommandDto.prototype, "targetRoleId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], SendCommandDto.prototype, "templateId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], SendCommandDto.prototype, "message", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], SendCommandDto.prototype, "requiresAck", void 0);
 //# sourceMappingURL=intercom.dto.js.map

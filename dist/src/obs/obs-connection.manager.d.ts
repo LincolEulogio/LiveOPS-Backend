@@ -22,6 +22,8 @@ export declare class ObsConnectionManager implements OnModuleInit, OnModuleDestr
         url: string;
         password?: string;
     }): void;
+    private startStatsPolling;
+    private stopStatsPolling;
     getInstance(productionId: string): OBSWebSocket | undefined;
     getObsState(productionId: string): {
         currentScene?: string | undefined;
@@ -30,6 +32,9 @@ export declare class ObsConnectionManager implements OnModuleInit, OnModuleDestr
         isRecording?: boolean | undefined;
         cpuUsage?: number | undefined;
         fps?: number | undefined;
+        bitrate?: number;
+        outputSkippedFrames?: number;
+        outputTotalFrames?: number;
         isConnected: boolean;
     };
 }

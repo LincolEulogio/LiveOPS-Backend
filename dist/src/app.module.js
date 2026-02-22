@@ -28,6 +28,8 @@ const automation_module_1 = require("./automation/automation.module");
 const analytics_module_1 = require("./analytics/analytics.module");
 const streaming_module_1 = require("./streaming/streaming.module");
 const users_module_1 = require("./users/users.module");
+const chat_module_1 = require("./chat/chat.module");
+const script_module_1 = require("./script/script.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -66,6 +68,8 @@ exports.AppModule = AppModule = __decorate([
             analytics_module_1.AnalyticsModule,
             streaming_module_1.StreamingModule,
             users_module_1.UsersModule,
+            chat_module_1.ChatModule,
+            script_module_1.ScriptModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

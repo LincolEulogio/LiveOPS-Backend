@@ -6,3 +6,11 @@ export declare class CreateCommandTemplateDto {
 }
 export declare class UpdateCommandTemplateDto extends CreateCommandTemplateDto {
 }
+export declare class SendCommandDto {
+    productionId: string;
+    senderId: string;
+    targetRoleId?: string;
+    templateId?: string;
+    message: string;
+    requiresAck?: boolean;
+}

@@ -19,6 +19,9 @@ export declare class StreamingService {
             isRecording?: boolean | undefined;
             cpuUsage?: number | undefined;
             fps?: number | undefined;
+            bitrate?: number;
+            outputSkippedFrames?: number;
+            outputTotalFrames?: number;
             isConnected: boolean;
         } | null;
         vmix: null;

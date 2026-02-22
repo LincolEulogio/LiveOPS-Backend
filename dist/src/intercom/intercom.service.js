@@ -12,10 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.IntercomService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const event_emitter_1 = require("@nestjs/event-emitter");
 let IntercomService = class IntercomService {
     prisma;
-    constructor(prisma) {
+    eventEmitter;
+    constructor(prisma, eventEmitter) {
         this.prisma = prisma;
+        this.eventEmitter = eventEmitter;
     }
     async createTemplate(productionId, dto) {
         return this.prisma.commandTemplate.create({
@@ -110,10 +113,34 @@ let IntercomService = class IntercomService {
             take: limit,
         });
     }
+    async sendCommand(dto) {
+        const command = await this.prisma.command.create({
+            data: {
+                productionId: dto.productionId,
+                senderId: dto.senderId,
+                targetRoleId: dto.targetRoleId,
+                templateId: dto.templateId,
+                message: dto.message,
+                requiresAck: dto.requiresAck ?? true,
+                status: 'SENT'
+            },
+            include: {
+                sender: { select: { id: true, name: true } },
+                targetRole: { select: { id: true, name: true } },
+                template: true
+            }
+        });
+        this.eventEmitter.emit('command.created', {
+            productionId: dto.productionId,
+            command
+        });
+        return command;
+    }
 };
 exports.IntercomService = IntercomService;
 exports.IntercomService = IntercomService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        event_emitter_1.EventEmitter2])
 ], IntercomService);
 //# sourceMappingURL=intercom.service.js.map
