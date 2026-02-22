@@ -90,6 +90,17 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         await this.scriptService.updateScriptState(data.productionId, Buffer.from(updateArray));
     }
 
+    @SubscribeMessage('script.awareness_update')
+    handleAwarenessUpdate(
+        @MessageBody() data: { productionId: string; update: number[] },
+        @ConnectedSocket() client: Socket
+    ) {
+        // Broadcast awareness state (cursors, selections) to others
+        client.to(`production_${data.productionId}`).emit('script.awareness_received', {
+            update: data.update
+        });
+    }
+
     async handleConnection(client: Socket, ...args: any[]) {
         const productionId = client.handshake.query.productionId as string;
         const userId = client.handshake.query.userId as string;
