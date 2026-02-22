@@ -3,6 +3,8 @@ import { TimelineService } from './timeline.service';
 import { CreateTimelineBlockDto, UpdateTimelineBlockDto, ReorderBlocksDto } from './dto/timeline.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { Permissions } from '../common/decorators/permissions.decorator';
+import { PermissionAction } from '../common/constants/rbac.constants';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions/:productionId/timeline')
@@ -10,11 +12,13 @@ export class TimelineController {
     constructor(private readonly timelineService: TimelineService) { }
 
     @Get()
+    @Permissions(PermissionAction.RUNDOWN_VIEW)
     getBlocks(@Param('productionId') productionId: string) {
         return this.timelineService.getBlocks(productionId);
     }
 
     @Post()
+    @Permissions(PermissionAction.RUNDOWN_EDIT)
     createBlock(
         @Param('productionId') productionId: string,
         @Body() dto: CreateTimelineBlockDto
@@ -23,6 +27,7 @@ export class TimelineController {
     }
 
     @Put('reorder')
+    @Permissions(PermissionAction.RUNDOWN_EDIT)
     reorderBlocks(
         @Param('productionId') productionId: string,
         @Body() dto: ReorderBlocksDto
@@ -31,6 +36,7 @@ export class TimelineController {
     }
 
     @Put(':id')
+    @Permissions(PermissionAction.RUNDOWN_EDIT)
     updateBlock(
         @Param('productionId') productionId: string,
         @Param('id') id: string,
@@ -40,6 +46,7 @@ export class TimelineController {
     }
 
     @Delete(':id')
+    @Permissions(PermissionAction.RUNDOWN_EDIT)
     deleteBlock(
         @Param('productionId') productionId: string,
         @Param('id') id: string
@@ -50,6 +57,7 @@ export class TimelineController {
     // --- State Machine Endpoints ---
 
     @Post(':id/start')
+    @Permissions(PermissionAction.RUNDOWN_CONTROL)
     startBlock(
         @Param('productionId') productionId: string,
         @Param('id') id: string
@@ -58,6 +66,7 @@ export class TimelineController {
     }
 
     @Post(':id/complete')
+    @Permissions(PermissionAction.RUNDOWN_CONTROL)
     completeBlock(
         @Param('productionId') productionId: string,
         @Param('id') id: string
@@ -66,6 +75,7 @@ export class TimelineController {
     }
 
     @Post(':id/reset')
+    @Permissions(PermissionAction.RUNDOWN_CONTROL)
     resetBlock(
         @Param('productionId') productionId: string,
         @Param('id') id: string

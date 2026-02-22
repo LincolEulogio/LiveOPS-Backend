@@ -12,8 +12,8 @@ export declare class UsersService implements OnModuleInit {
         permissions: ({
             permission: {
                 action: string;
-                description: string | null;
                 id: string;
+                description: string | null;
                 createdAt: Date;
                 updatedAt: Date;
             };
@@ -22,15 +22,15 @@ export declare class UsersService implements OnModuleInit {
             permissionId: string;
         })[];
     } & {
+        id: string;
         name: string;
         description: string | null;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
     }) | null>;
     findAllUsers(): Promise<{
-        name: string | null;
         id: string;
+        name: string | null;
         createdAt: Date;
         updatedAt: Date;
         email: string;
@@ -40,8 +40,8 @@ export declare class UsersService implements OnModuleInit {
         } | null;
     }[]>;
     createUser(dto: CreateUserDto): Promise<{
-        name: string | null;
         id: string;
+        name: string | null;
         createdAt: Date;
         email: string;
         globalRoleId: string | null;
@@ -50,8 +50,8 @@ export declare class UsersService implements OnModuleInit {
         } | null;
     }>;
     updateUser(id: string, dto: UpdateUserDto): Promise<{
-        name: string | null;
         id: string;
+        name: string | null;
         updatedAt: Date;
         email: string;
         globalRoleId: string | null;
@@ -67,8 +67,8 @@ export declare class UsersService implements OnModuleInit {
         permissions: ({
             permission: {
                 action: string;
-                description: string | null;
                 id: string;
+                description: string | null;
                 createdAt: Date;
                 updatedAt: Date;
             };
@@ -77,37 +77,37 @@ export declare class UsersService implements OnModuleInit {
             permissionId: string;
         })[];
     } & {
+        id: string;
         name: string;
         description: string | null;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
     })[]>;
     createRole(dto: CreateRoleDto): Promise<{
+        id: string;
         name: string;
         description: string | null;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
     }>;
     updateRole(id: string, dto: UpdateRoleDto): Promise<{
+        id: string;
         name: string;
         description: string | null;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
     }>;
     deleteRole(id: string): Promise<{
+        id: string;
         name: string;
         description: string | null;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
     }>;
     findAllPermissions(): Promise<{
         action: string;
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
     }[]>;

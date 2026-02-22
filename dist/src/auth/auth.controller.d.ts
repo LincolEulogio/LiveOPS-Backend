@@ -8,13 +8,13 @@ export declare class AuthController {
         accessToken: string;
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
-            name: string | null;
             id: string;
+            name: string | null;
             createdAt: Date;
             email: string;
             globalRole: {
-                name: string;
                 id: string;
+                name: string;
                 permissions: {
                     permission: {
                         action: string;
@@ -24,13 +24,13 @@ export declare class AuthController {
         } | null;
     }>;
     getProfile(req: any): Promise<{
-        name: string | null;
         id: string;
+        name: string | null;
         createdAt: Date;
         email: string;
         globalRole: {
-            name: string;
             id: string;
+            name: string;
             permissions: {
                 permission: {
                     action: string;
@@ -42,13 +42,13 @@ export declare class AuthController {
         name?: string;
         password?: string;
     }): Promise<{
-        name: string | null;
         id: string;
+        name: string | null;
         createdAt: Date;
         email: string;
         globalRole: {
-            name: string;
             id: string;
+            name: string;
             permissions: {
                 permission: {
                     action: string;
@@ -60,13 +60,13 @@ export declare class AuthController {
         accessToken: string;
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
-            name: string | null;
             id: string;
+            name: string | null;
             createdAt: Date;
             email: string;
             globalRole: {
-                name: string;
                 id: string;
+                name: string;
                 permissions: {
                     permission: {
                         action: string;

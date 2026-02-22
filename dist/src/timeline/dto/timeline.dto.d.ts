@@ -4,6 +4,8 @@ export declare class CreateTimelineBlockDto {
     durationMs?: number;
     order?: number;
     linkedScene?: string;
+    source?: string;
+    notes?: string;
     intercomTemplateId?: string;
 }
 export declare class UpdateTimelineBlockDto extends CreateTimelineBlockDto {

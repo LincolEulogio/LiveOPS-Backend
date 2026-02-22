@@ -23,6 +23,14 @@ export class CreateTimelineBlockDto {
     @IsOptional()
     linkedScene?: string;
 
+    @IsString()
+    @IsOptional()
+    source?: string;
+
+    @IsString()
+    @IsOptional()
+    notes?: string;
+
     @IsUUID()
     @IsOptional()
     intercomTemplateId?: string;

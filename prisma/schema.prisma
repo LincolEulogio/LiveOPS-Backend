@@ -81,6 +81,8 @@ model TimelineBlock {
   productionId       String      @db.Uuid
   title              String
   description        String?
+  source             String? // e.g. "CÁMARA 1", "VTR", "REPLAY"
+  notes              String? // Internal operator notes
   durationMs         Int         @default(0) // 0 means manual trigger
   status             BlockStatus @default(PENDING)
   order              Int         @default(0)

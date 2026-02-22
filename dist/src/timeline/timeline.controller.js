@@ -18,6 +18,8 @@ const timeline_service_1 = require("./timeline.service");
 const timeline_dto_1 = require("./dto/timeline.dto");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const permissions_guard_1 = require("../common/guards/permissions.guard");
+const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
+const rbac_constants_1 = require("../common/constants/rbac.constants");
 let TimelineController = class TimelineController {
     timelineService;
     constructor(timelineService) {
@@ -51,6 +53,7 @@ let TimelineController = class TimelineController {
 exports.TimelineController = TimelineController;
 __decorate([
     (0, common_1.Get)(),
+    (0, permissions_decorator_1.Permissions)(rbac_constants_1.PermissionAction.RUNDOWN_VIEW),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -58,6 +61,7 @@ __decorate([
 ], TimelineController.prototype, "getBlocks", null);
 __decorate([
     (0, common_1.Post)(),
+    (0, permissions_decorator_1.Permissions)(rbac_constants_1.PermissionAction.RUNDOWN_EDIT),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -66,6 +70,7 @@ __decorate([
 ], TimelineController.prototype, "createBlock", null);
 __decorate([
     (0, common_1.Put)('reorder'),
+    (0, permissions_decorator_1.Permissions)(rbac_constants_1.PermissionAction.RUNDOWN_EDIT),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -74,6 +79,7 @@ __decorate([
 ], TimelineController.prototype, "reorderBlocks", null);
 __decorate([
     (0, common_1.Put)(':id'),
+    (0, permissions_decorator_1.Permissions)(rbac_constants_1.PermissionAction.RUNDOWN_EDIT),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
@@ -83,6 +89,7 @@ __decorate([
 ], TimelineController.prototype, "updateBlock", null);
 __decorate([
     (0, common_1.Delete)(':id'),
+    (0, permissions_decorator_1.Permissions)(rbac_constants_1.PermissionAction.RUNDOWN_EDIT),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -91,6 +98,7 @@ __decorate([
 ], TimelineController.prototype, "deleteBlock", null);
 __decorate([
     (0, common_1.Post)(':id/start'),
+    (0, permissions_decorator_1.Permissions)(rbac_constants_1.PermissionAction.RUNDOWN_CONTROL),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -99,6 +107,7 @@ __decorate([
 ], TimelineController.prototype, "startBlock", null);
 __decorate([
     (0, common_1.Post)(':id/complete'),
+    (0, permissions_decorator_1.Permissions)(rbac_constants_1.PermissionAction.RUNDOWN_CONTROL),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -107,6 +116,7 @@ __decorate([
 ], TimelineController.prototype, "completeBlock", null);
 __decorate([
     (0, common_1.Post)(':id/reset'),
+    (0, permissions_decorator_1.Permissions)(rbac_constants_1.PermissionAction.RUNDOWN_CONTROL),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),

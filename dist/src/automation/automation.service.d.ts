@@ -22,19 +22,19 @@ export declare class AutomationService {
             ruleId: string;
         }[];
     } & {
+        id: string;
         name: string;
         description: string | null;
-        productionId: string;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
         isEnabled: boolean;
     })[]>;
     getRule(id: string, productionId: string): Promise<{
         logs: {
-            productionId: string;
             id: string;
             createdAt: Date;
+            productionId: string;
             status: string;
             details: string | null;
             ruleId: string;
@@ -57,12 +57,12 @@ export declare class AutomationService {
             ruleId: string;
         }[];
     } & {
+        id: string;
         name: string;
         description: string | null;
-        productionId: string;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
         isEnabled: boolean;
     }>;
     createRule(productionId: string, dto: CreateRuleDto): Promise<{
@@ -84,21 +84,21 @@ export declare class AutomationService {
             ruleId: string;
         }[];
     } & {
+        id: string;
         name: string;
         description: string | null;
-        productionId: string;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
         isEnabled: boolean;
     }>;
     updateRule(id: string, productionId: string, dto: UpdateRuleDto): Promise<{
+        id: string;
         name: string;
         description: string | null;
-        productionId: string;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
         isEnabled: boolean;
     }>;
     deleteRule(id: string, productionId: string): Promise<{
@@ -109,9 +109,9 @@ export declare class AutomationService {
             name: string;
         };
     } & {
-        productionId: string;
         id: string;
         createdAt: Date;
+        productionId: string;
         status: string;
         details: string | null;
         ruleId: string;

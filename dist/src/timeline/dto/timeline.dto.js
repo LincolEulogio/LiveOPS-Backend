@@ -17,6 +17,8 @@ class CreateTimelineBlockDto {
     durationMs;
     order;
     linkedScene;
+    source;
+    notes;
     intercomTemplateId;
 }
 exports.CreateTimelineBlockDto = CreateTimelineBlockDto;
@@ -47,6 +49,16 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateTimelineBlockDto.prototype, "linkedScene", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateTimelineBlockDto.prototype, "source", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateTimelineBlockDto.prototype, "notes", void 0);
 __decorate([
     (0, class_validator_1.IsUUID)(),
     (0, class_validator_1.IsOptional)(),

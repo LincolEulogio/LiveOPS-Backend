@@ -12,9 +12,9 @@ export declare class AnalyticsController {
         totalOperatorActions: number;
     }>;
     getLogs(productionId: string): Promise<{
-        productionId: string;
         id: string;
         createdAt: Date;
+        productionId: string;
         details: import("@prisma/client/runtime/client").JsonValue | null;
         eventType: string;
     }[]>;
