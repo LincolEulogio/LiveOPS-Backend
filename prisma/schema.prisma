@@ -290,6 +290,7 @@ model TimelineBlock {
   order              Int              @default(0)
   linkedScene        String?
   source             String?
+  notes              String?
   intercomTemplateId String?          @db.Uuid
   startTime          DateTime?
   endTime            DateTime?
