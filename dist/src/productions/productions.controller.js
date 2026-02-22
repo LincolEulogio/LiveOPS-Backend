@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var ProductionsController_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductionsController = void 0;
 const common_1 = require("@nestjs/common");
@@ -19,16 +20,17 @@ const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const permissions_guard_1 = require("../common/guards/permissions.guard");
 const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
 const production_dto_1 = require("./dto/production.dto");
-let ProductionsController = class ProductionsController {
+let ProductionsController = ProductionsController_1 = class ProductionsController {
     productionsService;
+    logger = new common_1.Logger(ProductionsController_1.name);
     constructor(productionsService) {
         this.productionsService = productionsService;
     }
     create(req, dto) {
         return this.productionsService.create(req.user.userId, dto);
     }
-    findAll(req) {
-        return this.productionsService.findAllForUser(req.user.userId);
+    findAll(req, query) {
+        return this.productionsService.findAllForUser(req.user.userId, query);
     }
     findOne(id, req) {
         return this.productionsService.findOne(id, req.user.userId);
@@ -45,6 +47,10 @@ let ProductionsController = class ProductionsController {
     removeUser(id, userId) {
         return this.productionsService.removeUser(id, userId);
     }
+    remove(id) {
+        this.logger.log(`Handling delete request for production: ${id}`);
+        return this.productionsService.remove(id);
+    }
 };
 exports.ProductionsController = ProductionsController;
 __decorate([
@@ -59,8 +65,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, production_dto_1.GetProductionsQueryDto]),
     __metadata("design:returntype", void 0)
 ], ProductionsController.prototype, "findAll", null);
 __decorate([
@@ -107,7 +114,15 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], ProductionsController.prototype, "removeUser", null);
-exports.ProductionsController = ProductionsController = __decorate([
+__decorate([
+    (0, common_1.Delete)(':id'),
+    (0, permissions_decorator_1.Permissions)('production:manage'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProductionsController.prototype, "remove", null);
+exports.ProductionsController = ProductionsController = ProductionsController_1 = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     (0, common_1.Controller)('productions'),
     __metadata("design:paramtypes", [productions_service_1.ProductionsService])

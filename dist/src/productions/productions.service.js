@@ -72,29 +72,57 @@ let ProductionsService = class ProductionsService {
             return production;
         });
     }
-    async findAllForUser(userId) {
-        return this.prisma.production.findMany({
-            where: {
-                deletedAt: null,
-                users: {
-                    some: { userId }
-                }
-            },
-            include: {
-                users: {
-                    where: { userId },
-                    include: {
-                        role: {
-                            include: {
-                                permissions: {
-                                    include: { permission: true }
+    async findAllForUser(userId, query) {
+        const page = parseInt(query.page || '1', 10);
+        const limit = parseInt(query.limit || '10', 10);
+        const skip = (page - 1) * limit;
+        const where = {
+            deletedAt: null,
+            users: {
+                some: { userId }
+            }
+        };
+        if (query.status) {
+            where.status = query.status;
+        }
+        if (query.search) {
+            where.OR = [
+                { name: { contains: query.search, mode: 'insensitive' } },
+                { description: { contains: query.search, mode: 'insensitive' } }
+            ];
+        }
+        const [data, total] = await Promise.all([
+            this.prisma.production.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    users: {
+                        where: { userId },
+                        include: {
+                            role: {
+                                include: {
+                                    permissions: {
+                                        include: { permission: true }
+                                    }
                                 }
                             }
                         }
                     }
                 }
+            }),
+            this.prisma.production.count({ where })
+        ]);
+        return {
+            data,
+            meta: {
+                total,
+                page,
+                limit,
+                lastPage: Math.ceil(total / limit)
             }
-        });
+        };
     }
     async findOne(productionId, userId) {
         const prod = await this.prisma.production.findFirst({
@@ -238,6 +266,12 @@ let ProductionsService = class ProductionsService {
             userId: userIdToRemove
         });
         return result;
+    }
+    async remove(productionId) {
+        return this.prisma.production.update({
+            where: { id: productionId },
+            data: { deletedAt: new Date() }
+        });
     }
 };
 exports.ProductionsService = ProductionsService;

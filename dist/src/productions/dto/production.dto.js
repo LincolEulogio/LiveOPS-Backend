@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AssignUserDto = exports.UpdateProductionStateDto = exports.UpdateProductionDto = exports.CreateProductionDto = exports.VmixConfigDto = exports.ObsConfigDto = exports.ProductionStatus = exports.EngineType = void 0;
+exports.GetProductionsQueryDto = exports.AssignUserDto = exports.UpdateProductionStateDto = exports.UpdateProductionDto = exports.CreateProductionDto = exports.VmixConfigDto = exports.ObsConfigDto = exports.ProductionStatus = exports.EngineType = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 var EngineType;
@@ -183,4 +183,31 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], AssignUserDto.prototype, "roleName", void 0);
+class GetProductionsQueryDto {
+    page;
+    limit;
+    status;
+    search;
+}
+exports.GetProductionsQueryDto = GetProductionsQueryDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], GetProductionsQueryDto.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], GetProductionsQueryDto.prototype, "limit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], GetProductionsQueryDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], GetProductionsQueryDto.prototype, "search", void 0);
 //# sourceMappingURL=production.dto.js.map

@@ -43,3 +43,9 @@ export declare class AssignUserDto {
     email: string;
     roleName: string;
 }
+export declare class GetProductionsQueryDto {
+    page?: string;
+    limit?: string;
+    status?: string;
+    search?: string;
+}

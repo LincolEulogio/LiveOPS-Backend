@@ -1,5 +1,5 @@
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProductionDto, UpdateProductionDto, UpdateProductionStateDto, AssignUserDto } from './dto/production.dto';
+import { CreateProductionDto, UpdateProductionDto, UpdateProductionStateDto, AssignUserDto, GetProductionsQueryDto } from './dto/production.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 export declare class ProductionsService {
     private prisma;
@@ -15,45 +15,53 @@ export declare class ProductionsService {
         deletedAt: Date | null;
         engineType: import("@prisma/client").$Enums.EngineType;
     }>;
-    findAllForUser(userId: string): Promise<({
-        users: ({
-            role: {
-                permissions: ({
-                    permission: {
-                        action: string;
-                        description: string | null;
-                        id: string;
-                        createdAt: Date;
-                        updatedAt: Date;
-                    };
+    findAllForUser(userId: string, query: GetProductionsQueryDto): Promise<{
+        data: ({
+            users: ({
+                role: {
+                    permissions: ({
+                        permission: {
+                            action: string;
+                            description: string | null;
+                            id: string;
+                            createdAt: Date;
+                            updatedAt: Date;
+                        };
+                    } & {
+                        roleId: string;
+                        permissionId: string;
+                    })[];
                 } & {
-                    roleId: string;
-                    permissionId: string;
-                })[];
+                    description: string | null;
+                    id: string;
+                    createdAt: Date;
+                    name: string;
+                    updatedAt: Date;
+                };
             } & {
-                description: string | null;
-                id: string;
+                productionId: string;
+                userId: string;
+                roleId: string;
                 createdAt: Date;
-                name: string;
                 updatedAt: Date;
-            };
+            })[];
         } & {
-            productionId: string;
-            userId: string;
-            roleId: string;
+            description: string | null;
+            id: string;
+            status: import("@prisma/client").$Enums.ProductionStatus;
             createdAt: Date;
+            name: string;
             updatedAt: Date;
+            deletedAt: Date | null;
+            engineType: import("@prisma/client").$Enums.EngineType;
         })[];
-    } & {
-        description: string | null;
-        id: string;
-        status: import("@prisma/client").$Enums.ProductionStatus;
-        createdAt: Date;
-        name: string;
-        updatedAt: Date;
-        deletedAt: Date | null;
-        engineType: import("@prisma/client").$Enums.EngineType;
-    })[]>;
+        meta: {
+            total: number;
+            page: number;
+            limit: number;
+            lastPage: number;
+        };
+    }>;
     findOne(productionId: string, userId: string): Promise<{
         vmixConnection: {
             url: string;
@@ -149,5 +157,15 @@ export declare class ProductionsService {
         roleId: string;
         createdAt: Date;
         updatedAt: Date;
+    }>;
+    remove(productionId: string): Promise<{
+        description: string | null;
+        id: string;
+        status: import("@prisma/client").$Enums.ProductionStatus;
+        createdAt: Date;
+        name: string;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        engineType: import("@prisma/client").$Enums.EngineType;
     }>;
 }
