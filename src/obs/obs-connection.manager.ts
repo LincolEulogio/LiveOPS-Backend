@@ -8,6 +8,7 @@ import { EngineType } from '../productions/dto/production.dto';
 interface ObsInstance {
     obs: OBSWebSocket;
     reconnectTimeout?: NodeJS.Timeout;
+    statsInterval?: NodeJS.Timeout;
     isConnected: boolean;
     lastState?: {
         currentScene: string;
@@ -16,6 +17,9 @@ interface ObsInstance {
         isRecording: boolean;
         cpuUsage: number;
         fps: number;
+        bitrate?: number;
+        outputSkippedFrames?: number;
+        outputTotalFrames?: number;
     };
 }
 
@@ -97,6 +101,11 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
             if (instance.lastState) {
                 instance.lastState.isStreaming = data.outputActive;
             }
+            if (data.outputActive) {
+                this.startStatsPolling(productionId, instance);
+            } else {
+                this.stopStatsPolling(instance);
+            }
             this.eventEmitter.emit('obs.stream.state', {
                 productionId,
                 active: data.outputActive,
@@ -164,7 +173,12 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
                 isRecording: recordStatus.outputActive,
                 cpuUsage: stats.cpuUsage,
                 fps: fps,
+                bitrate: streamStatus.outputSkippedFrames !== undefined ? 0 : undefined // streamStatus might not have bitrate initially
             };
+
+            if (streamStatus.outputActive) {
+                this.startStatsPolling(productionId, instance);
+            }
 
             // Re-emit scene change if we have one to populate frontend
             this.eventEmitter.emit('obs.scene.changed', {
@@ -187,6 +201,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
         if (instance.reconnectTimeout) {
             clearTimeout(instance.reconnectTimeout);
         }
+        this.stopStatsPolling(instance);
         // Remove listeners to prevent memory leaks or unwanted reconnects during manual disconnect
         instance.obs.removeAllListeners();
         instance.obs.disconnect().catch(() => { });
@@ -230,6 +245,50 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
         if (payload.type === EngineType.OBS) {
             this.logger.log(`Received connection update for production ${payload.productionId} (OBS)`);
             this.connectObs(payload.productionId, payload.url, payload.password);
+        }
+    }
+
+    private startStatsPolling(productionId: string, instance: ObsInstance) {
+        this.stopStatsPolling(instance);
+        this.logger.log(`Starting Technical Stats Polling for production ${productionId} (OBS)`);
+
+        instance.statsInterval = setInterval(async () => {
+            try {
+                if (!instance.isConnected) return;
+                const [stats, streamStatus] = await Promise.all([
+                    instance.obs.call('GetStats'),
+                    instance.obs.call('GetStreamStatus')
+                ]);
+
+                if (instance.lastState) {
+                    instance.lastState.cpuUsage = stats.cpuUsage;
+                    instance.lastState.outputSkippedFrames = streamStatus.outputSkippedFrames;
+                    instance.lastState.outputTotalFrames = streamStatus.outputTotalFrames;
+                    // Note: obs-websocket-js v5 streamStatus might not have 'kbitrate' directly in every version, 
+                    // but we focus on cpu and drops if available. 
+                }
+
+                this.eventEmitter.emit('production.health.stats', {
+                    productionId,
+                    engineType: EngineType.OBS,
+                    cpuUsage: stats.cpuUsage,
+                    fps: stats.activeFps,
+                    bitrate: 0, // OBS v5 GetStreamStatus response varies, often doesn't have bitrate directly like v4
+                    skippedFrames: streamStatus.outputSkippedFrames || 0,
+                    totalFrames: streamStatus.outputTotalFrames || 0,
+                    memoryUsage: stats.memoryUsage,
+                    timestamp: new Date().toISOString()
+                });
+            } catch (e) {
+                this.logger.error(`Error polling OBS stats for ${productionId}: ${e.message}`);
+            }
+        }, 2000);
+    }
+
+    private stopStatsPolling(instance: ObsInstance) {
+        if (instance.statsInterval) {
+            clearInterval(instance.statsInterval);
+            instance.statsInterval = undefined;
         }
     }
 

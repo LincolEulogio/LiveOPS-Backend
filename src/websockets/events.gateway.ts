@@ -234,4 +234,11 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             .to(`production_${payload.productionId}`)
             .emit('command.received', payload.command);
     }
+
+    @OnEvent('production.health.stats')
+    handleProductionHealthStats(payload: any) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('production.health.stats', payload);
+    }
 }

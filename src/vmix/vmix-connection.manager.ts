@@ -114,6 +114,19 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
             // We consider it connected if the poll succeeded
             this.eventEmitter.emit('vmix.connection.state', { productionId, connected: true });
 
+            // Emit Unified Health Stats
+            this.eventEmitter.emit('production.health.stats', {
+                productionId,
+                engineType: EngineType.VMIX,
+                cpuUsage: 0, // vMix API doesn't expose CPU directly in simple /api
+                fps: 0,
+                bitrate: 0,
+                skippedFrames: 0,
+                isStreaming,
+                isRecording,
+                timestamp: new Date().toISOString()
+            });
+
         } catch (error) {
             // Log silently unless debugging, as this will spam if vMix is off
             this.eventEmitter.emit('vmix.connection.state', { productionId, connected: false });
