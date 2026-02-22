@@ -370,12 +370,12 @@ model CommandResponse {
 model ChatMessage {
   id           String   @id @default(uuid()) @db.Uuid
   productionId String   @db.Uuid
-  userId       String   @db.Uuid
+  userId       String?  @db.Uuid
   message      String
   createdAt    DateTime @default(now())
 
   production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([productionId])
   @@index([userId])

@@ -53,6 +53,14 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         return { status: 'ok', messageId: message.id };
     }
 
+    @SubscribeMessage('chat.typing')
+    handleChatTyping(
+        @MessageBody() data: { productionId: string; userId: string; userName: string; isTyping: boolean },
+        @ConnectedSocket() client: Socket
+    ) {
+        client.to(`production_${data.productionId}`).emit('chat.typing', data);
+    }
+
     async handleConnection(client: Socket, ...args: any[]) {
         const productionId = client.handshake.query.productionId as string;
         const userId = client.handshake.query.userId as string;
@@ -184,7 +192,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     // --- Internal Events Handlers (Forwarding to WS) ---
 
     @OnEvent('obs.scene.changed')
-    handleObsSceneChanged(payload: { productionId: string; sceneName: string; cpuUsage?: number; fps?: number }) {
+    async handleObsSceneChanged(payload: { productionId: string; sceneName: string; cpuUsage?: number; fps?: number }) {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('obs.scene.changed', {
@@ -192,27 +200,59 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
                 cpuUsage: payload.cpuUsage,
                 fps: payload.fps
             });
+
+        // SYSTEM LOG IN CHAT
+        const msg = await this.chatService.saveMessage(
+            payload.productionId,
+            null,
+            `🎬 Escena cambiada a: ${payload.sceneName}`
+        );
+        this.server.to(`production_${payload.productionId}`).emit('chat.received', msg);
     }
 
     @OnEvent('obs.stream.state')
-    handleObsStreamState(payload: { productionId: string; active: boolean; state: string }) {
+    async handleObsStreamState(payload: { productionId: string; active: boolean; state: string }) {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('obs.stream.state', payload);
+
+        // SYSTEM LOG IN CHAT
+        const msg = await this.chatService.saveMessage(
+            payload.productionId,
+            null,
+            payload.active ? `🔴 EMISIÓN INICIADA (${payload.state})` : `⚪ EMISIÓN DETENIDA (${payload.state})`
+        );
+        this.server.to(`production_${payload.productionId}`).emit('chat.received', msg);
     }
 
     @OnEvent('obs.record.state')
-    handleObsRecordState(payload: { productionId: string; active: boolean; state: string }) {
+    async handleObsRecordState(payload: { productionId: string; active: boolean; state: string }) {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('obs.record.state', payload);
+
+        // SYSTEM LOG IN CHAT
+        const msg = await this.chatService.saveMessage(
+            payload.productionId,
+            null,
+            payload.active ? `⏺️ GRABACIÓN INICIADA (${payload.state})` : `⏹️ GRABACIÓN DETENIDA (${payload.state})`
+        );
+        this.server.to(`production_${payload.productionId}`).emit('chat.received', msg);
     }
 
     @OnEvent('obs.connection.state')
-    handleObsConnectionState(payload: { productionId: string; connected: boolean }) {
+    async handleObsConnectionState(payload: { productionId: string; connected: boolean }) {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('obs.connection.state', payload);
+
+        // SYSTEM LOG IN CHAT
+        const msg = await this.chatService.saveMessage(
+            payload.productionId,
+            null,
+            payload.connected ? `🔗 OBS CONECTADO` : `❌ OBS DESCONECTADO`
+        );
+        this.server.to(`production_${payload.productionId}`).emit('chat.received', msg);
     }
 
     @OnEvent('vmix.input.changed')
