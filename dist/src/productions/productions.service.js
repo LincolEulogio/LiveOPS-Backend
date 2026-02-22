@@ -89,12 +89,19 @@ let ProductionsService = class ProductionsService {
         const page = parseInt(query.page || '1', 10);
         const limit = parseInt(query.limit || '10', 10);
         const skip = (page - 1) * limit;
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { globalRole: true },
+        });
+        const isSuperAdmin = user?.globalRole?.name === 'SUPERADMIN';
         const where = {
             deletedAt: null,
-            users: {
-                some: { userId },
-            },
         };
+        if (!isSuperAdmin) {
+            where.users = {
+                some: { userId },
+            };
+        }
         if (query.status) {
             where.status = query.status;
         }
@@ -138,12 +145,20 @@ let ProductionsService = class ProductionsService {
         };
     }
     async findOne(productionId, userId) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { globalRole: true },
+        });
+        const isSuperAdmin = user?.globalRole?.name === 'SUPERADMIN';
+        const where = {
+            id: productionId,
+            deletedAt: null,
+        };
+        if (!isSuperAdmin) {
+            where.users = { some: { userId } };
+        }
         const prod = await this.prisma.production.findFirst({
-            where: {
-                id: productionId,
-                deletedAt: null,
-                users: { some: { userId } },
-            },
+            where,
             include: {
                 users: {
                     include: {

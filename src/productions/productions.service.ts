@@ -101,12 +101,23 @@ export class ProductionsService {
     const limit = parseInt(query.limit || '10', 10);
     const skip = (page - 1) * limit;
 
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { globalRole: true },
+    });
+
+    const isSuperAdmin = user?.globalRole?.name === 'SUPERADMIN';
+
     const where: any = {
       deletedAt: null,
-      users: {
-        some: { userId },
-      },
     };
+
+    // Only filter by user assignment if NOT a SUPERADMIN
+    if (!isSuperAdmin) {
+      where.users = {
+        some: { userId },
+      };
+    }
 
     if (query.status) {
       where.status = query.status;
@@ -155,12 +166,24 @@ export class ProductionsService {
   }
 
   async findOne(productionId: string, userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { globalRole: true },
+    });
+
+    const isSuperAdmin = user?.globalRole?.name === 'SUPERADMIN';
+
+    const where: any = {
+      id: productionId,
+      deletedAt: null,
+    };
+
+    if (!isSuperAdmin) {
+      where.users = { some: { userId } };
+    }
+
     const prod = await this.prisma.production.findFirst({
-      where: {
-        id: productionId,
-        deletedAt: null,
-        users: { some: { userId } },
-      },
+      where,
       include: {
         users: {
           include: {
