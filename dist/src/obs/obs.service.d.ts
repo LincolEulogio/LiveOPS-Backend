@@ -7,18 +7,18 @@ export declare class ObsService {
     private readonly logger;
     constructor(prisma: PrismaService, obsManager: ObsConnectionManager);
     saveConnection(productionId: string, dto: SaveObsConnectionDto): Promise<{
-        productionId: string;
-        id: string;
         url: string;
+        id: string;
+        productionId: string;
         password: string | null;
         isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
     }>;
     getConnection(productionId: string): Promise<{
-        productionId: string;
-        id: string;
         url: string;
+        id: string;
+        productionId: string;
         password: string | null;
         isEnabled: boolean;
         createdAt: Date;

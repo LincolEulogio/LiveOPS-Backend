@@ -8,9 +8,9 @@ export declare class AuthService {
     constructor(prisma: PrismaService, jwtService: JwtService);
     getProfile(userId: string): Promise<{
         id: string;
-        email: string;
-        name: string | null;
         createdAt: Date;
+        name: string | null;
+        email: string;
         globalRole: {
             id: string;
             name: string;
@@ -26,9 +26,9 @@ export declare class AuthService {
         password?: string;
     }): Promise<{
         id: string;
-        email: string;
-        name: string | null;
         createdAt: Date;
+        name: string | null;
+        email: string;
         globalRole: {
             id: string;
             name: string;
@@ -44,9 +44,9 @@ export declare class AuthService {
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
             id: string;
-            email: string;
-            name: string | null;
             createdAt: Date;
+            name: string | null;
+            email: string;
             globalRole: {
                 id: string;
                 name: string;
@@ -63,9 +63,9 @@ export declare class AuthService {
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
             id: string;
-            email: string;
-            name: string | null;
             createdAt: Date;
+            name: string | null;
+            email: string;
             globalRole: {
                 id: string;
                 name: string;

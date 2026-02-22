@@ -15,15 +15,15 @@ export declare class AnalyticsService {
     }>;
     getProductionLogs(productionId: string): Promise<{
         id: string;
-        createdAt: Date;
         productionId: string;
+        createdAt: Date;
         details: import("@prisma/client/runtime/client").JsonValue | null;
         eventType: string;
     }[]>;
     getAllLogsForExport(productionId: string): Promise<{
         id: string;
-        createdAt: Date;
         productionId: string;
+        createdAt: Date;
         details: import("@prisma/client/runtime/client").JsonValue | null;
         eventType: string;
     }[]>;

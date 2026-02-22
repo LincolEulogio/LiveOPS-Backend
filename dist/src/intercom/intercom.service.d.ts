@@ -7,44 +7,44 @@ export declare class IntercomService {
     constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
     createTemplate(productionId: string, dto: CreateCommandTemplateDto): Promise<{
         id: string;
-        description: string | null;
+        productionId: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        description: string | null;
         icon: string | null;
         color: string | null;
-        productionId: string;
     }>;
     getTemplates(productionId: string): Promise<{
         id: string;
-        description: string | null;
+        productionId: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        description: string | null;
         icon: string | null;
         color: string | null;
-        productionId: string;
     }[]>;
     private seedDefaultTemplates;
     updateTemplate(id: string, productionId: string, dto: CreateCommandTemplateDto): Promise<{
         id: string;
-        description: string | null;
+        productionId: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        description: string | null;
         icon: string | null;
         color: string | null;
-        productionId: string;
     }>;
     deleteTemplate(id: string, productionId: string): Promise<{
         id: string;
-        description: string | null;
+        productionId: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        description: string | null;
         icon: string | null;
         color: string | null;
-        productionId: string;
     }>;
     getCommandHistory(productionId: string, limit?: number): Promise<({
         sender: {
@@ -57,13 +57,13 @@ export declare class IntercomService {
         } | null;
         template: {
             id: string;
-            description: string | null;
+            productionId: string;
             createdAt: Date;
             updatedAt: Date;
             name: string;
+            description: string | null;
             icon: string | null;
             color: string | null;
-            productionId: string;
         } | null;
         responses: ({
             responder: {
@@ -80,15 +80,15 @@ export declare class IntercomService {
         })[];
     } & {
         id: string;
-        createdAt: Date;
         productionId: string;
+        createdAt: Date;
+        status: string;
         senderId: string;
         targetRoleId: string | null;
         targetUserId: string | null;
         templateId: string | null;
         message: string;
         requiresAck: boolean;
-        status: string;
     })[]>;
     sendCommand(dto: SendCommandDto): Promise<{
         sender: {
@@ -101,24 +101,24 @@ export declare class IntercomService {
         } | null;
         template: {
             id: string;
-            description: string | null;
+            productionId: string;
             createdAt: Date;
             updatedAt: Date;
             name: string;
+            description: string | null;
             icon: string | null;
             color: string | null;
-            productionId: string;
         } | null;
     } & {
         id: string;
-        createdAt: Date;
         productionId: string;
+        createdAt: Date;
+        status: string;
         senderId: string;
         targetRoleId: string | null;
         targetUserId: string | null;
         templateId: string | null;
         message: string;
         requiresAck: boolean;
-        status: string;
     }>;
 }

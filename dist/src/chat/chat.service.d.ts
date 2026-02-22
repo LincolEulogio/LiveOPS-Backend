@@ -9,8 +9,8 @@ export declare class ChatService {
         } | null;
     } & {
         id: string;
-        createdAt: Date;
         productionId: string;
+        createdAt: Date;
         message: string;
         userId: string | null;
     }>;
@@ -21,8 +21,8 @@ export declare class ChatService {
         } | null;
     } & {
         id: string;
-        createdAt: Date;
         productionId: string;
+        createdAt: Date;
         message: string;
         userId: string | null;
     })[]>;

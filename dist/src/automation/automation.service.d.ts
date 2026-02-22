@@ -4,6 +4,14 @@ export declare class AutomationService {
     private prisma;
     constructor(prisma: PrismaService);
     getRules(productionId: string): Promise<({
+        triggers: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            eventType: string;
+            condition: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
+        }[];
         actions: {
             id: string;
             createdAt: Date;
@@ -13,6 +21,16 @@ export declare class AutomationService {
             payload: import("@prisma/client/runtime/client").JsonValue | null;
             ruleId: string;
         }[];
+    } & {
+        id: string;
+        productionId: string;
+        isEnabled: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        description: string | null;
+    })[]>;
+    getRule(id: string, productionId: string): Promise<{
         triggers: {
             id: string;
             createdAt: Date;
@@ -21,16 +39,6 @@ export declare class AutomationService {
             condition: import("@prisma/client/runtime/client").JsonValue | null;
             ruleId: string;
         }[];
-    } & {
-        id: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
-        productionId: string;
-        isEnabled: boolean;
-    })[]>;
-    getRule(id: string, productionId: string): Promise<{
         actions: {
             id: string;
             createdAt: Date;
@@ -42,12 +50,22 @@ export declare class AutomationService {
         }[];
         executionLogs: {
             id: string;
-            createdAt: Date;
             productionId: string;
+            createdAt: Date;
             status: string;
             details: string | null;
             ruleId: string;
         }[];
+    } & {
+        id: string;
+        productionId: string;
+        isEnabled: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        description: string | null;
+    }>;
+    createRule(productionId: string, dto: CreateRuleDto): Promise<{
         triggers: {
             id: string;
             createdAt: Date;
@@ -56,16 +74,6 @@ export declare class AutomationService {
             condition: import("@prisma/client/runtime/client").JsonValue | null;
             ruleId: string;
         }[];
-    } & {
-        id: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
-        productionId: string;
-        isEnabled: boolean;
-    }>;
-    createRule(productionId: string, dto: CreateRuleDto): Promise<{
         actions: {
             id: string;
             createdAt: Date;
@@ -75,31 +83,23 @@ export declare class AutomationService {
             payload: import("@prisma/client/runtime/client").JsonValue | null;
             ruleId: string;
         }[];
-        triggers: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            eventType: string;
-            condition: import("@prisma/client/runtime/client").JsonValue | null;
-            ruleId: string;
-        }[];
     } & {
         id: string;
-        description: string | null;
+        productionId: string;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        productionId: string;
-        isEnabled: boolean;
+        description: string | null;
     }>;
     updateRule(id: string, productionId: string, dto: UpdateRuleDto): Promise<{
         id: string;
-        description: string | null;
+        productionId: string;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        productionId: string;
-        isEnabled: boolean;
+        description: string | null;
     }>;
     deleteRule(id: string, productionId: string): Promise<{
         success: boolean;
@@ -110,8 +110,8 @@ export declare class AutomationService {
         };
     } & {
         id: string;
-        createdAt: Date;
         productionId: string;
+        createdAt: Date;
         status: string;
         details: string | null;
         ruleId: string;
