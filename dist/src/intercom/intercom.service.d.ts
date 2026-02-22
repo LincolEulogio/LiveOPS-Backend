@@ -6,69 +6,69 @@ export declare class IntercomService {
     private eventEmitter;
     constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
     createTemplate(productionId: string, dto: CreateCommandTemplateDto): Promise<{
-        name: string;
+        id: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         icon: string | null;
         color: string | null;
         productionId: string;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     getTemplates(productionId: string): Promise<{
-        name: string;
+        id: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         icon: string | null;
         color: string | null;
         productionId: string;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     private seedDefaultTemplates;
     updateTemplate(id: string, productionId: string, dto: CreateCommandTemplateDto): Promise<{
-        name: string;
+        id: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         icon: string | null;
         color: string | null;
         productionId: string;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     deleteTemplate(id: string, productionId: string): Promise<{
-        name: string;
+        id: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         icon: string | null;
         color: string | null;
         productionId: string;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     getCommandHistory(productionId: string, limit?: number): Promise<({
         sender: {
-            name: string | null;
             id: string;
+            name: string | null;
         };
         targetRole: {
-            name: string;
             id: string;
+            name: string;
         } | null;
         template: {
-            name: string;
+            id: string;
             description: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
             icon: string | null;
             color: string | null;
             productionId: string;
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
         } | null;
         responses: ({
             responder: {
-                name: string | null;
                 id: string;
+                name: string | null;
             };
         } & {
             id: string;
@@ -79,44 +79,44 @@ export declare class IntercomService {
             responderId: string;
         })[];
     } & {
+        id: string;
+        createdAt: Date;
         productionId: string;
         senderId: string;
         targetRoleId: string | null;
         templateId: string | null;
         message: string;
         requiresAck: boolean;
-        id: string;
-        createdAt: Date;
         status: string;
     })[]>;
     sendCommand(dto: SendCommandDto): Promise<{
         sender: {
-            name: string | null;
             id: string;
+            name: string | null;
         };
         targetRole: {
-            name: string;
             id: string;
+            name: string;
         } | null;
         template: {
-            name: string;
+            id: string;
             description: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
             icon: string | null;
             color: string | null;
             productionId: string;
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
         } | null;
     } & {
+        id: string;
+        createdAt: Date;
         productionId: string;
         senderId: string;
         targetRoleId: string | null;
         templateId: string | null;
         message: string;
         requiresAck: boolean;
-        id: string;
-        createdAt: Date;
         status: string;
     }>;
 }

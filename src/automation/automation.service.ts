@@ -4,7 +4,7 @@ import { CreateRuleDto, UpdateRuleDto } from './dto/automation.dto';
 
 @Injectable()
 export class AutomationService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async getRules(productionId: string) {
     return this.prisma.rule.findMany({
@@ -22,7 +22,7 @@ export class AutomationService {
       include: {
         triggers: true,
         actions: { orderBy: { order: 'asc' } },
-        logs: { orderBy: { createdAt: 'desc' }, take: 20 },
+        executionLogs: { orderBy: { createdAt: 'desc' }, take: 20 },
       },
     });
     if (!rule) throw new NotFoundException('Rule not found');

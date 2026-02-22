@@ -6,11 +6,11 @@ export declare class ProductionsService {
     private eventEmitter;
     constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
     create(userId: string, dto: CreateProductionDto): Promise<{
-        name: string;
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         status: import("@prisma/client").$Enums.ProductionStatus;
         deletedAt: Date | null;
         engineType: import("@prisma/client").$Enums.EngineType;
@@ -22,8 +22,8 @@ export declare class ProductionsService {
                     permissions: ({
                         permission: {
                             action: string;
-                            description: string | null;
                             id: string;
+                            description: string | null;
                             createdAt: Date;
                             updatedAt: Date;
                         };
@@ -32,25 +32,25 @@ export declare class ProductionsService {
                         permissionId: string;
                     })[];
                 } & {
-                    name: string;
-                    description: string | null;
                     id: string;
+                    description: string | null;
                     createdAt: Date;
                     updatedAt: Date;
+                    name: string;
                 };
             } & {
-                productionId: string;
                 createdAt: Date;
                 updatedAt: Date;
                 roleId: string;
+                productionId: string;
                 userId: string;
             })[];
         } & {
-            name: string;
-            description: string | null;
             id: string;
+            description: string | null;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
             status: import("@prisma/client").$Enums.ProductionStatus;
             deletedAt: Date | null;
             engineType: import("@prisma/client").$Enums.EngineType;
@@ -63,107 +63,107 @@ export declare class ProductionsService {
         };
     }>;
     findOne(productionId: string, userId: string): Promise<{
-        vmixConnection: {
-            url: string;
-            productionId: string;
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            isEnabled: boolean;
-            pollingInterval: number;
-        } | null;
         obsConnection: {
             url: string;
-            productionId: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            productionId: string;
             password: string | null;
             isEnabled: boolean;
         } | null;
+        vmixConnection: {
+            url: string;
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            productionId: string;
+            isEnabled: boolean;
+            pollingInterval: number;
+        } | null;
         users: ({
-            user: {
-                name: string | null;
-                id: string;
-                email: string;
-            };
             role: {
-                name: string;
-                description: string | null;
                 id: string;
+                description: string | null;
                 createdAt: Date;
                 updatedAt: Date;
+                name: string;
+            };
+            user: {
+                id: string;
+                name: string | null;
+                email: string;
             };
         } & {
-            productionId: string;
             createdAt: Date;
             updatedAt: Date;
             roleId: string;
+            productionId: string;
             userId: string;
         })[];
     } & {
-        name: string;
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         status: import("@prisma/client").$Enums.ProductionStatus;
         deletedAt: Date | null;
         engineType: import("@prisma/client").$Enums.EngineType;
     }>;
     update(productionId: string, dto: UpdateProductionDto): Promise<{
-        name: string;
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         status: import("@prisma/client").$Enums.ProductionStatus;
         deletedAt: Date | null;
         engineType: import("@prisma/client").$Enums.EngineType;
     }>;
     updateState(productionId: string, dto: UpdateProductionStateDto): Promise<{
-        name: string;
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         status: import("@prisma/client").$Enums.ProductionStatus;
         deletedAt: Date | null;
         engineType: import("@prisma/client").$Enums.EngineType;
     }>;
     assignUser(productionId: string, dto: AssignUserDto): Promise<{
-        user: {
-            name: string | null;
-            id: string;
-            email: string;
-        };
         role: {
-            name: string;
-            description: string | null;
             id: string;
+            description: string | null;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
+        };
+        user: {
+            id: string;
+            name: string | null;
+            email: string;
         };
     } & {
-        productionId: string;
         createdAt: Date;
         updatedAt: Date;
         roleId: string;
+        productionId: string;
         userId: string;
     }>;
     removeUser(productionId: string, userIdToRemove: string): Promise<{
-        productionId: string;
         createdAt: Date;
         updatedAt: Date;
         roleId: string;
+        productionId: string;
         userId: string;
     }>;
     remove(productionId: string): Promise<{
-        name: string;
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         status: import("@prisma/client").$Enums.ProductionStatus;
         deletedAt: Date | null;
         engineType: import("@prisma/client").$Enums.EngineType;

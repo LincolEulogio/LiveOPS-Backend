@@ -32,7 +32,7 @@ let AutomationService = class AutomationService {
             include: {
                 triggers: true,
                 actions: { orderBy: { order: 'asc' } },
-                logs: { orderBy: { createdAt: 'desc' }, take: 20 },
+                executionLogs: { orderBy: { createdAt: 'desc' }, take: 20 },
             },
         });
         if (!rule)

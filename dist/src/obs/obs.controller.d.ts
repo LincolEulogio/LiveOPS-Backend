@@ -5,19 +5,19 @@ export declare class ObsController {
     constructor(obsService: ObsService);
     saveConnection(productionId: string, dto: SaveObsConnectionDto): Promise<{
         url: string;
-        productionId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
         password: string | null;
         isEnabled: boolean;
     }>;
     getConnection(productionId: string): Promise<{
         url: string;
-        productionId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
         password: string | null;
         isEnabled: boolean;
     }>;
