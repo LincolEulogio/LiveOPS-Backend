@@ -4,6 +4,7 @@ import { IntercomController } from './intercom.controller';
 
 @Module({
   providers: [IntercomService],
-  controllers: [IntercomController]
+  controllers: [IntercomController],
+  exports: [IntercomService]
 })
-export class IntercomModule {}
+export class IntercomModule { }

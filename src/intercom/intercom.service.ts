@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateCommandTemplateDto } from './dto/intercom.dto';
+import { CreateCommandTemplateDto, SendCommandDto } from './dto/intercom.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class IntercomService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private eventEmitter: EventEmitter2
+    ) { }
 
     async createTemplate(productionId: string, dto: CreateCommandTemplateDto) {
         return this.prisma.commandTemplate.create({
@@ -106,5 +110,31 @@ export class IntercomService {
             orderBy: { createdAt: 'desc' },
             take: limit,
         });
+    }
+
+    async sendCommand(dto: SendCommandDto) {
+        const command = await this.prisma.command.create({
+            data: {
+                productionId: dto.productionId,
+                senderId: dto.senderId,
+                targetRoleId: dto.targetRoleId,
+                templateId: dto.templateId,
+                message: dto.message,
+                requiresAck: dto.requiresAck ?? true,
+                status: 'SENT'
+            },
+            include: {
+                sender: { select: { id: true, name: true } },
+                targetRole: { select: { id: true, name: true } },
+                template: true
+            }
+        });
+
+        this.eventEmitter.emit('command.created', {
+            productionId: dto.productionId,
+            command
+        });
+
+        return command;
     }
 }

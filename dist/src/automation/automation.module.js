@@ -8,9 +8,11 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AutomationModule = void 0;
 const common_1 = require("@nestjs/common");
+const schedule_1 = require("@nestjs/schedule");
 const prisma_module_1 = require("../prisma/prisma.module");
 const obs_module_1 = require("../obs/obs.module");
 const vmix_module_1 = require("../vmix/vmix.module");
+const intercom_module_1 = require("../intercom/intercom.module");
 const automation_service_1 = require("./automation.service");
 const automation_controller_1 = require("./automation.controller");
 const automation_engine_service_1 = require("./automation-engine.service");
@@ -19,7 +21,13 @@ let AutomationModule = class AutomationModule {
 exports.AutomationModule = AutomationModule;
 exports.AutomationModule = AutomationModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule, obs_module_1.ObsModule, vmix_module_1.VmixModule],
+        imports: [
+            schedule_1.ScheduleModule.forRoot(),
+            prisma_module_1.PrismaModule,
+            obs_module_1.ObsModule,
+            vmix_module_1.VmixModule,
+            intercom_module_1.IntercomModule
+        ],
         providers: [automation_service_1.AutomationService, automation_engine_service_1.AutomationEngineService],
         controllers: [automation_controller_1.AutomationController],
         exports: [automation_service_1.AutomationService, automation_engine_service_1.AutomationEngineService]

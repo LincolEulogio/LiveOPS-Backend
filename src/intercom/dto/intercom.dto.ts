@@ -19,3 +19,28 @@ export class CreateCommandTemplateDto {
 }
 
 export class UpdateCommandTemplateDto extends CreateCommandTemplateDto { }
+
+export class SendCommandDto {
+    @IsString()
+    @IsNotEmpty()
+    productionId: string;
+
+    @IsString()
+    @IsNotEmpty()
+    senderId: string;
+
+    @IsString()
+    @IsOptional()
+    targetRoleId?: string;
+
+    @IsString()
+    @IsOptional()
+    templateId?: string;
+
+    @IsString()
+    @IsNotEmpty()
+    message: string;
+
+    @IsOptional()
+    requiresAck?: boolean;
+}

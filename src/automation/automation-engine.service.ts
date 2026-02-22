@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
+import { Interval } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { ObsService } from '../obs/obs.service';
 import { VmixService } from '../vmix/vmix.service';
-// Need IntercomService later if integrating Intercom actions
+import { IntercomService } from '../intercom/intercom.service';
 
 @Injectable()
 export class AutomationEngineService {
@@ -12,8 +13,75 @@ export class AutomationEngineService {
     constructor(
         private prisma: PrismaService,
         private obsService: ObsService,
-        private vmixService: VmixService
+        private vmixService: VmixService,
+        private intercomService: IntercomService
     ) { }
+
+    /**
+     * Ticker that runs every second to check for time-based triggers.
+     */
+    @Interval(1000)
+    async checkTimeTriggers() {
+        const now = new Date();
+
+        // Find active blocks with duration
+        const activeBlocks = await this.prisma.timelineBlock.findMany({
+            where: {
+                status: 'ACTIVE',
+                durationMs: { gt: 0 },
+                startTime: { not: null }
+            }
+        });
+
+        for (const block of activeBlocks) {
+            if (!block.startTime) continue;
+
+            const elapsedTime = now.getTime() - block.startTime.getTime();
+            const remainingTime = block.durationMs - elapsedTime;
+            const remainingSeconds = Math.floor(remainingTime / 1000);
+
+            // Fetch rules for this production that have 'timeline.before_end' triggers
+            const rules = await this.prisma.rule.findMany({
+                where: {
+                    productionId: block.productionId,
+                    isEnabled: true,
+                    triggers: {
+                        some: { eventType: 'timeline.before_end' }
+                    }
+                },
+                include: {
+                    triggers: true,
+                    actions: { orderBy: { order: 'asc' } }
+                }
+            });
+
+            for (const rule of rules) {
+                for (const trigger of rule.triggers) {
+                    if (trigger.eventType !== 'timeline.before_end') continue;
+
+                    const condition = trigger.condition as any;
+                    const triggerSeconds = condition?.secondsBefore || 0;
+
+                    // Trigger if we just hit the mark (with a 1s tolerance)
+                    if (remainingSeconds === triggerSeconds) {
+                        // Check if already executed for this block to avoid repeats
+                        const alreadyLogged = await this.prisma.ruleExecutionLog.findFirst({
+                            where: {
+                                ruleId: rule.id,
+                                details: { contains: `Block: ${block.id}` },
+                                createdAt: { gt: block.startTime }
+                            }
+                        });
+
+                        if (!alreadyLogged) {
+                            this.logger.log(`Time-trigger hit! Rule "${rule.name}" triggered ${triggerSeconds}s before block end.`);
+                            await this.executeActions(rule, { ...block, remainingSeconds });
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Listen to all events emitted on the internal EventBus.
@@ -73,9 +141,6 @@ export class AutomationEngineService {
         return false;
     }
 
-    /**
-     * Executes sequentially all actions defined in the rule.
-     */
     private async executeActions(rule: any, eventPayload: any) {
         try {
             for (const action of rule.actions) {
@@ -103,9 +168,25 @@ export class AutomationEngineService {
                         }
                         break;
 
-                    // case 'intercom.send':
-                    //   // Implement intercom send logic here
-                    //   break;
+                    case 'intercom.send':
+                        if (payload?.templateId || payload?.message) {
+                            // If templateId is provided and message is empty, fetch template name
+                            let message = payload.message;
+                            if (!message && payload.templateId) {
+                                const template = await this.prisma.commandTemplate.findUnique({ where: { id: payload.templateId } });
+                                message = template?.name || 'Automation Alert';
+                            }
+
+                            await this.intercomService.sendCommand({
+                                productionId: rule.productionId,
+                                senderId: '00000000-0000-0000-0000-000000000000', // SYSTEM ID
+                                targetRoleId: payload?.targetRoleId,
+                                templateId: payload?.templateId,
+                                message: message,
+                                requiresAck: payload?.requiresAck ?? true
+                            });
+                        }
+                        break;
 
                     case 'webhook.call':
                         // Implement webhook HTTP call logic here
@@ -117,11 +198,11 @@ export class AutomationEngineService {
                 }
             }
 
-            // Log Success
-            await this.logExecution(rule.id, rule.productionId, 'SUCCESS', 'All actions executed successfully.');
+            // Log Success with context
+            const context = eventPayload?.id ? `Block: ${eventPayload.id}` : 'Generic event';
+            await this.logExecution(rule.id, rule.productionId, 'SUCCESS', `Executed for ${context}`);
         } catch (error: any) {
             this.logger.error(`Rule execution failed for rule ${rule.id}: ${error.message}`);
-            // Log Failure
             await this.logExecution(rule.id, rule.productionId, 'ERROR', error.message);
         }
     }
@@ -132,7 +213,7 @@ export class AutomationEngineService {
                 ruleId,
                 productionId,
                 status,
-                details
+                details: details.length > 500 ? details.substring(0, 500) : details
             }
         });
     }

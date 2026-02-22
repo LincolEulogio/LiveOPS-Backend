@@ -12,6 +12,7 @@ import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
+import { IntercomService } from '../intercom/intercom.service';
 
 @WebSocketGateway({
     cors: {
@@ -27,7 +28,8 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
     constructor(
         private prisma: PrismaService,
-        private eventEmitter: EventEmitter2
+        private eventEmitter: EventEmitter2,
+        private intercomService: IntercomService
     ) { }
 
     afterInit(server: Server) {
@@ -111,30 +113,10 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         @MessageBody() data: { productionId: string; senderId: string; targetUserId?: string; targetRoleId?: string; templateId?: string; message: string; requiresAck?: boolean },
         @ConnectedSocket() client: Socket
     ) {
-        // Validate payload and save to DB
-        const command = await this.prisma.command.create({
-            data: {
-                productionId: data.productionId,
-                senderId: data.senderId,
-                targetRoleId: data.targetRoleId,
-                templateId: data.templateId,
-                message: data.message,
-                requiresAck: data.requiresAck ?? true,
-                status: 'SENT'
-            },
-            include: {
-                sender: { select: { id: true, name: true } },
-                targetRole: { select: { id: true, name: true } },
-                template: true
-            }
-        });
+        // Save to DB via service
+        const command = await this.intercomService.sendCommand(data);
 
-        // Add targetUserId to the object for real-time filtering
-        const commandWithTarget = { ...command, targetUserId: data.targetUserId };
-
-        // Broadcast to specific role or all
-        const room = `production_${data.productionId}`;
-        // Update status for relevant users
+        // Update presence status for relevant users
         for (const [sid, user] of this.activeUsers.entries()) {
             const isTargeted =
                 (data.targetUserId && user.userId === data.targetUserId) ||
@@ -145,8 +127,6 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             }
         }
         this.broadcastPresence(data.productionId);
-
-        this.server.to(room).emit('command.received', commandWithTarget);
 
         return { status: 'ok', commandId: command.id };
     }
@@ -245,5 +225,13 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         this.server
             .to(`production_${payload.productionId}`)
             .emit('timeline.updated', payload);
+    }
+
+    @OnEvent('command.created')
+    handleCommandCreated(payload: { productionId: string; command: any }) {
+        this.logger.log(`Broadcasting new command for production ${payload.productionId}`);
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('command.received', payload.command);
     }
 }
