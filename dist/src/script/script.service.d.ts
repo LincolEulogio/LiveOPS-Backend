@@ -4,14 +4,14 @@ export declare class ScriptService {
     constructor(prisma: PrismaService);
     getScriptState(productionId: string): Promise<{
         id: string;
-        updatedAt: Date;
         productionId: string;
         content: import("@prisma/client/runtime/client").Bytes;
+        updatedAt: Date;
     } | null>;
-    updateScriptState(productionId: string, content: Buffer): Promise<{
+    updateScriptState(productionId: string, update: Buffer): Promise<{
         id: string;
-        updatedAt: Date;
         productionId: string;
         content: import("@prisma/client/runtime/client").Bytes;
+        updatedAt: Date;
     }>;
 }
