@@ -13,6 +13,7 @@ import { Logger } from '@nestjs/common';
 import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { IntercomService } from '../intercom/intercom.service';
+import { ChatService } from '../chat/chat.service';
 
 @WebSocketGateway({
     cors: {
@@ -29,11 +30,27 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     constructor(
         private prisma: PrismaService,
         private eventEmitter: EventEmitter2,
-        private intercomService: IntercomService
+        private intercomService: IntercomService,
+        private chatService: ChatService
     ) { }
 
     afterInit(server: Server) {
         this.logger.log('WebSocket Gateway initialized');
+    }
+
+    @SubscribeMessage('chat.send')
+    async handleChatSend(
+        @MessageBody() data: { productionId: string; userId: string; message: string },
+        @ConnectedSocket() client: Socket
+    ) {
+        const message = await this.chatService.saveMessage(data.productionId, data.userId, data.message);
+
+        // Broadcast to the production room
+        this.server
+            .to(`production_${data.productionId}`)
+            .emit('chat.received', message);
+
+        return { status: 'ok', messageId: message.id };
     }
 
     async handleConnection(client: Socket, ...args: any[]) {

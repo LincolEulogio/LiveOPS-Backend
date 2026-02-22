@@ -23,6 +23,7 @@ model User {
   operatorActivities OperatorActivity[]
   auditLogs          AuditLog[]
   deviceSessions     DeviceSession[]
+  chatMessages       ChatMessage[]
 
   // Performance Indexes
   @@index([email])
@@ -236,6 +237,7 @@ model Production {
   timelineBlocks   TimelineBlock[]
   rules            Rule[]
   logs             ProductionLog[]
+  chatMessages     ChatMessage[]
 
   @@index([status])
   @@index([deletedAt])
@@ -363,6 +365,21 @@ model CommandResponse {
 
   @@index([commandId])
   @@index([responderId])
+}
+
+model ChatMessage {
+  id           String   @id @default(uuid()) @db.Uuid
+  productionId String   @db.Uuid
+  userId       String   @db.Uuid
+  message      String
+  createdAt    DateTime @default(now())
+
+  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([productionId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model ObsConnection {
