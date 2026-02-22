@@ -9,7 +9,8 @@ export class AppService implements OnModuleInit {
   constructor(private prisma: PrismaService) { }
 
   async onModuleInit() {
-    await this.seedRbac();
+    // RBAC Seeding is now handled by UsersService to avoid redundancy and conflicts
+    // await this.seedRbac();
   }
 
   getHello(): string {

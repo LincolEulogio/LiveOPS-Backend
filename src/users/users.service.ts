@@ -219,6 +219,10 @@ export class UsersService implements OnModuleInit {
   }
 
   async deleteRole(id: string) {
+    const role = await this.prisma.role.findUnique({ where: { id } });
+    if (role?.name === 'SUPERADMIN') {
+      throw new ConflictException('The SUPERADMIN role is protected and cannot be deleted.');
+    }
     return this.prisma.role.delete({ where: { id } });
   }
 

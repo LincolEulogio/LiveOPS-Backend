@@ -229,6 +229,10 @@ let UsersService = UsersService_1 = class UsersService {
         });
     }
     async deleteRole(id) {
+        const role = await this.prisma.role.findUnique({ where: { id } });
+        if (role?.name === 'SUPERADMIN') {
+            throw new common_1.ConflictException('The SUPERADMIN role is protected and cannot be deleted.');
+        }
         return this.prisma.role.delete({ where: { id } });
     }
     async findAllPermissions() {

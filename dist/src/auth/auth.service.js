@@ -212,6 +212,10 @@ let AuthService = class AuthService {
         });
         return { success: true };
     }
+    async checkSetup() {
+        const userCount = await this.prisma.user.count();
+        return { setupRequired: userCount === 0 };
+    }
     async generateTokens(userId) {
         const payload = { sub: userId };
         const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });

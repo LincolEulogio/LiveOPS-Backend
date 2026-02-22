@@ -201,6 +201,11 @@ export class AuthService {
     return { success: true };
   }
 
+  async checkSetup() {
+    const userCount = await this.prisma.user.count();
+    return { setupRequired: userCount === 0 };
+  }
+
   private async generateTokens(userId: string) {
     const payload = { sub: userId };
     const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });

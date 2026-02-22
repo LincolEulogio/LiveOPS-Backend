@@ -21,7 +21,6 @@ let AppService = AppService_1 = class AppService {
         this.prisma = prisma;
     }
     async onModuleInit() {
-        await this.seedRbac();
     }
     getHello() {
         return 'Hello World!';
