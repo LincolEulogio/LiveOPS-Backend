@@ -26,6 +26,11 @@ let ProductionsService = class ProductionsService {
             where: { name: 'ADMIN' },
         });
         if (!adminRole) {
+            adminRole = await this.prisma.role.findUnique({
+                where: { name: 'SUPERADMIN' },
+            });
+        }
+        if (!adminRole) {
             adminRole = await this.prisma.role.create({
                 data: { name: 'ADMIN', description: 'Production Administrator' },
             });

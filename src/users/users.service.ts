@@ -18,7 +18,7 @@ import * as bcrypt from 'bcrypt';
 export class UsersService implements OnModuleInit {
   private readonly logger = new Logger(UsersService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async onModuleInit() {
     await this.seedDefaultRoles();
@@ -65,6 +65,7 @@ export class UsersService implements OnModuleInit {
     }
 
     const defaultRoles = [
+      { name: 'SUPERADMIN', description: 'Global System Administrator' },
       { name: 'ADMIN', description: 'Full access to production' },
       {
         name: 'OPERATOR',
@@ -91,7 +92,7 @@ export class UsersService implements OnModuleInit {
       // Sync permissions for default roles
       const allPerms = await this.prisma.permission.findMany();
 
-      if (role.name === 'ADMIN') {
+      if (role.name === 'SUPERADMIN' || role.name === 'ADMIN') {
         for (const p of allPerms) {
           await this.prisma.rolePermission.upsert({
             where: {

@@ -19,7 +19,7 @@ export class ProductionsService {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
-  ) {}
+  ) { }
 
   async create(userId: string, dto: CreateProductionDto) {
     // We assume the creator gets an 'ADMIN' role in this production
@@ -27,6 +27,14 @@ export class ProductionsService {
     let adminRole = await this.prisma.role.findUnique({
       where: { name: 'ADMIN' },
     });
+
+    if (!adminRole) {
+      // Fallback to SUPERADMIN if ADMIN is not found for some reason
+      adminRole = await this.prisma.role.findUnique({
+        where: { name: 'SUPERADMIN' },
+      });
+    }
+
     if (!adminRole) {
       adminRole = await this.prisma.role.create({
         data: { name: 'ADMIN', description: 'Production Administrator' },

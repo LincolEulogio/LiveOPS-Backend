@@ -14,7 +14,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async getProfile(userId: string) {
     return this.prisma.user.findUnique({
@@ -82,12 +82,17 @@ export class AuthService {
     let globalRoleId: string | undefined;
 
     if (userCount === 0) {
-      const adminRole = await this.prisma.role.findUnique({
-        where: { name: 'ADMIN' },
+      let superAdminRole = await this.prisma.role.findUnique({
+        where: { name: 'SUPERADMIN' },
       });
-      if (adminRole) {
-        globalRoleId = adminRole.id;
+
+      if (!superAdminRole) {
+        superAdminRole = await this.prisma.role.create({
+          data: { name: 'SUPERADMIN', description: 'Global System Administrator' }
+        });
       }
+
+      globalRoleId = superAdminRole.id;
     }
 
     const user = await this.prisma.user.create({

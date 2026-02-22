@@ -92,6 +92,7 @@ let UsersService = UsersService_1 = class UsersService {
             });
         }
         const defaultRoles = [
+            { name: 'SUPERADMIN', description: 'Global System Administrator' },
             { name: 'ADMIN', description: 'Full access to production' },
             {
                 name: 'OPERATOR',
@@ -114,7 +115,7 @@ let UsersService = UsersService_1 = class UsersService {
                 this.logger.log(`Created default role: ${roleData.name}`);
             }
             const allPerms = await this.prisma.permission.findMany();
-            if (role.name === 'ADMIN') {
+            if (role.name === 'SUPERADMIN' || role.name === 'ADMIN') {
                 for (const p of allPerms) {
                     await this.prisma.rolePermission.upsert({
                         where: {
