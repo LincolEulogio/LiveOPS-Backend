@@ -4,102 +4,102 @@ export declare class AutomationController {
     private readonly automationService;
     constructor(automationService: AutomationService);
     getRules(productionId: string): Promise<({
+        triggers: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            eventType: string;
+            condition: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
+        }[];
         actions: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
             order: number;
-            ruleId: string;
             actionType: string;
             payload: import("@prisma/client/runtime/client").JsonValue | null;
-        }[];
-        triggers: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
             ruleId: string;
-            eventType: string;
-            condition: import("@prisma/client/runtime/client").JsonValue | null;
         }[];
     } & {
         id: string;
-        productionId: string;
-        name: string;
         description: string | null;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        productionId: string;
+        isEnabled: boolean;
     })[]>;
     createRule(productionId: string, dto: CreateRuleDto): Promise<{
-        actions: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            order: number;
-            ruleId: string;
-            actionType: string;
-            payload: import("@prisma/client/runtime/client").JsonValue | null;
-        }[];
         triggers: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            ruleId: string;
             eventType: string;
             condition: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
         }[];
-    } & {
-        id: string;
-        productionId: string;
-        name: string;
-        description: string | null;
-        isEnabled: boolean;
-        createdAt: Date;
-        updatedAt: Date;
-    }>;
-    getRule(productionId: string, id: string): Promise<{
         actions: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
             order: number;
-            ruleId: string;
             actionType: string;
             payload: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
+        }[];
+    } & {
+        id: string;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        productionId: string;
+        isEnabled: boolean;
+    }>;
+    getRule(productionId: string, id: string): Promise<{
+        triggers: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            eventType: string;
+            condition: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
+        }[];
+        actions: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            order: number;
+            actionType: string;
+            payload: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
         }[];
         executionLogs: {
             id: string;
-            productionId: string;
             createdAt: Date;
-            ruleId: string;
+            productionId: string;
             status: string;
             details: string | null;
-        }[];
-        triggers: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
             ruleId: string;
-            eventType: string;
-            condition: import("@prisma/client/runtime/client").JsonValue | null;
         }[];
     } & {
         id: string;
-        productionId: string;
-        name: string;
         description: string | null;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        productionId: string;
+        isEnabled: boolean;
     }>;
     updateRule(productionId: string, id: string, dto: UpdateRuleDto): Promise<{
         id: string;
-        productionId: string;
-        name: string;
         description: string | null;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        productionId: string;
+        isEnabled: boolean;
     }>;
     deleteRule(productionId: string, id: string): Promise<{
         success: boolean;
@@ -110,10 +110,10 @@ export declare class AutomationController {
         };
     } & {
         id: string;
-        productionId: string;
         createdAt: Date;
-        ruleId: string;
+        productionId: string;
         status: string;
         details: string | null;
+        ruleId: string;
     })[]>;
 }
