@@ -10,6 +10,7 @@ export declare class SendCommandDto {
     productionId: string;
     senderId: string;
     targetRoleId?: string;
+    targetUserId?: string;
     templateId?: string;
     message: string;
     requiresAck?: boolean;

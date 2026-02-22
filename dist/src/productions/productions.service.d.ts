@@ -64,20 +64,20 @@ export declare class ProductionsService {
     }>;
     findOne(productionId: string, userId: string): Promise<{
         obsConnection: {
-            url: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
             productionId: string;
             password: string | null;
+            url: string;
             isEnabled: boolean;
         } | null;
         vmixConnection: {
-            url: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
             productionId: string;
+            url: string;
             isEnabled: boolean;
             pollingInterval: number;
         } | null;

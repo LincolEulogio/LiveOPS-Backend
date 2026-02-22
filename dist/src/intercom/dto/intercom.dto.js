@@ -45,6 +45,7 @@ class SendCommandDto {
     productionId;
     senderId;
     targetRoleId;
+    targetUserId;
     templateId;
     message;
     requiresAck;
@@ -65,6 +66,11 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], SendCommandDto.prototype, "targetRoleId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], SendCommandDto.prototype, "targetUserId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),

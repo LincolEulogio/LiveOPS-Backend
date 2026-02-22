@@ -51,6 +51,7 @@ model Command {
   productionId String            @db.Uuid
   senderId     String            @db.Uuid
   targetRoleId String?           @db.Uuid
+  targetUserId String?           @db.Uuid
   templateId   String?           @db.Uuid
   message      String
   requiresAck  Boolean           @default(true)
@@ -59,12 +60,14 @@ model Command {
   production   Production        @relation(fields: [productionId], references: [id], onDelete: Cascade)
   sender       User              @relation(fields: [senderId], references: [id], onDelete: Cascade)
   targetRole   Role?             @relation(fields: [targetRoleId], references: [id])
+  targetUser   User?             @relation("CommandTarget", fields: [targetUserId], references: [id])
   template     CommandTemplate?  @relation(fields: [templateId], references: [id])
   responses    CommandResponse[]
 
   @@index([productionId])
   @@index([senderId])
   @@index([targetRoleId])
+  @@index([targetUserId])
 }
 
 model CommandResponse {
@@ -328,6 +331,8 @@ model User {
   productions        ProductionUser[]
   sessions           Session[]
   globalRole         Role?              @relation(fields: [globalRoleId], references: [id])
+
+  receivedCommands Command[] @relation("CommandTarget")
 
   @@index([deletedAt])
   @@index([email])

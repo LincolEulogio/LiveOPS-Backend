@@ -7,43 +7,43 @@ export declare class IntercomService {
     constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
     createTemplate(productionId: string, dto: CreateCommandTemplateDto): Promise<{
         id: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
+        description: string | null;
         icon: string | null;
         color: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         productionId: string;
     }>;
     getTemplates(productionId: string): Promise<{
         id: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
+        description: string | null;
         icon: string | null;
         color: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         productionId: string;
     }[]>;
     private seedDefaultTemplates;
     updateTemplate(id: string, productionId: string, dto: CreateCommandTemplateDto): Promise<{
         id: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
+        description: string | null;
         icon: string | null;
         color: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         productionId: string;
     }>;
     deleteTemplate(id: string, productionId: string): Promise<{
         id: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
+        description: string | null;
         icon: string | null;
         color: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         productionId: string;
     }>;
     getCommandHistory(productionId: string, limit?: number): Promise<({
@@ -57,12 +57,12 @@ export declare class IntercomService {
         } | null;
         template: {
             id: string;
-            description: string | null;
-            createdAt: Date;
-            updatedAt: Date;
             name: string;
+            description: string | null;
             icon: string | null;
             color: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             productionId: string;
         } | null;
         responses: ({
@@ -73,10 +73,10 @@ export declare class IntercomService {
         } & {
             id: string;
             createdAt: Date;
-            response: string;
-            note: string | null;
             commandId: string;
             responderId: string;
+            response: string;
+            note: string | null;
         })[];
     } & {
         id: string;
@@ -84,6 +84,7 @@ export declare class IntercomService {
         productionId: string;
         senderId: string;
         targetRoleId: string | null;
+        targetUserId: string | null;
         templateId: string | null;
         message: string;
         requiresAck: boolean;
@@ -100,12 +101,12 @@ export declare class IntercomService {
         } | null;
         template: {
             id: string;
-            description: string | null;
-            createdAt: Date;
-            updatedAt: Date;
             name: string;
+            description: string | null;
             icon: string | null;
             color: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             productionId: string;
         } | null;
     } & {
@@ -114,6 +115,7 @@ export declare class IntercomService {
         productionId: string;
         senderId: string;
         targetRoleId: string | null;
+        targetUserId: string | null;
         templateId: string | null;
         message: string;
         requiresAck: boolean;

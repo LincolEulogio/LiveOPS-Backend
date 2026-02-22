@@ -18,7 +18,7 @@ export class CreateCommandTemplateDto {
   color?: string;
 }
 
-export class UpdateCommandTemplateDto extends CreateCommandTemplateDto {}
+export class UpdateCommandTemplateDto extends CreateCommandTemplateDto { }
 
 export class SendCommandDto {
   @IsString()
@@ -32,6 +32,10 @@ export class SendCommandDto {
   @IsString()
   @IsOptional()
   targetRoleId?: string;
+
+  @IsString()
+  @IsOptional()
+  targetUserId?: string;
 
   @IsString()
   @IsOptional()

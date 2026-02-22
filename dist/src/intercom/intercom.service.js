@@ -121,6 +121,7 @@ let IntercomService = class IntercomService {
                 productionId: dto.productionId,
                 senderId: dto.senderId,
                 targetRoleId: dto.targetRoleId,
+                targetUserId: dto.targetUserId,
                 templateId: dto.templateId,
                 message: dto.message,
                 requiresAck: dto.requiresAck ?? true,
