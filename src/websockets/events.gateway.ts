@@ -99,6 +99,17 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         });
     }
 
+    @SubscribeMessage('script.scroll_sync')
+    handleScriptScrollSync(
+        @MessageBody() data: { productionId: string; scrollPercentage: number },
+        @ConnectedSocket() client: Socket
+    ) {
+        // Broadcast scroll position to others (talent/prompter)
+        client.to(`production_${data.productionId}`).emit('script.scroll_received', {
+            scrollPercentage: data.scrollPercentage
+        });
+    }
+
     async handleConnection(client: Socket, ...args: any[]) {
         const productionId = client.handshake.query.productionId as string;
         const userId = client.handshake.query.userId as string;

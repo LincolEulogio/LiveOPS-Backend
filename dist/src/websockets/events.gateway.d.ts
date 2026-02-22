@@ -41,6 +41,10 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         productionId: string;
         update: number[];
     }, client: Socket): void;
+    handleScriptScrollSync(data: {
+        productionId: string;
+        scrollPercentage: number;
+    }, client: Socket): void;
     handleConnection(client: Socket, ...args: any[]): Promise<void>;
     private broadcastPresence;
     handleDisconnect(client: Socket): void;

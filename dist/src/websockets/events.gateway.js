@@ -64,6 +64,11 @@ let EventsGateway = class EventsGateway {
             update: data.update
         });
     }
+    handleScriptScrollSync(data, client) {
+        client.to(`production_${data.productionId}`).emit('script.scroll_received', {
+            scrollPercentage: data.scrollPercentage
+        });
+    }
     async handleConnection(client, ...args) {
         const productionId = client.handshake.query.productionId;
         const userId = client.handshake.query.userId;
@@ -260,6 +265,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
     __metadata("design:returntype", void 0)
 ], EventsGateway.prototype, "handleAwarenessUpdate", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('script.scroll_sync'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleScriptScrollSync", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('role.identify'),
     __param(0, (0, websockets_1.MessageBody)()),
