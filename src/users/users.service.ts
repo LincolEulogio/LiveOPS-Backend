@@ -44,7 +44,7 @@ export class UsersService implements OnModuleInit {
     }
   }
 
-  private async seedDefaultRoles() {
+  public async seedDefaultRoles() {
     // Seed Permissions first
     const permissions = [
       { action: 'production:create', description: 'Create new productions' },

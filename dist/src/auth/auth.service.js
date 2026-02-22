@@ -47,12 +47,15 @@ const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const prisma_service_1 = require("../prisma/prisma.service");
 const bcrypt = __importStar(require("bcrypt"));
+const users_service_1 = require("../users/users.service");
 let AuthService = class AuthService {
     prisma;
     jwtService;
-    constructor(prisma, jwtService) {
+    usersService;
+    constructor(prisma, jwtService, usersService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
+        this.usersService = usersService;
     }
     async getProfile(userId) {
         return this.prisma.user.findUnique({
@@ -120,6 +123,7 @@ let AuthService = class AuthService {
                 });
             }
             globalRoleId = superAdminRole.id;
+            await this.usersService.seedDefaultRoles();
         }
         const user = await this.prisma.user.create({
             data: {
@@ -239,6 +243,7 @@ exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        jwt_1.JwtService])
+        jwt_1.JwtService,
+        users_service_1.UsersService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

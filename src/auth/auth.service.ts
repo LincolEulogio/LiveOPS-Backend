@@ -9,11 +9,14 @@ import * as bcrypt from 'bcrypt';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 
+import { UsersService } from '../users/users.service';
+
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private usersService: UsersService,
   ) { }
 
   async getProfile(userId: string) {
@@ -93,6 +96,8 @@ export class AuthService {
       }
 
       globalRoleId = superAdminRole.id;
+      // Trigger full seeding to ensure permissions are attached
+      await this.usersService.seedDefaultRoles();
     }
 
     const user = await this.prisma.user.create({

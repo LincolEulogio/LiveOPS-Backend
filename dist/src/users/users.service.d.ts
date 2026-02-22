@@ -7,7 +7,7 @@ export declare class UsersService implements OnModuleInit {
     constructor(prisma: PrismaService);
     onModuleInit(): Promise<void>;
     private bootstrapAdmin;
-    private seedDefaultRoles;
+    seedDefaultRoles(): Promise<void>;
     updateRolePermissions(roleId: string, permissionIds: string[]): Promise<({
         permissions: ({
             permission: {

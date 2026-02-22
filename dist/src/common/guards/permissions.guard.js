@@ -44,6 +44,10 @@ let PermissionsGuard = class PermissionsGuard {
         if (!dbUser) {
             throw new common_1.ForbiddenException('User record not found');
         }
+        const globalRoleName = dbUser.globalRole?.name?.toUpperCase();
+        if (globalRoleName === 'SUPERADMIN') {
+            return true;
+        }
         const globalPermissions = dbUser.globalRole?.permissions.map((rp) => rp.permission.action) || [];
         const hasGlobalPermission = requiredPermissions.every((perm) => globalPermissions.includes(perm));
         if (hasGlobalPermission) {

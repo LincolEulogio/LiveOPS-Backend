@@ -13,7 +13,7 @@ export class PermissionsGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private prisma: PrismaService,
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
@@ -46,6 +46,11 @@ export class PermissionsGuard implements CanActivate {
 
     if (!dbUser) {
       throw new ForbiddenException('User record not found');
+    }
+
+    const globalRoleName = dbUser.globalRole?.name?.toUpperCase();
+    if (globalRoleName === 'SUPERADMIN') {
+      return true;
     }
 
     const globalPermissions =
