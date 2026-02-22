@@ -47,6 +47,19 @@ let EventsGateway = class EventsGateway {
             .emit('chat.received', message);
         return { status: 'ok', messageId: message.id };
     }
+    async handleProductionJoin(data, client) {
+        this.logger.log(`Client ${client.id} joining room production_${data.productionId}`);
+        client.join(`production_${data.productionId}`);
+        client.data.productionId = data.productionId;
+        this.broadcastPresence(data.productionId);
+        return { status: 'joined', room: `production_${data.productionId}` };
+    }
+    async handleProductionLeave(data, client) {
+        this.logger.log(`Client ${client.id} leaving room production_${data.productionId}`);
+        client.leave(`production_${data.productionId}`);
+        this.broadcastPresence(data.productionId);
+        return { status: 'left', room: `production_${data.productionId}` };
+    }
     handleChatTyping(data, client) {
         client.to(`production_${data.productionId}`).emit('chat.typing', data);
     }
@@ -303,6 +316,22 @@ __decorate([
     __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
     __metadata("design:returntype", Promise)
 ], EventsGateway.prototype, "handleChatSend", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('production.join'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", Promise)
+], EventsGateway.prototype, "handleProductionJoin", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('production.leave'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", Promise)
+], EventsGateway.prototype, "handleProductionLeave", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('script.typing'),
     __param(0, (0, websockets_1.MessageBody)()),

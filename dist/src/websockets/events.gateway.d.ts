@@ -24,6 +24,18 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         status: string;
         messageId: string;
     }>;
+    handleProductionJoin(data: {
+        productionId: string;
+    }, client: Socket): Promise<{
+        status: string;
+        room: string;
+    }>;
+    handleProductionLeave(data: {
+        productionId: string;
+    }, client: Socket): Promise<{
+        status: string;
+        room: string;
+    }>;
     handleChatTyping(data: {
         productionId: string;
         userId: string;

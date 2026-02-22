@@ -27,7 +27,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     this.logger.log('Initializing vMix Connection Manager...');
@@ -133,10 +133,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
       this.eventEmitter.emit('production.health.stats', {
         productionId,
         engineType: EngineType.VMIX,
-        cpuUsage: 0, // vMix API doesn't expose CPU directly in simple /api
-        fps: 0,
-        bitrate: 0,
-        skippedFrames: 0,
+        // cpuUsage and fps are omitted as vMix XML API doesn't provide them easily
         isStreaming,
         isRecording,
         timestamp: new Date().toISOString(),

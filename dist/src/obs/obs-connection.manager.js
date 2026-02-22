@@ -80,12 +80,6 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
             if (instance.lastState) {
                 instance.lastState.isStreaming = data.outputActive;
             }
-            if (data.outputActive) {
-                this.startStatsPolling(productionId, instance);
-            }
-            else {
-                this.stopStatsPolling(instance);
-            }
             this.eventEmitter.emit('obs.stream.state', {
                 productionId,
                 active: data.outputActive,
@@ -147,9 +141,7 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
                 fps: fps,
                 bitrate: streamStatus.outputSkippedFrames !== undefined ? 0 : undefined,
             };
-            if (streamStatus.outputActive) {
-                this.startStatsPolling(productionId, instance);
-            }
+            this.startStatsPolling(productionId, instance);
             this.eventEmitter.emit('obs.scene.changed', {
                 productionId,
                 sceneName: sceneList.currentProgramSceneName,

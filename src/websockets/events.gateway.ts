@@ -71,6 +71,35 @@ export class EventsGateway
     return { status: 'ok', messageId: message.id };
   }
 
+  @SubscribeMessage('production.join')
+  async handleProductionJoin(
+    @MessageBody() data: { productionId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    this.logger.log(`Client ${client.id} joining room production_${data.productionId}`);
+    client.join(`production_${data.productionId}`);
+    client.data.productionId = data.productionId;
+
+    // Broadcast presence immediately to everyone in the room
+    this.broadcastPresence(data.productionId);
+
+    return { status: 'joined', room: `production_${data.productionId}` };
+  }
+
+  @SubscribeMessage('production.leave')
+  async handleProductionLeave(
+    @MessageBody() data: { productionId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    this.logger.log(`Client ${client.id} leaving room production_${data.productionId}`);
+    client.leave(`production_${data.productionId}`);
+
+    // Broadcast updated presence to the room they left
+    this.broadcastPresence(data.productionId);
+
+    return { status: 'left', room: `production_${data.productionId}` };
+  }
+
   @SubscribeMessage('script.typing')
   handleChatTyping(
     @MessageBody()

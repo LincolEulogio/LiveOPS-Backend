@@ -37,7 +37,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     this.logger.log('Initializing OBS Connection Manager...');
@@ -117,11 +117,6 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     obs.on('StreamStateChanged', (data) => {
       if (instance.lastState) {
         instance.lastState.isStreaming = data.outputActive;
-      }
-      if (data.outputActive) {
-        this.startStatsPolling(productionId, instance);
-      } else {
-        this.stopStatsPolling(instance);
       }
       this.eventEmitter.emit('obs.stream.state', {
         productionId,
@@ -205,9 +200,8 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
         bitrate: streamStatus.outputSkippedFrames !== undefined ? 0 : undefined, // streamStatus might not have bitrate initially
       };
 
-      if (streamStatus.outputActive) {
-        this.startStatsPolling(productionId, instance);
-      }
+      // Start polling immediately after connection, even if not streaming
+      this.startStatsPolling(productionId, instance);
 
       // Re-emit scene change if we have one to populate frontend
       this.eventEmitter.emit('obs.scene.changed', {
@@ -234,7 +228,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     this.stopStatsPolling(instance);
     // Remove listeners to prevent memory leaks or unwanted reconnects during manual disconnect
     instance.obs.removeAllListeners();
-    instance.obs.disconnect().catch(() => {});
+    instance.obs.disconnect().catch(() => { });
     this.connections.delete(productionId);
     this.eventEmitter.emit('obs.connection.state', {
       productionId,
