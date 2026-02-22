@@ -57,6 +57,15 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
     handleConnection(client: Socket, ...args: any[]): Promise<void>;
     private broadcastPresence;
     handleDisconnect(client: Socket): void;
+    handleUserIdentify(data: {
+        userId: string;
+        userName: string;
+        roleId: string;
+        roleName: string;
+        productionId: string;
+    }, client: Socket): {
+        status: string;
+    };
     handleRoleIdentify(data: {
         roleId: string;
         roleName: string;

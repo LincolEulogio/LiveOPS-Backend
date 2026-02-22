@@ -219,15 +219,19 @@ export class EventsGateway
   private broadcastPresence(productionId: string) {
     const room = `production_${productionId}`;
     const socketIds = this.server.sockets.adapter.rooms.get(room);
-    const members = [];
+    const uniqueMembers = new Map<string, any>();
 
     if (socketIds) {
       for (const socketId of socketIds) {
         const data = this.activeUsers.get(socketId);
-        if (data) members.push(data);
+        if (data && data.userId) {
+          // Use userId as key to ensure uniqueness
+          uniqueMembers.set(data.userId, data);
+        }
       }
     }
 
+    const members = Array.from(uniqueMembers.values());
     this.server.to(room).emit('presence.update', { members });
   }
 
@@ -240,6 +244,29 @@ export class EventsGateway
     if (productionId) {
       this.broadcastPresence(productionId);
     }
+  }
+
+  @SubscribeMessage('user.identify')
+  handleUserIdentify(
+    @MessageBody() data: { userId: string; userName: string; roleId: string; roleName: string; productionId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    this.activeUsers.set(client.id, {
+      userId: data.userId,
+      userName: data.userName || 'User',
+      roleId: data.roleId || '',
+      roleName: data.roleName || 'Viewer',
+      lastSeen: new Date().toISOString(),
+      status: 'IDLE',
+    });
+
+    if (data.productionId) {
+      client.join(`production_${data.productionId}`);
+      client.data.productionId = data.productionId;
+      this.broadcastPresence(data.productionId);
+    }
+
+    return { status: 'ok' };
   }
 
   @SubscribeMessage('role.identify')
@@ -276,6 +303,7 @@ export class EventsGateway
     },
     @ConnectedSocket() client: Socket,
   ) {
+    console.log(`[Intercom] Sending command from ${data.senderId} to production ${data.productionId}`, data);
     // Save to DB via service
     const command = await this.intercomService.sendCommand(data);
 
@@ -308,6 +336,7 @@ export class EventsGateway
     },
     @ConnectedSocket() client: Socket,
   ) {
+    console.log(`[Intercom] Received Ack from ${data.responderId} for command ${data.commandId}`);
     // Save response to DB
     const response = await this.prisma.commandResponse.create({
       data: {

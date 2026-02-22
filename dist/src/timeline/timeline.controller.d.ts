@@ -26,7 +26,6 @@ export declare class TimelineController {
         order: number;
         linkedScene: string | null;
         source: string | null;
-        notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
         endTime: Date | null;
@@ -43,7 +42,6 @@ export declare class TimelineController {
         order: number;
         linkedScene: string | null;
         source: string | null;
-        notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
         endTime: Date | null;
@@ -63,7 +61,6 @@ export declare class TimelineController {
         order: number;
         linkedScene: string | null;
         source: string | null;
-        notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
         endTime: Date | null;
@@ -83,7 +80,6 @@ export declare class TimelineController {
         order: number;
         linkedScene: string | null;
         source: string | null;
-        notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
         endTime: Date | null;
@@ -100,7 +96,6 @@ export declare class TimelineController {
         order: number;
         linkedScene: string | null;
         source: string | null;
-        notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
         endTime: Date | null;
@@ -117,7 +112,6 @@ export declare class TimelineController {
         order: number;
         linkedScene: string | null;
         source: string | null;
-        notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
         endTime: Date | null;

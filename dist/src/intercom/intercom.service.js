@@ -37,12 +37,14 @@ let IntercomService = class IntercomService {
             orderBy: { createdAt: 'asc' },
         });
         if (templates.length === 0) {
+            console.log(`[Intercom] No templates found for production ${productionId}. Seeding defaults...`);
             await this.seedDefaultTemplates(productionId);
             return this.prisma.commandTemplate.findMany({
                 where: { productionId },
                 orderBy: { createdAt: 'asc' },
             });
         }
+        console.log(`[Intercom] Found ${templates.length} templates for production ${productionId}`);
         return templates;
     }
     async seedDefaultTemplates(productionId) {

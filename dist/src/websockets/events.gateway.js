@@ -122,14 +122,16 @@ let EventsGateway = class EventsGateway {
     broadcastPresence(productionId) {
         const room = `production_${productionId}`;
         const socketIds = this.server.sockets.adapter.rooms.get(room);
-        const members = [];
+        const uniqueMembers = new Map();
         if (socketIds) {
             for (const socketId of socketIds) {
                 const data = this.activeUsers.get(socketId);
-                if (data)
-                    members.push(data);
+                if (data && data.userId) {
+                    uniqueMembers.set(data.userId, data);
+                }
             }
         }
+        const members = Array.from(uniqueMembers.values());
         this.server.to(room).emit('presence.update', { members });
     }
     handleDisconnect(client) {
@@ -139,6 +141,22 @@ let EventsGateway = class EventsGateway {
         if (productionId) {
             this.broadcastPresence(productionId);
         }
+    }
+    handleUserIdentify(data, client) {
+        this.activeUsers.set(client.id, {
+            userId: data.userId,
+            userName: data.userName || 'User',
+            roleId: data.roleId || '',
+            roleName: data.roleName || 'Viewer',
+            lastSeen: new Date().toISOString(),
+            status: 'IDLE',
+        });
+        if (data.productionId) {
+            client.join(`production_${data.productionId}`);
+            client.data.productionId = data.productionId;
+            this.broadcastPresence(data.productionId);
+        }
+        return { status: 'ok' };
     }
     handleRoleIdentify(data, client) {
         const currentUser = this.activeUsers.get(client.id);
@@ -156,6 +174,7 @@ let EventsGateway = class EventsGateway {
         return { status: 'ok', role: data.roleName };
     }
     async handleCommandSend(data, client) {
+        console.log(`[Intercom] Sending command from ${data.senderId} to production ${data.productionId}`, data);
         const command = await this.intercomService.sendCommand(data);
         for (const [sid, user] of this.activeUsers.entries()) {
             const isTargeted = (data.targetUserId && user.userId === data.targetUserId) ||
@@ -169,6 +188,7 @@ let EventsGateway = class EventsGateway {
         return { status: 'ok', commandId: command.id };
     }
     async handleCommandAck(data, client) {
+        console.log(`[Intercom] Received Ack from ${data.responderId} for command ${data.commandId}`);
         const response = await this.prisma.commandResponse.create({
             data: {
                 commandId: data.commandId,
@@ -339,6 +359,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
     __metadata("design:returntype", void 0)
 ], EventsGateway.prototype, "handleScriptScrollSync", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('user.identify'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleUserIdentify", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('role.identify'),
     __param(0, (0, websockets_1.MessageBody)()),

@@ -15,47 +15,333 @@ model User {
   updatedAt          DateTime           @updatedAt
   deletedAt          DateTime?
   globalRoleId       String?            @db.Uuid
-  globalRole         Role?              @relation("GlobalUserRole", fields: [globalRoleId], references: [id])
-  sessions           Session[]
-  productions        ProductionUser[]
+  auditLogs          AuditLog[]
+  chatMessages       ChatMessage[]
   sentCommands       Command[]          @relation("CommandSender")
   commandResponses   CommandResponse[]
-  operatorActivities OperatorActivity[]
-  auditLogs          AuditLog[]
   deviceSessions     DeviceSession[]
-  chatMessages       ChatMessage[]
+  operatorActivities OperatorActivity[]
+  productions        ProductionUser[]
+  sessions           Session[]
+  globalRole         Role?              @relation("GlobalUserRole", fields: [globalRoleId], references: [id])
 
-  // Performance Indexes
   @@index([email])
   @@index([deletedAt])
 }
 
 model Role {
-  id          String  @id @default(uuid()) @db.Uuid
-  name        String  @unique // e.g., 'ADMIN', 'OPERATOR', 'VIEWER'
+  id          String           @id @default(uuid()) @db.Uuid
+  name        String           @unique
   description String?
-
-  // Relations
-  permissions RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  commands    Command[]
   users       ProductionUser[]
+  permissions RolePermission[]
   globalUsers User[]           @relation("GlobalUserRole")
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  commands  Command[]
 }
 
 model VmixConnection {
-  id              String  @id @default(uuid()) @db.Uuid
-  productionId    String  @unique @db.Uuid
-  url             String // usually http://127.0.0.1:8088
-  isEnabled       Boolean @default(true)
-  pollingInterval Int     @default(500)
+  id              String     @id @default(uuid()) @db.Uuid
+  productionId    String     @unique @db.Uuid
+  url             String
+  isEnabled       Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  pollingInterval Int        @default(500)
+  production      Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+}
 
-  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+model TimelineBlock {
+  id                 String           @id @default(uuid()) @db.Uuid
+  productionId       String           @db.Uuid
+  title              String
+  description        String?
+  durationMs         Int              @default(0)
+  status             BlockStatus      @default(PENDING)
+  order              Int              @default(0)
+  linkedScene        String?
+  source             String?
+  intercomTemplateId String?          @db.Uuid
+  startTime          DateTime?
+  endTime            DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  intercomTemplate   CommandTemplate? @relation(fields: [intercomTemplateId], references: [id])
+  production         Production       @relation(fields: [productionId], references: [id], onDelete: Cascade)
 
+  @@index([productionId])
+}
+
+model Rule {
+  id           String             @id @default(uuid()) @db.Uuid
+  productionId String             @db.Uuid
+  name         String
+  description  String?
+  isEnabled    Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  actions      Action[]
+  production   Production         @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  logs         RuleExecutionLog[]
+  triggers     Trigger[]
+
+  @@index([productionId])
+  @@index([isEnabled])
+}
+
+model Trigger {
+  id        String   @id @default(uuid()) @db.Uuid
+  ruleId    String   @db.Uuid
+  eventType String
+  condition Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  rule      Rule     @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId])
+}
+
+model Action {
+  id         String   @id @default(uuid()) @db.Uuid
+  ruleId     String   @db.Uuid
+  actionType String
+  payload    Json?
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  rule       Rule     @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId])
+}
+
+model RuleExecutionLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  ruleId       String   @db.Uuid
+  productionId String   @db.Uuid
+  status       String
+  details      String?
+  createdAt    DateTime @default(now())
+  rule         Rule     @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId])
+  @@index([productionId])
+}
+
+model ProductionLog {
+  id           String     @id @default(uuid()) @db.Uuid
+  productionId String     @db.Uuid
+  eventType    String
+  details      Json?
+  createdAt    DateTime   @default(now())
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
+  @@index([productionId])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+model OperatorActivity {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  productionId String   @db.Uuid
+  action       String
+  details      Json?
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([productionId])
+  @@index([createdAt])
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  action      String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model Production {
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String
+  description      String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  deletedAt        DateTime?
+  engineType       EngineType        @default(OBS)
+  status           ProductionStatus  @default(DRAFT)
+  chatMessages     ChatMessage[]
+  commands         Command[]
+  commandTemplates CommandTemplate[]
+  deviceSessions   DeviceSession[]
+  obsConnection    ObsConnection?
+  logs             ProductionLog[]
+  script           ProductionScript?
+  users            ProductionUser[]
+  rules            Rule[]
+  timelineBlocks   TimelineBlock[]
+  vmixConnection   VmixConnection?
+
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model ProductionUser {
+  userId       String     @db.Uuid
+  productionId String     @db.Uuid
+  roleId       String     @db.Uuid
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id])
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, productionId])
+  @@index([userId])
+  @@index([productionId])
+}
+
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  refreshToken String   @unique
+  expiresAt    DateTime
+  isRevoked    Boolean  @default(false)
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshToken])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid
+  action    String
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+}
+
+model DeviceSession {
+  id             String     @id @default(uuid()) @db.Uuid
+  socketId       String     @unique
+  userId         String     @db.Uuid
+  productionId   String     @db.Uuid
+  isOnline       Boolean    @default(true)
+  connectedAt    DateTime   @default(now())
+  disconnectedAt DateTime?
+  production     Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([productionId])
+  @@index([isOnline])
+}
+
+model CommandTemplate {
+  id             String          @id @default(uuid()) @db.Uuid
+  productionId   String          @db.Uuid
+  name           String
+  description    String?
+  icon           String?
+  color          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  commands       Command[]
+  production     Production      @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  timelineBlocks TimelineBlock[]
+
+  @@index([productionId])
+}
+
+model Command {
+  id           String            @id @default(uuid()) @db.Uuid
+  productionId String            @db.Uuid
+  senderId     String            @db.Uuid
+  targetRoleId String?           @db.Uuid
+  templateId   String?           @db.Uuid
+  message      String
+  requiresAck  Boolean           @default(true)
+  status       String            @default("SENT")
+  createdAt    DateTime          @default(now())
+  production   Production        @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  sender       User              @relation("CommandSender", fields: [senderId], references: [id], onDelete: Cascade)
+  targetRole   Role?             @relation(fields: [targetRoleId], references: [id])
+  template     CommandTemplate?  @relation(fields: [templateId], references: [id])
+  responses    CommandResponse[]
+
+  @@index([productionId])
+  @@index([senderId])
+  @@index([targetRoleId])
+}
+
+model CommandResponse {
+  id          String   @id @default(uuid()) @db.Uuid
+  commandId   String   @db.Uuid
+  responderId String   @db.Uuid
+  response    String
+  note        String?
+  createdAt   DateTime @default(now())
+  command     Command  @relation(fields: [commandId], references: [id], onDelete: Cascade)
+  responder   User     @relation(fields: [responderId], references: [id], onDelete: Cascade)
+
+  @@index([commandId])
+  @@index([responderId])
+}
+
+model ChatMessage {
+  id           String     @id @default(uuid()) @db.Uuid
+  productionId String     @db.Uuid
+  userId       String?    @db.Uuid
+  message      String
+  createdAt    DateTime   @default(now())
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  user         User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([productionId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ProductionScript {
+  id           String     @id @default(uuid()) @db.Uuid
+  productionId String     @unique @db.Uuid
+  content      Bytes
+  updatedAt    DateTime   @updatedAt
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+}
+
+model ObsConnection {
+  id           String     @id @default(uuid()) @db.Uuid
+  productionId String     @unique @db.Uuid
+  url          String
+  password     String?
+  isEnabled    Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
 }
 
 enum BlockStatus {
@@ -74,335 +360,4 @@ enum ProductionStatus {
   ACTIVE
   ARCHIVED
   DRAFT
-}
-
-model TimelineBlock {
-  id                 String      @id @default(uuid()) @db.Uuid
-  productionId       String      @db.Uuid
-  title              String
-  description        String?
-  source             String? // e.g. "CÁMARA 1", "VTR", "REPLAY"
-  notes              String? // Internal operator notes
-  durationMs         Int         @default(0) // 0 means manual trigger
-  status             BlockStatus @default(PENDING)
-  order              Int         @default(0)
-  linkedScene        String? // e.g., name of OBS/vMix scene
-  intercomTemplateId String?     @db.Uuid // Optional auto-command
-  startTime          DateTime?
-  endTime            DateTime?
-
-  production       Production       @relation(fields: [productionId], references: [id], onDelete: Cascade)
-  intercomTemplate CommandTemplate? @relation(fields: [intercomTemplateId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([productionId])
-}
-
-model Rule {
-  id           String  @id @default(uuid()) @db.Uuid
-  productionId String  @db.Uuid
-  name         String
-  description  String?
-  isEnabled    Boolean @default(true)
-
-  production Production         @relation(fields: [productionId], references: [id], onDelete: Cascade)
-  triggers   Trigger[]
-  actions    Action[]
-  logs       RuleExecutionLog[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([productionId])
-  @@index([isEnabled])
-}
-
-model Trigger {
-  id        String @id @default(uuid()) @db.Uuid
-  ruleId    String @db.Uuid
-  eventType String // e.g., 'obs.scene.changed', 'timeline.updated'
-  condition Json? // e.g., { "sceneName": "Intro" }
-
-  rule Rule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([ruleId])
-}
-
-model Action {
-  id         String @id @default(uuid()) @db.Uuid
-  ruleId     String @db.Uuid
-  actionType String // e.g., 'obs.changeScene', 'vmix.cut', 'intercom.send'
-  payload    Json? // e.g., { "sceneName": "Camera 1" }
-  order      Int    @default(0)
-
-  rule Rule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([ruleId])
-}
-
-model RuleExecutionLog {
-  id           String  @id @default(uuid()) @db.Uuid
-  ruleId       String  @db.Uuid
-  productionId String  @db.Uuid
-  status       String // e.g., 'SUCCESS', 'ERROR'
-  details      String?
-
-  rule Rule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@index([ruleId])
-  @@index([productionId])
-}
-
-model ProductionLog {
-  id           String @id @default(uuid()) @db.Uuid
-  productionId String @db.Uuid
-  eventType    String // e.g., 'obs.scene.changed', 'command.sent', 'timeline.started'
-  details      Json? // e.g., { sceneName: "Camera 1", durationMs: 5000 }
-
-  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@index([productionId])
-  @@index([eventType])
-  @@index([createdAt])
-}
-
-model OperatorActivity {
-  id           String @id @default(uuid()) @db.Uuid
-  userId       String @db.Uuid
-  productionId String @db.Uuid
-  action       String // e.g., 'command.ack_sent'
-  details      Json?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([productionId])
-  @@index([createdAt])
-}
-
-model Permission {
-  id          String  @id @default(uuid()) @db.Uuid
-  action      String  @unique // e.g., 'production:create', 'scene:switch'
-  description String?
-
-  // Relations
-  roles RolePermission[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model RolePermission {
-  roleId       String @db.Uuid
-  permissionId String @db.Uuid
-
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  @@id([roleId, permissionId])
-  @@index([roleId])
-  @@index([permissionId])
-}
-
-model Production {
-  id          String           @id @default(uuid()) @db.Uuid
-  name        String
-  description String?
-  status      ProductionStatus @default(DRAFT)
-  engineType  EngineType       @default(OBS)
-
-  // Relations
-  users ProductionUser[]
-
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  deletedAt        DateTime?
-  deviceSessions   DeviceSession[]
-  commandTemplates CommandTemplate[]
-  commands         Command[]
-  obsConnection    ObsConnection?
-  vmixConnection   VmixConnection?
-  timelineBlocks   TimelineBlock[]
-  rules            Rule[]
-  logs             ProductionLog[]
-  chatMessages     ChatMessage[]
-  script           ProductionScript?
-
-  @@index([status])
-  @@index([deletedAt])
-}
-
-model ProductionUser {
-  userId       String @db.Uuid
-  productionId String @db.Uuid
-  roleId       String @db.Uuid
-
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Restrict)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@id([userId, productionId])
-  @@index([userId])
-  @@index([productionId])
-}
-
-model Session {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @db.Uuid
-  refreshToken String   @unique
-  expiresAt    DateTime
-  isRevoked    Boolean  @default(false)
-  ipAddress    String?
-  userAgent    String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([refreshToken])
-}
-
-model AuditLog {
-  id        String  @id @default(uuid()) @db.Uuid
-  userId    String? @db.Uuid
-  action    String
-  details   Json?
-  ipAddress String?
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([action])
-}
-
-model DeviceSession {
-  id             String    @id @default(uuid()) @db.Uuid
-  socketId       String    @unique
-  userId         String    @db.Uuid
-  productionId   String    @db.Uuid
-  isOnline       Boolean   @default(true)
-  connectedAt    DateTime  @default(now())
-  disconnectedAt DateTime?
-
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([productionId])
-  @@index([isOnline])
-}
-
-model CommandTemplate {
-  id           String  @id @default(uuid()) @db.Uuid
-  productionId String  @db.Uuid
-  name         String // e.g. "Standby Camera 1", "Cut to Black"
-  description  String?
-  icon         String?
-  color        String?
-
-  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
-  commands   Command[]
-
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  timelineBlocks TimelineBlock[]
-
-  @@index([productionId])
-}
-
-model Command {
-  id           String  @id @default(uuid()) @db.Uuid
-  productionId String  @db.Uuid
-  senderId     String  @db.Uuid
-  targetRoleId String? @db.Uuid // If null, it's a broadcast
-  templateId   String? @db.Uuid
-  message      String // The actual text sent
-  requiresAck  Boolean @default(true)
-  status       String  @default("SENT") // SENT, DELIVERED, COMPLETED
-
-  production Production        @relation(fields: [productionId], references: [id], onDelete: Cascade)
-  sender     User              @relation("CommandSender", fields: [senderId], references: [id], onDelete: Cascade)
-  targetRole Role?             @relation(fields: [targetRoleId], references: [id], onDelete: SetNull)
-  template   CommandTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  responses  CommandResponse[]
-
-  createdAt DateTime @default(now())
-
-  @@index([productionId])
-  @@index([senderId])
-  @@index([targetRoleId])
-}
-
-model CommandResponse {
-  id          String  @id @default(uuid()) @db.Uuid
-  commandId   String  @db.Uuid
-  responderId String  @db.Uuid
-  response    String // e.g. "OK", "PROBLEM", "STANDBY"
-  note        String?
-
-  command   Command @relation(fields: [commandId], references: [id], onDelete: Cascade)
-  responder User    @relation(fields: [responderId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@index([commandId])
-  @@index([responderId])
-}
-
-model ChatMessage {
-  id           String   @id @default(uuid()) @db.Uuid
-  productionId String   @db.Uuid
-  userId       String?  @db.Uuid
-  message      String
-  createdAt    DateTime @default(now())
-
-  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
-  user       User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([productionId])
-  @@index([userId])
-  @@index([createdAt])
-}
-
-model ProductionScript {
-  id           String   @id @default(uuid()) @db.Uuid
-  productionId String   @unique @db.Uuid
-  content      Bytes // Yjs binary document state
-  updatedAt    DateTime @updatedAt
-
-  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
-}
-
-model ObsConnection {
-  id           String  @id @default(uuid()) @db.Uuid
-  productionId String  @unique @db.Uuid
-  url          String // usually ws://127.0.0.1:4455
-  password     String?
-  isEnabled    Boolean @default(true)
-
-  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }

@@ -8,7 +8,7 @@ export class IntercomService {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
-  ) {}
+  ) { }
 
   async createTemplate(productionId: string, dto: CreateCommandTemplateDto) {
     return this.prisma.commandTemplate.create({
@@ -29,12 +29,14 @@ export class IntercomService {
     });
 
     if (templates.length === 0) {
+      console.log(`[Intercom] No templates found for production ${productionId}. Seeding defaults...`);
       await this.seedDefaultTemplates(productionId);
       return this.prisma.commandTemplate.findMany({
         where: { productionId },
         orderBy: { createdAt: 'asc' },
       });
     }
+    console.log(`[Intercom] Found ${templates.length} templates for production ${productionId}`);
 
     return templates;
   }

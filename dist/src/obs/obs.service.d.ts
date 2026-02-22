@@ -7,22 +7,22 @@ export declare class ObsService {
     private readonly logger;
     constructor(prisma: PrismaService, obsManager: ObsConnectionManager);
     saveConnection(productionId: string, dto: SaveObsConnectionDto): Promise<{
+        url: string;
         productionId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         password: string | null;
         isEnabled: boolean;
-        url: string;
     }>;
     getConnection(productionId: string): Promise<{
+        url: string;
         productionId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         password: string | null;
         isEnabled: boolean;
-        url: string;
     }>;
     isConnected(productionId: string): boolean;
     getRealTimeState(productionId: string): Promise<{
