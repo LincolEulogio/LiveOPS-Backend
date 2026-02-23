@@ -13,6 +13,7 @@ const prisma_module_1 = require("../prisma/prisma.module");
 const obs_module_1 = require("../obs/obs.module");
 const vmix_module_1 = require("../vmix/vmix.module");
 const intercom_module_1 = require("../intercom/intercom.module");
+const notifications_module_1 = require("../notifications/notifications.module");
 const automation_service_1 = require("./automation.service");
 const automation_controller_1 = require("./automation.controller");
 const automation_engine_service_1 = require("./automation-engine.service");
@@ -27,6 +28,7 @@ exports.AutomationModule = AutomationModule = __decorate([
             obs_module_1.ObsModule,
             vmix_module_1.VmixModule,
             intercom_module_1.IntercomModule,
+            notifications_module_1.NotificationsModule,
         ],
         providers: [automation_service_1.AutomationService, automation_engine_service_1.AutomationEngineService],
         controllers: [automation_controller_1.AutomationController],

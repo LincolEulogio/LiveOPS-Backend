@@ -22,17 +22,29 @@ let SocialController = class SocialController {
     constructor(socialService) {
         this.socialService = socialService;
     }
-    getMessages(productionId) {
-        return this.socialService.getMessages(productionId);
+    getMessages(productionId, status) {
+        return this.socialService.getMessages(productionId, status);
     }
     injectMessage(productionId, payload) {
         return this.socialService.ingestMessage(productionId, {
-            productionId,
-            ...payload
+            ...payload,
+            productionId
         });
     }
     updateStatus(productionId, id, status) {
         return this.socialService.updateMessageStatus(productionId, id, status);
+    }
+    createPoll(productionId, payload) {
+        return this.socialService.createPoll(productionId, payload.question, payload.options);
+    }
+    getActivePoll(productionId) {
+        return this.socialService.getActivePoll(productionId);
+    }
+    votePoll(id, optionId) {
+        return this.socialService.votePoll(id, optionId);
+    }
+    closePoll(productionId, id) {
+        return this.socialService.closePoll(productionId, id);
     }
     getBlacklist(productionId) {
         return this.socialService.getBlacklist(productionId);
@@ -46,8 +58,9 @@ exports.SocialController = SocialController;
 __decorate([
     (0, common_1.Get)('messages'),
     __param(0, (0, common_1.Param)('productionId')),
+    __param(1, (0, common_1.Param)('status')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], SocialController.prototype, "getMessages", null);
 __decorate([
@@ -67,6 +80,37 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", void 0)
 ], SocialController.prototype, "updateStatus", null);
+__decorate([
+    (0, common_1.Post)('polls'),
+    __param(0, (0, common_1.Param)('productionId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], SocialController.prototype, "createPoll", null);
+__decorate([
+    (0, common_1.Get)('polls/active'),
+    __param(0, (0, common_1.Param)('productionId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], SocialController.prototype, "getActivePoll", null);
+__decorate([
+    (0, common_1.Post)('polls/:id/vote'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('optionId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], SocialController.prototype, "votePoll", null);
+__decorate([
+    (0, common_1.Delete)('polls/:id'),
+    __param(0, (0, common_1.Param)('productionId')),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], SocialController.prototype, "closePoll", null);
 __decorate([
     (0, common_1.Get)('blacklist'),
     __param(0, (0, common_1.Param)('productionId')),

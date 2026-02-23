@@ -1,27 +1,25 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PrismaService } from '../prisma/prisma.service';
 
-export interface SocialMessage {
-    id: string;
+export interface SocialMessagePayload {
     productionId: string;
-    platform: 'twitch' | 'youtube';
+    platform: string;
     author: string;
     avatarUrl?: string;
     content: string;
-    timestamp: Date;
-    status: 'pending' | 'approved' | 'rejected' | 'on-air';
+    externalId?: string;
 }
 
 @Injectable()
 export class SocialService {
     private readonly logger = new Logger(SocialService.name);
-    // In-memory store for messages per production (in a real app, use Redis or DB)
-    private messages = new Map<string, SocialMessage[]>();
     private blacklists = new Map<string, string[]>(); // productionId -> blocked words
 
-    constructor(private eventEmitter: EventEmitter2) {
-        // Initialize with some default bad words for testing
-        // In a real app, load from DB
+    constructor(
+        private prisma: PrismaService,
+        private eventEmitter: EventEmitter2
+    ) {
         this.blacklists.set('default', ['spam', 'buy followers', 'scam']);
     }
 
@@ -33,26 +31,25 @@ export class SocialService {
         return this.blacklists.get(productionId) || [];
     }
 
-    // Simulate receiving a message from a webhook or polling service
-    ingestMessage(productionId: string, payload: Omit<SocialMessage, 'id' | 'timestamp' | 'status'>) {
+    async ingestMessage(productionId: string, payload: SocialMessagePayload) {
         const blacklist = this.getBlacklist(productionId);
 
-        // Check against blacklist
         const isClean = !blacklist.some(word =>
             payload.content.toLowerCase().includes(word)
         );
 
-        const message: SocialMessage = {
-            id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            timestamp: new Date(),
-            status: isClean ? 'pending' : 'rejected',
-            ...payload,
-        };
+        const message = await this.prisma.socialMessage.create({
+            data: {
+                productionId,
+                platform: payload.platform,
+                author: payload.author,
+                authorAvatar: payload.avatarUrl,
+                content: payload.content,
+                externalId: payload.externalId,
+                status: isClean ? 'PENDING' : 'REJECTED',
+            },
+        });
 
-        const prodMessages = this.messages.get(productionId) || [];
-        this.messages.set(productionId, [...prodMessages, message]);
-
-        // Fast-path: emit event to clients
         this.eventEmitter.emit('social.message.new', message);
 
         if (!isClean) {
@@ -62,38 +59,110 @@ export class SocialService {
         return message;
     }
 
-    getMessages(productionId: string, status?: SocialMessage['status']) {
-        const prodMessages = this.messages.get(productionId) || [];
-        if (status) {
-            return prodMessages.filter(m => m.status === status);
-        }
-        return prodMessages;
+    async getMessages(productionId: string, status?: string) {
+        return this.prisma.socialMessage.findMany({
+            where: {
+                productionId,
+                ...(status ? { status } : {}),
+            },
+            orderBy: { timestamp: 'desc' },
+            take: 100,
+        });
     }
 
-    updateMessageStatus(productionId: string, messageId: string, status: SocialMessage['status']) {
-        const prodMessages = this.messages.get(productionId) || [];
-        const idx = prodMessages.findIndex(m => m.id === messageId);
-
-        if (idx !== -1) {
-            // If moving to on-air, we might want to change previous on-air back to approved
-            if (status === 'on-air') {
-                prodMessages.forEach(m => {
-                    if (m.status === 'on-air') m.status = 'approved';
-                });
-            }
-
-            prodMessages[idx] = { ...prodMessages[idx], status };
-            this.messages.set(productionId, prodMessages);
-
-            this.eventEmitter.emit('social.message.updated', prodMessages[idx]);
-
-            // If 'on-air', perhaps trigger automation generic event
-            if (status === 'on-air') {
-                this.eventEmitter.emit('graphics.social.show', prodMessages[idx]);
-            }
-
-            return prodMessages[idx];
+    async updateMessageStatus(productionId: string, messageId: string, status: string) {
+        if (status === 'ON_AIR') {
+            // Unset previous on-air messages
+            await this.prisma.socialMessage.updateMany({
+                where: { productionId, status: 'ON_AIR' },
+                data: { status: 'APPROVED' },
+            });
         }
-        return null;
+
+        const message = await this.prisma.socialMessage.update({
+            where: { id: messageId },
+            data: { status },
+        });
+
+        this.eventEmitter.emit('social.message.updated', message);
+
+        if (status === 'ON_AIR') {
+            this.eventEmitter.emit('graphics.social.show', message);
+        } else if (status === 'APPROVED' || status === 'REJECTED' || status === 'PENDING') {
+            // If it was on-air and moved to something else, clear overlay
+            this.eventEmitter.emit('graphics.social.hide', { productionId });
+        }
+
+        return message;
+    }
+
+    // Poll logic
+    async createPoll(productionId: string, question: string, options: string[]) {
+        // Deactivate previous active polls
+        await this.prisma.socialPoll.updateMany({
+            where: { productionId, isActive: true },
+            data: { isActive: false },
+        });
+
+        const pollOptions = options.map((opt, index) => ({
+            id: `opt-${index}`,
+            text: opt,
+            votes: 0,
+        }));
+
+        const poll = await this.prisma.socialPoll.create({
+            data: {
+                productionId,
+                question,
+                options: pollOptions,
+                isActive: true,
+            },
+        });
+
+        this.eventEmitter.emit('social.poll.created', poll);
+        return poll;
+    }
+
+    async getActivePoll(productionId: string) {
+        return this.prisma.socialPoll.findFirst({
+            where: { productionId, isActive: true },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    async votePoll(pollId: string, optionId: string) {
+        const poll = await this.prisma.socialPoll.findUnique({
+            where: { id: pollId },
+        });
+
+        if (!poll || !poll.isActive) {
+            throw new NotFoundException('Poll not found or inactive');
+        }
+
+        const options = poll.options as any[];
+        const option = options.find(o => o.id === optionId);
+
+        if (option) {
+            option.votes += 1;
+            const updatedPoll = await this.prisma.socialPoll.update({
+                where: { id: pollId },
+                data: { options },
+            });
+
+            this.eventEmitter.emit('social.poll.updated', updatedPoll);
+            return updatedPoll;
+        }
+
+        throw new NotFoundException('Option not found');
+    }
+
+    async closePoll(productionId: string, pollId: string) {
+        const poll = await this.prisma.socialPoll.update({
+            where: { id: pollId },
+            data: { isActive: false },
+        });
+
+        this.eventEmitter.emit('social.poll.closed', poll);
+        return poll;
     }
 }

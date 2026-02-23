@@ -24,6 +24,7 @@ import { ChatModule } from './chat/chat.module';
 import { ScriptModule } from './script/script.module';
 import { SocialModule } from './social/social.module';
 import { HardwareModule } from './hardware/hardware.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { HardwareModule } from './hardware/hardware.module';
     ScriptModule,
     SocialModule,
     HardwareModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

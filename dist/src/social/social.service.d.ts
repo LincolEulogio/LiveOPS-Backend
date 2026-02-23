@@ -1,23 +1,88 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
-export interface SocialMessage {
-    id: string;
+import { PrismaService } from '../prisma/prisma.service';
+export interface SocialMessagePayload {
     productionId: string;
-    platform: 'twitch' | 'youtube';
+    platform: string;
     author: string;
     avatarUrl?: string;
     content: string;
-    timestamp: Date;
-    status: 'pending' | 'approved' | 'rejected' | 'on-air';
+    externalId?: string;
 }
 export declare class SocialService {
+    private prisma;
     private eventEmitter;
     private readonly logger;
-    private messages;
     private blacklists;
-    constructor(eventEmitter: EventEmitter2);
+    constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
     setBlacklist(productionId: string, words: string[]): void;
     getBlacklist(productionId: string): string[];
-    ingestMessage(productionId: string, payload: Omit<SocialMessage, 'id' | 'timestamp' | 'status'>): SocialMessage;
-    getMessages(productionId: string, status?: SocialMessage['status']): SocialMessage[];
-    updateMessageStatus(productionId: string, messageId: string, status: SocialMessage['status']): SocialMessage | null;
+    ingestMessage(productionId: string, payload: SocialMessagePayload): Promise<{
+        id: string;
+        status: string;
+        productionId: string;
+        content: string;
+        timestamp: Date;
+        platform: string;
+        author: string;
+        authorAvatar: string | null;
+        externalId: string | null;
+    }>;
+    getMessages(productionId: string, status?: string): Promise<{
+        id: string;
+        status: string;
+        productionId: string;
+        content: string;
+        timestamp: Date;
+        platform: string;
+        author: string;
+        authorAvatar: string | null;
+        externalId: string | null;
+    }[]>;
+    updateMessageStatus(productionId: string, messageId: string, status: string): Promise<{
+        id: string;
+        status: string;
+        productionId: string;
+        content: string;
+        timestamp: Date;
+        platform: string;
+        author: string;
+        authorAvatar: string | null;
+        externalId: string | null;
+    }>;
+    createPoll(productionId: string, question: string, options: string[]): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productionId: string;
+        isActive: boolean;
+        question: string;
+        options: import("@prisma/client/runtime/client").JsonValue;
+    }>;
+    getActivePoll(productionId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productionId: string;
+        isActive: boolean;
+        question: string;
+        options: import("@prisma/client/runtime/client").JsonValue;
+    } | null>;
+    votePoll(pollId: string, optionId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productionId: string;
+        isActive: boolean;
+        question: string;
+        options: import("@prisma/client/runtime/client").JsonValue;
+    }>;
+    closePoll(productionId: string, pollId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productionId: string;
+        isActive: boolean;
+        question: string;
+        options: import("@prisma/client/runtime/client").JsonValue;
+    }>;
 }

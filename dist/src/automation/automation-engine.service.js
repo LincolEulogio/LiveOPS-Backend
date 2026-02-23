@@ -18,17 +18,20 @@ const prisma_service_1 = require("../prisma/prisma.service");
 const obs_service_1 = require("../obs/obs.service");
 const vmix_service_1 = require("../vmix/vmix.service");
 const intercom_service_1 = require("../intercom/intercom.service");
+const notifications_service_1 = require("../notifications/notifications.service");
 let AutomationEngineService = AutomationEngineService_1 = class AutomationEngineService {
     prisma;
     obsService;
     vmixService;
     intercomService;
+    notificationsService;
     logger = new common_1.Logger(AutomationEngineService_1.name);
-    constructor(prisma, obsService, vmixService, intercomService) {
+    constructor(prisma, obsService, vmixService, intercomService, notificationsService) {
         this.prisma = prisma;
         this.obsService = obsService;
         this.vmixService = vmixService;
         this.intercomService = intercomService;
+        this.notificationsService = notificationsService;
     }
     async checkTimeTriggers() {
         const now = new Date();
@@ -195,7 +198,9 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
                         }
                         break;
                     case 'webhook.call':
-                        this.logger.log(`Webhook Call (Mock): ${payload?.url}`);
+                        if (payload?.url || payload?.message) {
+                            await this.notificationsService.sendNotification(rule.productionId, payload.message || `Automation Rule Triggered: ${rule.name}`);
+                        }
                         break;
                     default:
                         this.logger.warn(`Unknown action type: ${action.actionType}`);
@@ -246,6 +251,7 @@ exports.AutomationEngineService = AutomationEngineService = AutomationEngineServ
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         obs_service_1.ObsService,
         vmix_service_1.VmixService,
-        intercom_service_1.IntercomService])
+        intercom_service_1.IntercomService,
+        notifications_service_1.NotificationsService])
 ], AutomationEngineService);
 //# sourceMappingURL=automation-engine.service.js.map

@@ -13,12 +13,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SocialService = void 0;
 const common_1 = require("@nestjs/common");
 const event_emitter_1 = require("@nestjs/event-emitter");
+const prisma_service_1 = require("../prisma/prisma.service");
 let SocialService = SocialService_1 = class SocialService {
+    prisma;
     eventEmitter;
     logger = new common_1.Logger(SocialService_1.name);
-    messages = new Map();
     blacklists = new Map();
-    constructor(eventEmitter) {
+    constructor(prisma, eventEmitter) {
+        this.prisma = prisma;
         this.eventEmitter = eventEmitter;
         this.blacklists.set('default', ['spam', 'buy followers', 'scam']);
     }
@@ -28,54 +30,116 @@ let SocialService = SocialService_1 = class SocialService {
     getBlacklist(productionId) {
         return this.blacklists.get(productionId) || [];
     }
-    ingestMessage(productionId, payload) {
+    async ingestMessage(productionId, payload) {
         const blacklist = this.getBlacklist(productionId);
         const isClean = !blacklist.some(word => payload.content.toLowerCase().includes(word));
-        const message = {
-            id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            timestamp: new Date(),
-            status: isClean ? 'pending' : 'rejected',
-            ...payload,
-        };
-        const prodMessages = this.messages.get(productionId) || [];
-        this.messages.set(productionId, [...prodMessages, message]);
+        const message = await this.prisma.socialMessage.create({
+            data: {
+                productionId,
+                platform: payload.platform,
+                author: payload.author,
+                authorAvatar: payload.avatarUrl,
+                content: payload.content,
+                externalId: payload.externalId,
+                status: isClean ? 'PENDING' : 'REJECTED',
+            },
+        });
         this.eventEmitter.emit('social.message.new', message);
         if (!isClean) {
             this.logger.debug(`Message rejected due to blacklist: ${message.content}`);
         }
         return message;
     }
-    getMessages(productionId, status) {
-        const prodMessages = this.messages.get(productionId) || [];
-        if (status) {
-            return prodMessages.filter(m => m.status === status);
-        }
-        return prodMessages;
+    async getMessages(productionId, status) {
+        return this.prisma.socialMessage.findMany({
+            where: {
+                productionId,
+                ...(status ? { status } : {}),
+            },
+            orderBy: { timestamp: 'desc' },
+            take: 100,
+        });
     }
-    updateMessageStatus(productionId, messageId, status) {
-        const prodMessages = this.messages.get(productionId) || [];
-        const idx = prodMessages.findIndex(m => m.id === messageId);
-        if (idx !== -1) {
-            if (status === 'on-air') {
-                prodMessages.forEach(m => {
-                    if (m.status === 'on-air')
-                        m.status = 'approved';
-                });
-            }
-            prodMessages[idx] = { ...prodMessages[idx], status };
-            this.messages.set(productionId, prodMessages);
-            this.eventEmitter.emit('social.message.updated', prodMessages[idx]);
-            if (status === 'on-air') {
-                this.eventEmitter.emit('graphics.social.show', prodMessages[idx]);
-            }
-            return prodMessages[idx];
+    async updateMessageStatus(productionId, messageId, status) {
+        if (status === 'ON_AIR') {
+            await this.prisma.socialMessage.updateMany({
+                where: { productionId, status: 'ON_AIR' },
+                data: { status: 'APPROVED' },
+            });
         }
-        return null;
+        const message = await this.prisma.socialMessage.update({
+            where: { id: messageId },
+            data: { status },
+        });
+        this.eventEmitter.emit('social.message.updated', message);
+        if (status === 'ON_AIR') {
+            this.eventEmitter.emit('graphics.social.show', message);
+        }
+        else if (status === 'APPROVED' || status === 'REJECTED' || status === 'PENDING') {
+            this.eventEmitter.emit('graphics.social.hide', { productionId });
+        }
+        return message;
+    }
+    async createPoll(productionId, question, options) {
+        await this.prisma.socialPoll.updateMany({
+            where: { productionId, isActive: true },
+            data: { isActive: false },
+        });
+        const pollOptions = options.map((opt, index) => ({
+            id: `opt-${index}`,
+            text: opt,
+            votes: 0,
+        }));
+        const poll = await this.prisma.socialPoll.create({
+            data: {
+                productionId,
+                question,
+                options: pollOptions,
+                isActive: true,
+            },
+        });
+        this.eventEmitter.emit('social.poll.created', poll);
+        return poll;
+    }
+    async getActivePoll(productionId) {
+        return this.prisma.socialPoll.findFirst({
+            where: { productionId, isActive: true },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+    async votePoll(pollId, optionId) {
+        const poll = await this.prisma.socialPoll.findUnique({
+            where: { id: pollId },
+        });
+        if (!poll || !poll.isActive) {
+            throw new common_1.NotFoundException('Poll not found or inactive');
+        }
+        const options = poll.options;
+        const option = options.find(o => o.id === optionId);
+        if (option) {
+            option.votes += 1;
+            const updatedPoll = await this.prisma.socialPoll.update({
+                where: { id: pollId },
+                data: { options },
+            });
+            this.eventEmitter.emit('social.poll.updated', updatedPoll);
+            return updatedPoll;
+        }
+        throw new common_1.NotFoundException('Option not found');
+    }
+    async closePoll(productionId, pollId) {
+        const poll = await this.prisma.socialPoll.update({
+            where: { id: pollId },
+            data: { isActive: false },
+        });
+        this.eventEmitter.emit('social.poll.closed', poll);
+        return poll;
     }
 };
 exports.SocialService = SocialService;
 exports.SocialService = SocialService = SocialService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [event_emitter_1.EventEmitter2])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        event_emitter_1.EventEmitter2])
 ], SocialService);
 //# sourceMappingURL=social.service.js.map

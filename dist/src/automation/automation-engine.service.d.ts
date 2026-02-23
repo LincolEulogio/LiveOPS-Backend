@@ -2,13 +2,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ObsService } from '../obs/obs.service';
 import { VmixService } from '../vmix/vmix.service';
 import { IntercomService } from '../intercom/intercom.service';
+import { NotificationsService } from '../notifications/notifications.service';
 export declare class AutomationEngineService {
     private prisma;
     private obsService;
     private vmixService;
     private intercomService;
+    private notificationsService;
     private readonly logger;
-    constructor(prisma: PrismaService, obsService: ObsService, vmixService: VmixService, intercomService: IntercomService);
+    constructor(prisma: PrismaService, obsService: ObsService, vmixService: VmixService, intercomService: IntercomService, notificationsService: NotificationsService);
     checkTimeTriggers(): Promise<void>;
     handleEvent(eventPrefix: string, payload: any): Promise<void>;
     handleHardwareTrigger(payload: {

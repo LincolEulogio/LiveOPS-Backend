@@ -4,6 +4,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { ObsModule } from '../obs/obs.module';
 import { VmixModule } from '../vmix/vmix.module';
 import { IntercomModule } from '../intercom/intercom.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { AutomationService } from './automation.service';
 import { AutomationController } from './automation.controller';
 import { AutomationEngineService } from './automation-engine.service';
@@ -15,9 +16,10 @@ import { AutomationEngineService } from './automation-engine.service';
     ObsModule,
     VmixModule,
     IntercomModule,
+    NotificationsModule,
   ],
   providers: [AutomationService, AutomationEngineService],
   controllers: [AutomationController],
   exports: [AutomationService, AutomationEngineService],
 })
-export class AutomationModule {}
+export class AutomationModule { }

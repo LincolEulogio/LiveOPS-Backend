@@ -173,10 +173,15 @@ model Production {
   telemetryLogs    TelemetryLog[]
   showReport       ShowReport?
   hardwareMappings HardwareMapping[]
+  socialMessages   SocialMessage[]
+  socialPolls      SocialPoll[]
   isRehearsal      Boolean           @default(false)
 
   tenantId String? @db.Uuid
   tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  webhooks            Webhook[]
+  publicStatusEnabled Boolean   @default(false)
 
   @@index([deletedAt])
   @@index([status])
@@ -437,5 +442,48 @@ model HardwareMapping {
   updatedAt    DateTime   @updatedAt
 
   @@unique([productionId, mapKey])
+  @@index([productionId])
+}
+
+model SocialMessage {
+  id           String     @id @default(uuid()) @db.Uuid
+  productionId String     @db.Uuid
+  platform     String // "TWITCH", "YOUTUBE", etc.
+  author       String
+  authorAvatar String?
+  content      String
+  status       String     @default("PENDING") // PENDING, APPROVED, REJECTED, ON_AIR
+  externalId   String?    @unique
+  timestamp    DateTime   @default(now())
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
+  @@index([productionId])
+  @@index([status])
+}
+
+model SocialPoll {
+  id           String     @id @default(uuid()) @db.Uuid
+  productionId String     @db.Uuid
+  question     String
+  options      Json // Array of { id, text, votes }
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
+  @@index([productionId])
+}
+
+model Webhook {
+  id           String     @id @default(uuid()) @db.Uuid
+  productionId String     @db.Uuid
+  name         String
+  url          String
+  platform     String // "DISCORD", "SLACK", "GENERIC"
+  isEnabled    Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
   @@index([productionId])
 }

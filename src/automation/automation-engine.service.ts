@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ObsService } from '../obs/obs.service';
 import { VmixService } from '../vmix/vmix.service';
 import { IntercomService } from '../intercom/intercom.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AutomationEngineService {
@@ -15,6 +16,7 @@ export class AutomationEngineService {
     private obsService: ObsService,
     private vmixService: VmixService,
     private intercomService: IntercomService,
+    private notificationsService: NotificationsService,
   ) { }
 
   /**
@@ -240,8 +242,12 @@ export class AutomationEngineService {
             break;
 
           case 'webhook.call':
-            // Implement webhook HTTP call logic here
-            this.logger.log(`Webhook Call (Mock): ${payload?.url}`);
+            if (payload?.url || payload?.message) {
+              await this.notificationsService.sendNotification(
+                rule.productionId,
+                payload.message || `Automation Rule Triggered: ${rule.name}`,
+              );
+            }
             break;
 
           default:
