@@ -16,6 +16,54 @@ import { IntercomService } from '../intercom/intercom.service';
 import { ChatService } from '../chat/chat.service';
 import { ScriptService } from '../script/script.service';
 
+interface UserPresence {
+  userId: string;
+  userName: string;
+  roleId: string;
+  roleName: string;
+  lastSeen: string;
+  status: string;
+}
+
+interface WebRTCSignalPayload {
+  productionId: string;
+  targetUserId: string;
+  signal: unknown;
+}
+
+interface SocialComment {
+  id: string;
+  author: string;
+  content: string;
+  platform: string;
+  avatarUrl?: string;
+  timestamp: string;
+}
+
+interface IntercomCommand {
+  id: string;
+  productionId: string;
+  senderId: string;
+  targetUserId?: string;
+  targetRoleId?: string;
+  templateId?: string;
+  message: string;
+  requiresAck?: boolean;
+  createdAt: string;
+  status?: string;
+  sender?: { id: string; name: string };
+}
+
+interface HealthStatsPayload {
+  productionId: string;
+  cpuUsage: number;
+  memoryUsage: number;
+  bitrate: number;
+  fps: number;
+  skippedFrames: number;
+  timestamp: string;
+}
+
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -27,17 +75,7 @@ export class EventsGateway
   server: Server;
 
   private logger: Logger = new Logger('EventsGateway');
-  private activeUsers: Map<
-    string,
-    {
-      userId: string;
-      userName: string;
-      roleId: string;
-      roleName: string;
-      lastSeen: string;
-      status: string;
-    }
-  > = new Map();
+  private activeUsers: Map<string, UserPresence> = new Map();
 
   constructor(
     private prisma: PrismaService,
@@ -189,11 +227,7 @@ export class EventsGateway
   @SubscribeMessage('webrtc.signal')
   handleWebRTCSignal(
     @MessageBody()
-    data: {
-      productionId: string;
-      targetUserId: string;
-      signal: any;
-    },
+    data: WebRTCSignalPayload,
     @ConnectedSocket() client: Socket,
   ) {
     const senderUserId = client.handshake.query.userId as string;
@@ -224,7 +258,7 @@ export class EventsGateway
     @MessageBody()
     data: {
       productionId: string;
-      comment: any | null;
+      comment: SocialComment | null;
     },
     @ConnectedSocket() client: Socket,
   ) {
@@ -254,7 +288,7 @@ export class EventsGateway
     this.eventEmitter.emit('hardware.trigger', data);
   }
 
-  async handleConnection(client: Socket, ...args: any[]) {
+  async handleConnection(client: Socket) {
     const productionId = client.handshake.query.productionId as string;
     const userId = client.handshake.query.userId as string;
     const userName = client.handshake.query.userName as string;
@@ -285,7 +319,7 @@ export class EventsGateway
   private broadcastPresence(productionId: string) {
     const room = `production_${productionId}`;
     const socketIds = this.server.sockets.adapter.rooms.get(room);
-    const uniqueMembers = new Map<string, any>();
+    const uniqueMembers = new Map<string, UserPresence>();
 
     if (socketIds) {
       for (const socketId of socketIds) {
@@ -600,7 +634,7 @@ export class EventsGateway
   }
 
   @OnEvent('command.created')
-  handleCommandCreated(payload: { productionId: string; command: any }) {
+  handleCommandCreated(payload: { productionId: string; command: IntercomCommand }) {
     this.logger.log(
       `Broadcasting new command for production ${payload.productionId}`,
     );
@@ -610,7 +644,7 @@ export class EventsGateway
   }
 
   @OnEvent('production.health.stats')
-  handleProductionHealthStats(payload: any) {
+  handleProductionHealthStats(payload: HealthStatsPayload) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('production.health.stats', payload);
@@ -619,7 +653,7 @@ export class EventsGateway
   @OnEvent('social.overlay_update')
   handleSocialOverlayUpdate(payload: {
     productionId: string;
-    comment: any | null;
+    comment: SocialComment | null;
   }) {
     this.server
       .to(`production_${payload.productionId}`)
@@ -628,43 +662,45 @@ export class EventsGateway
 
   // --- External Social Events Forwarding ---
 
+  // --- External Social Events Forwarding ---
+
   @OnEvent('social.message.new')
-  handleSocialMessageNew(payload: any) {
+  handleSocialMessageNew(payload: SocialComment & { productionId: string }) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('social.message.new', payload);
   }
 
   @OnEvent('social.message.updated')
-  handleSocialMessageUpdated(payload: any) {
+  handleSocialMessageUpdated(payload: SocialComment & { productionId: string }) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('social.message.updated', payload);
   }
 
   @OnEvent('social.poll.created')
-  handleSocialPollCreated(payload: any) {
+  handleSocialPollCreated(payload: { productionId: string;[key: string]: unknown }) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('social.poll.created', payload);
   }
 
   @OnEvent('social.poll.updated')
-  handleSocialPollUpdated(payload: any) {
+  handleSocialPollUpdated(payload: { productionId: string;[key: string]: unknown }) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('social.poll.updated', payload);
   }
 
   @OnEvent('social.poll.closed')
-  handleSocialPollClosed(payload: any) {
+  handleSocialPollClosed(payload: { productionId: string;[key: string]: unknown }) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('social.poll.closed', payload);
   }
 
   @OnEvent('graphics.social.show')
-  handleGraphicsSocialShow(payload: any) {
+  handleGraphicsSocialShow(payload: { productionId: string; comment: SocialComment }) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('graphics.social.show', payload);

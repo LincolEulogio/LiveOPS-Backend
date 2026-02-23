@@ -5,6 +5,44 @@ import { PrismaService } from '../prisma/prisma.service';
 import { IntercomService } from '../intercom/intercom.service';
 import { ChatService } from '../chat/chat.service';
 import { ScriptService } from '../script/script.service';
+interface WebRTCSignalPayload {
+    productionId: string;
+    targetUserId: string;
+    signal: unknown;
+}
+interface SocialComment {
+    id: string;
+    author: string;
+    content: string;
+    platform: string;
+    avatarUrl?: string;
+    timestamp: string;
+}
+interface IntercomCommand {
+    id: string;
+    productionId: string;
+    senderId: string;
+    targetUserId?: string;
+    targetRoleId?: string;
+    templateId?: string;
+    message: string;
+    requiresAck?: boolean;
+    createdAt: string;
+    status?: string;
+    sender?: {
+        id: string;
+        name: string;
+    };
+}
+interface HealthStatsPayload {
+    productionId: string;
+    cpuUsage: number;
+    memoryUsage: number;
+    bitrate: number;
+    fps: number;
+    skippedFrames: number;
+    timestamp: string;
+}
 export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     private prisma;
     private eventEmitter;
@@ -58,14 +96,10 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         productionId: string;
         update: number[];
     }, client: Socket): void;
-    handleWebRTCSignal(data: {
-        productionId: string;
-        targetUserId: string;
-        signal: any;
-    }, client: Socket): void;
+    handleWebRTCSignal(data: WebRTCSignalPayload, client: Socket): void;
     handleSocialOverlay(data: {
         productionId: string;
-        comment: any | null;
+        comment: SocialComment | null;
     }, client: Socket): void;
     handleScriptScrollSync(data: {
         productionId: string;
@@ -75,7 +109,7 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         productionId: string;
         mapKey: string;
     }): void;
-    handleConnection(client: Socket, ...args: any[]): Promise<void>;
+    handleConnection(client: Socket): Promise<void>;
     private broadcastPresence;
     handleDisconnect(client: Socket): void;
     handleUserIdentify(data: {
@@ -165,20 +199,37 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
     }): void;
     handleCommandCreated(payload: {
         productionId: string;
-        command: any;
+        command: IntercomCommand;
     }): void;
-    handleProductionHealthStats(payload: any): void;
+    handleProductionHealthStats(payload: HealthStatsPayload): void;
     handleSocialOverlayUpdate(payload: {
         productionId: string;
-        comment: any | null;
+        comment: SocialComment | null;
     }): void;
-    handleSocialMessageNew(payload: any): void;
-    handleSocialMessageUpdated(payload: any): void;
-    handleSocialPollCreated(payload: any): void;
-    handleSocialPollUpdated(payload: any): void;
-    handleSocialPollClosed(payload: any): void;
-    handleGraphicsSocialShow(payload: any): void;
+    handleSocialMessageNew(payload: SocialComment & {
+        productionId: string;
+    }): void;
+    handleSocialMessageUpdated(payload: SocialComment & {
+        productionId: string;
+    }): void;
+    handleSocialPollCreated(payload: {
+        productionId: string;
+        [key: string]: unknown;
+    }): void;
+    handleSocialPollUpdated(payload: {
+        productionId: string;
+        [key: string]: unknown;
+    }): void;
+    handleSocialPollClosed(payload: {
+        productionId: string;
+        [key: string]: unknown;
+    }): void;
+    handleGraphicsSocialShow(payload: {
+        productionId: string;
+        comment: SocialComment;
+    }): void;
     handleGraphicsSocialHide(payload: {
         productionId: string;
     }): void;
 }
+export {};

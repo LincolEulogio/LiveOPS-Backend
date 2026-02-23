@@ -36,7 +36,7 @@ let AuthController = class AuthController {
         return this.authService.updateProfile(req.user.userId, data);
     }
     login(dto, req) {
-        return this.authService.login(dto, req.ip);
+        return this.authService.login(dto, req.ip || '127.0.0.1');
     }
     refresh(refreshToken) {
         return this.authService.refresh(refreshToken);

@@ -1,6 +1,13 @@
 import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
+import type { Request } from 'express';
+interface RequestWithUser extends Request {
+    user: {
+        userId: string;
+        tenantId: string;
+    };
+}
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
@@ -26,7 +33,7 @@ export declare class AuthController {
     checkSetup(): Promise<{
         setupRequired: boolean;
     }>;
-    getProfile(req: any): Promise<{
+    getProfile(req: RequestWithUser): Promise<{
         id: string;
         email: string;
         name: string | null;
@@ -41,7 +48,7 @@ export declare class AuthController {
             }[];
         } | null;
     } | null>;
-    updateProfile(req: any, data: {
+    updateProfile(req: RequestWithUser, data: {
         name?: string;
         password?: string;
     }): Promise<{
@@ -59,7 +66,7 @@ export declare class AuthController {
             }[];
         } | null;
     }>;
-    login(dto: LoginUserDto, req: any): Promise<{
+    login(dto: LoginUserDto, req: Request): Promise<{
         accessToken: string;
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
@@ -86,3 +93,4 @@ export declare class AuthController {
         success: boolean;
     }>;
 }
+export {};

@@ -136,7 +136,7 @@ let EventsGateway = class EventsGateway {
         this.logger.debug(`Hardware trigger socket received: ${data.mapKey}`);
         this.eventEmitter.emit('hardware.trigger', data);
     }
-    async handleConnection(client, ...args) {
+    async handleConnection(client) {
         const productionId = client.handshake.query.productionId;
         const userId = client.handshake.query.userId;
         const userName = client.handshake.query.userName;

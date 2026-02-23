@@ -13,6 +13,14 @@ import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import type { Request } from 'express';
+
+interface RequestWithUser extends Request {
+  user: {
+    userId: string;
+    tenantId: string;
+  };
+}
 
 @Controller('auth')
 export class AuthController {
@@ -30,14 +38,14 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  getProfile(@Req() req: any) {
+  getProfile(@Req() req: RequestWithUser) {
     return this.authService.getProfile(req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch('profile')
   updateProfile(
-    @Req() req: any,
+    @Req() req: RequestWithUser,
     @Body() data: { name?: string; password?: string },
   ) {
     return this.authService.updateProfile(req.user.userId, data);
@@ -45,8 +53,8 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  login(@Body() dto: LoginUserDto, @Req() req: any) {
-    return this.authService.login(dto, req.ip);
+  login(@Body() dto: LoginUserDto, @Req() req: Request) {
+    return this.authService.login(dto, req.ip || '127.0.0.1');
   }
 
   @Post('refresh')
