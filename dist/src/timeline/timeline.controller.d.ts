@@ -19,8 +19,8 @@ export declare class TimelineController {
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
-        productionId: string;
         status: import("@prisma/client").$Enums.BlockStatus;
+        productionId: string;
         title: string;
         durationMs: number;
         order: number;
@@ -36,8 +36,8 @@ export declare class TimelineController {
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
-        productionId: string;
         status: import("@prisma/client").$Enums.BlockStatus;
+        productionId: string;
         title: string;
         durationMs: number;
         order: number;
@@ -56,8 +56,8 @@ export declare class TimelineController {
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
-        productionId: string;
         status: import("@prisma/client").$Enums.BlockStatus;
+        productionId: string;
         title: string;
         durationMs: number;
         order: number;
@@ -76,8 +76,8 @@ export declare class TimelineController {
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
-        productionId: string;
         status: import("@prisma/client").$Enums.BlockStatus;
+        productionId: string;
         title: string;
         durationMs: number;
         order: number;
@@ -93,8 +93,8 @@ export declare class TimelineController {
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
-        productionId: string;
         status: import("@prisma/client").$Enums.BlockStatus;
+        productionId: string;
         title: string;
         durationMs: number;
         order: number;
@@ -110,8 +110,8 @@ export declare class TimelineController {
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
-        productionId: string;
         status: import("@prisma/client").$Enums.BlockStatus;
+        productionId: string;
         title: string;
         durationMs: number;
         order: number;

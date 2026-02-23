@@ -5,14 +5,14 @@ export declare class AnalyticsController {
     getTelemetry(id: string, minutes?: string): Promise<{
         id: string;
         productionId: string;
-        timestamp: Date;
-        cpuUsage: number | null;
-        memoryUsage: number | null;
-        fps: number | null;
-        bitrate: number | null;
-        droppedFrames: number | null;
         isStreaming: boolean;
         isRecording: boolean;
+        cpuUsage: number | null;
+        fps: number | null;
+        timestamp: Date;
+        memoryUsage: number | null;
+        bitrate: number | null;
+        droppedFrames: number | null;
     }[]>;
     getReport(id: string): Promise<{
         id: string;

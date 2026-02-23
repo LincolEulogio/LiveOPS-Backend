@@ -53,9 +53,9 @@ export declare class IntercomController {
             id: string;
             createdAt: Date;
             commandId: string;
-            responderId: string;
             response: string;
             note: string | null;
+            responderId: string;
         })[];
         sender: {
             id: string;
@@ -78,6 +78,7 @@ export declare class IntercomController {
     } & {
         id: string;
         createdAt: Date;
+        status: string;
         productionId: string;
         senderId: string;
         targetRoleId: string | null;
@@ -85,6 +86,5 @@ export declare class IntercomController {
         templateId: string | null;
         message: string;
         requiresAck: boolean;
-        status: string;
     })[]>;
 }
