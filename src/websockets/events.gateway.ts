@@ -15,21 +15,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { IntercomService } from '../intercom/intercom.service';
 import { ChatService } from '../chat/chat.service';
 import { ScriptService } from '../script/script.service';
+import type { WebRTCSignalPayload, PresenceMember } from '../common/types/webrtc.types';
 
-interface UserPresence {
-  userId: string;
-  userName: string;
-  roleId: string;
-  roleName: string;
-  lastSeen: string;
-  status: string;
-}
 
-interface WebRTCSignalPayload {
-  productionId: string;
-  targetUserId: string;
-  signal: unknown;
-}
+interface UserPresence extends PresenceMember { }
+
+// WebRTCSignalPayload is now imported from webrtc.types.ts
 
 interface SocialComment {
   id: string;

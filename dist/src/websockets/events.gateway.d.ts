@@ -5,11 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { IntercomService } from '../intercom/intercom.service';
 import { ChatService } from '../chat/chat.service';
 import { ScriptService } from '../script/script.service';
-interface WebRTCSignalPayload {
-    productionId: string;
-    targetUserId: string;
-    signal: unknown;
-}
+import type { WebRTCSignalPayload } from '../common/types/webrtc.types';
 interface SocialComment {
     id: string;
     author: string;
