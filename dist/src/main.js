@@ -10,10 +10,13 @@ const common_1 = require("@nestjs/common");
 const helmet_1 = __importDefault(require("helmet"));
 const all_exceptions_filter_1 = require("./common/filters/all-exceptions.filter");
 const nestjs_pino_1 = require("nestjs-pino");
+const config_1 = require("@nestjs/config");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule, {
         bufferLogs: true,
     });
+    const configService = app.get(config_1.ConfigService);
+    const port = configService.get('PORT', 3000);
     app.useLogger(app.get(nestjs_pino_1.Logger));
     app.use((0, helmet_1.default)());
     app.enableCors({
@@ -28,7 +31,8 @@ async function bootstrap() {
         forbidNonWhitelisted: false,
     }));
     app.useGlobalFilters(new all_exceptions_filter_1.AllExceptionsFilter());
-    await app.listen(process.env.PORT ?? 3000);
+    await app.listen(port);
+    console.log(`Backend is running on port: ${port}`);
 }
 bootstrap();
 //# sourceMappingURL=main.js.map

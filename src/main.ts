@@ -5,11 +5,15 @@ import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { Logger } from 'nestjs-pino';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
+
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('PORT', 3000);
 
   // Logger
   app.useLogger(app.get(Logger));
@@ -19,7 +23,7 @@ async function bootstrap() {
 
   // Strict CORS configuration
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3001', // Ideally specify actual origins in prod
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3001', // Updated to match new frontend port
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
@@ -38,6 +42,7 @@ async function bootstrap() {
   // Exception Filter
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(port);
+  console.log(`Backend is running on port: ${port}`);
 }
 bootstrap();
