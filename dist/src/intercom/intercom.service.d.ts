@@ -74,9 +74,9 @@ export declare class IntercomService {
             id: string;
             createdAt: Date;
             commandId: string;
-            responderId: string;
             response: string;
             note: string | null;
+            responderId: string;
         })[];
     } & {
         id: string;
