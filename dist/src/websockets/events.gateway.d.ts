@@ -106,6 +106,16 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         status: string;
         commandId: string;
     }>;
+    handleChatDirect(data: {
+        productionId: string;
+        senderId: string;
+        targetUserId: string;
+        message: string;
+        senderName?: string;
+    }, client: Socket): Promise<{
+        status: string;
+        messageId: string;
+    }>;
     handleCommandAck(data: {
         commandId: string;
         responderId: string;

@@ -389,6 +389,45 @@ export class EventsGateway
     return { status: 'ok', commandId: command.id };
   }
 
+  @SubscribeMessage('chat.direct')
+  async handleChatDirect(
+    @MessageBody()
+    data: {
+      productionId: string;
+      senderId: string;
+      targetUserId: string;
+      message: string;
+      senderName?: string;
+    },
+    @ConnectedSocket() client: Socket,
+  ) {
+    console.log(`[Intercom] Direct Chat from ${data.senderId} to ${data.targetUserId}`);
+
+    const payload = {
+      id: `chat-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      productionId: data.productionId,
+      senderId: data.senderId,
+      targetUserId: data.targetUserId,
+      message: data.message,
+      senderName: data.senderName,
+      templateId: 'chat',
+      requiresAck: false,
+      createdAt: new Date().toISOString(),
+      status: 'SENT',
+      sender: {
+        id: data.senderId,
+        name: data.senderName || 'Sender',
+      },
+    };
+
+    // Broadcast only to the specific production room (frontend handles filtering by targetUserId)
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('command.received', payload);
+
+    return { status: 'ok', messageId: payload.id };
+  }
+
   @SubscribeMessage('command.ack')
   async handleCommandAck(
     @MessageBody()

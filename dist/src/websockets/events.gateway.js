@@ -225,6 +225,29 @@ let EventsGateway = class EventsGateway {
         this.broadcastPresence(data.productionId);
         return { status: 'ok', commandId: command.id };
     }
+    async handleChatDirect(data, client) {
+        console.log(`[Intercom] Direct Chat from ${data.senderId} to ${data.targetUserId}`);
+        const payload = {
+            id: `chat-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            productionId: data.productionId,
+            senderId: data.senderId,
+            targetUserId: data.targetUserId,
+            message: data.message,
+            senderName: data.senderName,
+            templateId: 'chat',
+            requiresAck: false,
+            createdAt: new Date().toISOString(),
+            status: 'SENT',
+            sender: {
+                id: data.senderId,
+                name: data.senderName || 'Sender',
+            },
+        };
+        this.server
+            .to(`production_${data.productionId}`)
+            .emit('command.received', payload);
+        return { status: 'ok', messageId: payload.id };
+    }
     async handleCommandAck(data, client) {
         console.log(`[Intercom] Received Ack from ${data.responderId} for command ${data.commandId}`);
         const response = await this.prisma.commandResponse.create({
@@ -479,6 +502,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
     __metadata("design:returntype", Promise)
 ], EventsGateway.prototype, "handleCommandSend", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('chat.direct'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", Promise)
+], EventsGateway.prototype, "handleChatDirect", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('command.ack'),
     __param(0, (0, websockets_1.MessageBody)()),
