@@ -327,6 +327,41 @@ let EventsGateway = class EventsGateway {
             .to(`production_${payload.productionId}`)
             .emit('social.overlay_update', payload);
     }
+    handleSocialMessageNew(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('social.message.new', payload);
+    }
+    handleSocialMessageUpdated(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('social.message.updated', payload);
+    }
+    handleSocialPollCreated(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('social.poll.created', payload);
+    }
+    handleSocialPollUpdated(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('social.poll.updated', payload);
+    }
+    handleSocialPollClosed(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('social.poll.closed', payload);
+    }
+    handleGraphicsSocialShow(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('graphics.social.show', payload);
+    }
+    handleGraphicsSocialHide(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('graphics.social.hide', payload);
+    }
 };
 exports.EventsGateway = EventsGateway;
 __decorate([
@@ -512,6 +547,48 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], EventsGateway.prototype, "handleSocialOverlayUpdate", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('social.message.new'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleSocialMessageNew", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('social.message.updated'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleSocialMessageUpdated", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('social.poll.created'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleSocialPollCreated", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('social.poll.updated'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleSocialPollUpdated", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('social.poll.closed'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleSocialPollClosed", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('graphics.social.show'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleGraphicsSocialShow", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('graphics.social.hide'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleGraphicsSocialHide", null);
 exports.EventsGateway = EventsGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {

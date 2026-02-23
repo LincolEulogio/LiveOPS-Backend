@@ -162,4 +162,13 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         productionId: string;
         comment: any | null;
     }): void;
+    handleSocialMessageNew(payload: any): void;
+    handleSocialMessageUpdated(payload: any): void;
+    handleSocialPollCreated(payload: any): void;
+    handleSocialPollUpdated(payload: any): void;
+    handleSocialPollClosed(payload: any): void;
+    handleGraphicsSocialShow(payload: any): void;
+    handleGraphicsSocialHide(payload: {
+        productionId: string;
+    }): void;
 }

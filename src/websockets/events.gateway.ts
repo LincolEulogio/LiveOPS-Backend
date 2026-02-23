@@ -586,4 +586,55 @@ export class EventsGateway
       .to(`production_${payload.productionId}`)
       .emit('social.overlay_update', payload);
   }
+
+  // --- External Social Events Forwarding ---
+
+  @OnEvent('social.message.new')
+  handleSocialMessageNew(payload: any) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('social.message.new', payload);
+  }
+
+  @OnEvent('social.message.updated')
+  handleSocialMessageUpdated(payload: any) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('social.message.updated', payload);
+  }
+
+  @OnEvent('social.poll.created')
+  handleSocialPollCreated(payload: any) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('social.poll.created', payload);
+  }
+
+  @OnEvent('social.poll.updated')
+  handleSocialPollUpdated(payload: any) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('social.poll.updated', payload);
+  }
+
+  @OnEvent('social.poll.closed')
+  handleSocialPollClosed(payload: any) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('social.poll.closed', payload);
+  }
+
+  @OnEvent('graphics.social.show')
+  handleGraphicsSocialShow(payload: any) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('graphics.social.show', payload);
+  }
+
+  @OnEvent('graphics.social.hide')
+  handleGraphicsSocialHide(payload: { productionId: string }) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('graphics.social.hide', payload);
+  }
 }
