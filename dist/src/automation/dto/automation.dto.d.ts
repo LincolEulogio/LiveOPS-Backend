@@ -1,10 +1,13 @@
+export type JsonValue = string | number | boolean | null | {
+    [key: string]: JsonValue;
+} | JsonValue[];
 export declare class CreateTriggerDto {
     eventType: string;
-    condition?: any;
+    condition?: JsonValue;
 }
 export declare class CreateActionDto {
     actionType: string;
-    payload?: any;
+    payload?: JsonValue;
     order?: number;
 }
 export declare class CreateRuleDto {

@@ -37,13 +37,13 @@ export class AutomationService {
         description: dto.description,
         isEnabled: dto.isEnabled ?? true,
         triggers: {
-          create: dto.triggers,
+          create: dto.triggers as any, // Cast local para compatibilidad con Prisma Create Input
         },
         actions: {
           create: dto.actions.map((a, idx) => ({
             ...a,
             order: a.order ?? idx,
-          })),
+          })) as any,
         },
       },
       include: { triggers: true, actions: true },

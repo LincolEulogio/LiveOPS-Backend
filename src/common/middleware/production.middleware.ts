@@ -7,11 +7,15 @@ import {
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 
+interface RequestWithProduction extends Request {
+  productionId?: string;
+}
+
 @Injectable()
 export class ProductionMiddleware implements NestMiddleware {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
-  async use(req: Request, res: Response, next: NextFunction) {
+  async use(req: RequestWithProduction, res: Response, next: NextFunction) {
     const productionId = req.headers['x-production-id'] as string;
 
     // We only validate if the header is present, endpoints without it bypass this
@@ -24,7 +28,7 @@ export class ProductionMiddleware implements NestMiddleware {
         throw new BadRequestException('Invalid x-production-id header');
       }
       // Attach to request object for easy access
-      (req as any).productionId = productionId;
+      req.productionId = productionId;
     }
 
     next();

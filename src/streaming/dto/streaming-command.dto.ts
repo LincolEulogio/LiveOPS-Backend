@@ -1,5 +1,7 @@
 import { IsNotEmpty, IsString, IsOptional, IsObject } from 'class-validator';
 
+export type JsonValue = string | number | boolean | null | { [key: string]: JsonValue } | JsonValue[];
+
 export class StreamingCommandDto {
   @IsString()
   @IsNotEmpty()
@@ -11,5 +13,5 @@ export class StreamingCommandDto {
 
   @IsOptional()
   @IsObject()
-  payload?: any;
+  payload?: JsonValue;
 }

@@ -92,10 +92,11 @@ let StreamingService = class StreamingService {
             case 'VMIX_FADE':
                 return this.vmixService.fade(productionId);
             case 'VMIX_SELECT_INPUT':
-                if (!dto.payload?.input)
+                const payload = dto.payload;
+                if (!payload?.input)
                     throw new common_1.BadRequestException('input is required in payload');
                 return this.vmixService.changeInput(productionId, {
-                    input: dto.payload.input,
+                    input: payload.input,
                 });
             default:
                 throw new common_1.BadRequestException(`Unknown vMix command: ${dto.type}`);

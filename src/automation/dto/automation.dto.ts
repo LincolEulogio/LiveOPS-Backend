@@ -1,4 +1,6 @@
 import { Type } from 'class-transformer';
+// ...
+export type JsonValue = string | number | boolean | null | { [key: string]: JsonValue } | JsonValue[];
 import {
   IsArray,
   IsBoolean,
@@ -15,7 +17,7 @@ export class CreateTriggerDto {
   eventType: string;
 
   @IsOptional()
-  condition?: any;
+  condition?: JsonValue;
 }
 
 export class CreateActionDto {
@@ -24,7 +26,7 @@ export class CreateActionDto {
   actionType: string;
 
   @IsOptional()
-  payload?: any;
+  payload?: JsonValue;
 
   @IsInt()
   @IsOptional()

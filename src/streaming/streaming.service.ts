@@ -14,7 +14,7 @@ export class StreamingService {
     private prisma: PrismaService,
     private obsService: ObsService,
     private vmixService: VmixService,
-  ) {}
+  ) { }
 
   async getStreamingState(productionId: string) {
     const production = await this.prisma.production.findUnique({
@@ -98,10 +98,11 @@ export class StreamingService {
       case 'VMIX_FADE':
         return this.vmixService.fade(productionId);
       case 'VMIX_SELECT_INPUT':
-        if (!dto.payload?.input)
+        const payload = dto.payload as Record<string, any>;
+        if (!payload?.input)
           throw new BadRequestException('input is required in payload');
         return this.vmixService.changeInput(productionId, {
-          input: dto.payload.input,
+          input: payload.input,
         });
       default:
         throw new BadRequestException(`Unknown vMix command: ${dto.type}`);
