@@ -712,4 +712,18 @@ export class EventsGateway
       .to(`production_${payload.productionId}`)
       .emit('graphics.social.hide', payload);
   }
+
+  @OnEvent('overlay.broadcast_data')
+  handleOverlayBroadcastData(payload: { productionId: string; data: Record<string, any> }) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('overlay.update_data', payload.data);
+  }
+
+  @OnEvent('overlay.template_updated')
+  handleOverlayTemplateUpdated(payload: { productionId: string; template: any }) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit(`overlay.template_update:${payload.template.id}`, payload.template);
+  }
 }

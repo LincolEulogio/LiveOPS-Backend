@@ -96,6 +96,15 @@ let TimelineService = TimelineService_1 = class TimelineService {
             blockId: block.id,
             linkedScene: block.linkedScene,
         });
+        this.eventEmitter.emit('overlay.broadcast_data', {
+            productionId,
+            data: {
+                active_block_title: updated.title,
+                active_block_notes: updated.notes || '',
+                active_block_guest: (updated.notes?.match(/Guest:\s*([^|]*)/) || [])[1]?.trim() || '',
+                active_block_duration: updated.durationMs ? `${Math.floor(updated.durationMs / 1000)}s` : '',
+            }
+        });
         this.emitTimelineUpdated(productionId);
         return updated;
     }

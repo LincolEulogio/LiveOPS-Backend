@@ -95,6 +95,17 @@ export class SocialService {
 
         if (status === 'ON_AIR') {
             this.eventEmitter.emit('graphics.social.show', message);
+
+            // Also broadcast for general Overlay Data Binding
+            this.eventEmitter.emit('overlay.broadcast_data', {
+                productionId,
+                data: {
+                    latest_comment_author: message.author,
+                    latest_comment_content: message.content,
+                    latest_comment_platform: message.platform,
+                    latest_comment_avatar: message.authorAvatar || '',
+                }
+            });
         } else if (status === 'APPROVED' || status === 'REJECTED' || status === 'PENDING') {
             // If it was on-air and moved to something else, clear overlay
             this.eventEmitter.emit('graphics.social.hide', { productionId });

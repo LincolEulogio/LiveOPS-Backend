@@ -34,6 +34,7 @@ const script_module_1 = require("./script/script.module");
 const social_module_1 = require("./social/social.module");
 const hardware_module_1 = require("./hardware/hardware.module");
 const notifications_module_1 = require("./notifications/notifications.module");
+const overlays_module_1 = require("./overlays/overlays.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer.apply(production_middleware_1.ProductionMiddleware).forRoutes('*');
@@ -78,6 +79,7 @@ exports.AppModule = AppModule = __decorate([
             social_module_1.SocialModule,
             hardware_module_1.HardwareModule,
             notifications_module_1.NotificationsModule,
+            overlays_module_1.OverlaysModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

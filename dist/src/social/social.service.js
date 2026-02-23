@@ -74,6 +74,15 @@ let SocialService = SocialService_1 = class SocialService {
         this.eventEmitter.emit('social.message.updated', message);
         if (status === 'ON_AIR') {
             this.eventEmitter.emit('graphics.social.show', message);
+            this.eventEmitter.emit('overlay.broadcast_data', {
+                productionId,
+                data: {
+                    latest_comment_author: message.author,
+                    latest_comment_content: message.content,
+                    latest_comment_platform: message.platform,
+                    latest_comment_avatar: message.authorAvatar || '',
+                }
+            });
         }
         else if (status === 'APPROVED' || status === 'REJECTED' || status === 'PENDING') {
             this.eventEmitter.emit('graphics.social.hide', { productionId });

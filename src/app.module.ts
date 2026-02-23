@@ -25,6 +25,7 @@ import { ScriptModule } from './script/script.module';
 import { SocialModule } from './social/social.module';
 import { HardwareModule } from './hardware/hardware.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { OverlaysModule } from './overlays/overlays.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     SocialModule,
     HardwareModule,
     NotificationsModule,
+    OverlaysModule,
   ],
   controllers: [AppController],
   providers: [

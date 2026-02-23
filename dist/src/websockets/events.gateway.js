@@ -385,6 +385,16 @@ let EventsGateway = class EventsGateway {
             .to(`production_${payload.productionId}`)
             .emit('graphics.social.hide', payload);
     }
+    handleOverlayBroadcastData(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('overlay.update_data', payload.data);
+    }
+    handleOverlayTemplateUpdated(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit(`overlay.template_update:${payload.template.id}`, payload.template);
+    }
 };
 exports.EventsGateway = EventsGateway;
 __decorate([
@@ -620,6 +630,18 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], EventsGateway.prototype, "handleGraphicsSocialHide", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('overlay.broadcast_data'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleOverlayBroadcastData", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('overlay.template_updated'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleOverlayTemplateUpdated", null);
 exports.EventsGateway = EventsGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {

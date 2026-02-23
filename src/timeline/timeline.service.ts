@@ -18,7 +18,7 @@ export class TimelineService {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
-  ) {}
+  ) { }
 
   // --- CRUD Operations --- //
 
@@ -116,6 +116,17 @@ export class TimelineService {
       productionId,
       blockId: block.id,
       linkedScene: block.linkedScene,
+    });
+
+    // Broadcast data for Overlays
+    this.eventEmitter.emit('overlay.broadcast_data', {
+      productionId,
+      data: {
+        active_block_title: updated.title,
+        active_block_notes: updated.notes || '',
+        active_block_guest: (updated.notes?.match(/Guest:\s*([^|]*)/) || [])[1]?.trim() || '',
+        active_block_duration: updated.durationMs ? `${Math.floor(updated.durationMs / 1000)}s` : '',
+      }
     });
 
     this.emitTimelineUpdated(productionId);

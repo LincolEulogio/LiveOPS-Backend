@@ -231,5 +231,13 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
     handleGraphicsSocialHide(payload: {
         productionId: string;
     }): void;
+    handleOverlayBroadcastData(payload: {
+        productionId: string;
+        data: Record<string, any>;
+    }): void;
+    handleOverlayTemplateUpdated(payload: {
+        productionId: string;
+        template: any;
+    }): void;
 }
 export {};
