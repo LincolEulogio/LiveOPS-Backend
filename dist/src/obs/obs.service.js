@@ -73,8 +73,9 @@ let ObsService = ObsService_1 = class ObsService {
             return { success: true, sceneName: dto.sceneName };
         }
         catch (e) {
-            this.logger.error(`Failed to change scene: ${e.message}`);
-            throw new common_1.BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
+            const error = e;
+            this.logger.error(`Failed to change scene: ${error.message}`);
+            throw new common_1.BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
         }
     }
     async startStream(productionId) {
@@ -84,8 +85,9 @@ let ObsService = ObsService_1 = class ObsService {
             return { success: true };
         }
         catch (e) {
-            this.logger.error(`Failed to start stream: ${e.message}`);
-            throw new common_1.BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
+            const error = e;
+            this.logger.error(`Failed to start stream: ${error.message}`);
+            throw new common_1.BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
         }
     }
     async stopStream(productionId) {
@@ -95,8 +97,9 @@ let ObsService = ObsService_1 = class ObsService {
             return { success: true };
         }
         catch (e) {
-            this.logger.error(`Failed to stop stream: ${e.message}`);
-            throw new common_1.BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
+            const error = e;
+            this.logger.error(`Failed to stop stream: ${error.message}`);
+            throw new common_1.BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
         }
     }
     async startRecord(productionId) {
@@ -106,8 +109,9 @@ let ObsService = ObsService_1 = class ObsService {
             return { success: true };
         }
         catch (e) {
-            this.logger.error(`Failed to start record: ${e.message}`);
-            throw new common_1.BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
+            const error = e;
+            this.logger.error(`Failed to start record: ${error.message}`);
+            throw new common_1.BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
         }
     }
     async stopRecord(productionId) {
@@ -117,8 +121,9 @@ let ObsService = ObsService_1 = class ObsService {
             return { success: true };
         }
         catch (e) {
-            this.logger.error(`Failed to stop record: ${e.message}`);
-            throw new common_1.BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
+            const error = e;
+            this.logger.error(`Failed to stop record: ${error.message}`);
+            throw new common_1.BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
         }
     }
 };

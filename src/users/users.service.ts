@@ -13,6 +13,7 @@ import {
   UpdateRoleDto,
 } from './dto/users.dto';
 import * as bcrypt from 'bcrypt';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -158,7 +159,7 @@ export class UsersService implements OnModuleInit {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user || user.deletedAt) throw new NotFoundException('User not found');
 
-    const data: any = { ...dto };
+    const data: Prisma.UserUncheckedUpdateInput = { ...dto };
     if (dto.password) {
       data.password = await bcrypt.hash(dto.password, 10);
     }

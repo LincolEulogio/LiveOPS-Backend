@@ -8,6 +8,15 @@ export enum NotificationPlatform {
     GENERIC = 'GENERIC',
 }
 
+interface WebhookType {
+    id: string;
+    productionId: string;
+    name: string;
+    url: string;
+    platform: string;
+    isEnabled: boolean;
+}
+
 @Injectable()
 export class NotificationsService {
     private readonly logger = new Logger(NotificationsService.name);
@@ -42,9 +51,9 @@ export class NotificationsService {
         }
     }
 
-    private async dispatchWebhook(webhook: any, message: string) {
+    private async dispatchWebhook(webhook: WebhookType, message: string) {
         try {
-            let payload: any;
+            let payload: unknown;
 
             if (webhook.platform === NotificationPlatform.DISCORD) {
                 payload = {
@@ -80,9 +89,10 @@ export class NotificationsService {
 
             await axios.post(webhook.url, payload);
             this.logger.log(`Successfully dispatched notification to ${webhook.name} (${webhook.platform})`);
-        } catch (error: any) {
-            this.logger.error(`Failed to dispatch notification to ${webhook.name}: ${error.message}`);
-            throw error;
+        } catch (error: unknown) {
+            const err = error as Error;
+            this.logger.error(`Failed to dispatch notification to ${webhook.name}: ${err.message}`);
+            throw err;
         }
     }
 }

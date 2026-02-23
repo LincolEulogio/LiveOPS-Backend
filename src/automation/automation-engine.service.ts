@@ -6,6 +6,22 @@ import { ObsService } from '../obs/obs.service';
 import { VmixService } from '../vmix/vmix.service';
 import { IntercomService } from '../intercom/intercom.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { Rule, Trigger, Action } from '@prisma/client';
+
+interface TriggerCondition {
+  secondsBefore?: number;
+  [key: string]: string | number | boolean | undefined | null;
+}
+
+interface EventPayload {
+  productionId: string;
+  [key: string]: string | number | boolean | undefined | null | Date | object;
+}
+
+interface RuleWithActions extends Rule {
+  triggers: Trigger[];
+  actions: Action[];
+}
 
 @Injectable()
 export class AutomationEngineService {
@@ -61,7 +77,7 @@ export class AutomationEngineService {
         for (const trigger of rule.triggers) {
           if (trigger.eventType !== 'timeline.before_end') continue;
 
-          const condition = trigger.condition as any;
+          const condition = trigger.condition as unknown as TriggerCondition;
           const triggerSeconds = condition?.secondsBefore || 0;
 
           // Trigger if we just hit the mark (with a 1s tolerance)
@@ -92,7 +108,7 @@ export class AutomationEngineService {
    * Wildcard '**' requires EventEmitter2 wildcard feature to be enabled.
    */
   @OnEvent('**')
-  async handleEvent(eventPrefix: string, payload: any) {
+  async handleEvent(eventPrefix: string, payload: EventPayload) {
     // Most domain events will have productionId in the payload
     const productionId = payload?.productionId;
     if (!productionId) return;
@@ -142,6 +158,7 @@ export class AutomationEngineService {
       include: {
         rule: {
           include: {
+            triggers: true,
             actions: { orderBy: { order: 'asc' } },
           },
         },
@@ -149,8 +166,9 @@ export class AutomationEngineService {
     });
 
     if (mapping && mapping.rule && mapping.rule.isEnabled) {
-      this.logger.log(`Executing Rule "${mapping.rule.name}" via hardware mapping: ${payload.mapKey}`);
-      await this.executeActions(mapping.rule, { ...payload, isHardware: true });
+      const ruleWithActions = mapping.rule as RuleWithActions;
+      this.logger.log(`Executing Rule "${ruleWithActions.name}" via hardware mapping: ${payload.mapKey}`);
+      await this.executeActions(ruleWithActions, { ...payload, isHardware: true });
     }
   }
 
@@ -159,9 +177,9 @@ export class AutomationEngineService {
    * Basic implementation: JSON subset matching.
    */
   private evaluateTriggers(
-    triggers: any[],
+    triggers: Trigger[],
     eventPrefix: string,
-    payload: any,
+    payload: EventPayload,
   ): boolean {
     const matchingTriggers = triggers.filter(
       (t) => t.eventType === eventPrefix,
@@ -171,7 +189,7 @@ export class AutomationEngineService {
       if (!t.condition) return true; // No conditions = run on any event of this type
 
       // Check if payload matches condition properties
-      const conditionObj = t.condition as Record<string, any>;
+      const conditionObj = t.condition as unknown as Record<string, string | number | boolean | null>;
       let matches = true;
       for (const [key, val] of Object.entries(conditionObj)) {
         if (payload[key] !== val) {
@@ -184,19 +202,19 @@ export class AutomationEngineService {
     return false;
   }
 
-  private async executeActions(rule: any, eventPayload: any) {
+  private async executeActions(rule: RuleWithActions, eventPayload: EventPayload) {
     try {
       for (const action of rule.actions) {
         this.logger.debug(
           `Executing action ${action.actionType} for rule ${rule.name}`,
         );
-        const payload = action.payload;
+        const payload = action.payload as unknown as Record<string, string | number | boolean | null>;
 
         switch (action.actionType) {
           case 'obs.changeScene':
             if (payload?.sceneName) {
               await this.obsService.changeScene(rule.productionId, {
-                sceneName: payload.sceneName,
+                sceneName: payload.sceneName as string,
               });
             }
             break;
@@ -207,14 +225,14 @@ export class AutomationEngineService {
 
           case 'vmix.fade':
             await this.vmixService.fade(rule.productionId, {
-              duration: payload?.duration || 500,
+              duration: (payload?.duration as number) || 500,
             });
             break;
 
           case 'vmix.changeInput':
             if (payload?.input) {
               await this.vmixService.changeInput(rule.productionId, {
-                input: payload.input,
+                input: payload.input as number,
               });
             }
             break;
@@ -222,10 +240,10 @@ export class AutomationEngineService {
           case 'intercom.send':
             if (payload?.templateId || payload?.message) {
               // If templateId is provided and message is empty, fetch template name
-              let message = payload.message;
+              let message = payload.message as string;
               if (!message && payload.templateId) {
                 const template = await this.prisma.commandTemplate.findUnique({
-                  where: { id: payload.templateId },
+                  where: { id: payload.templateId as string },
                 });
                 message = template?.name || 'Automation Alert';
               }
@@ -233,10 +251,10 @@ export class AutomationEngineService {
               await this.intercomService.sendCommand({
                 productionId: rule.productionId,
                 senderId: '00000000-0000-0000-0000-000000000000', // SYSTEM ID
-                targetRoleId: payload?.targetRoleId,
-                templateId: payload?.templateId,
+                targetRoleId: payload?.targetRoleId as string,
+                templateId: payload?.templateId as string,
                 message: message,
-                requiresAck: payload?.requiresAck ?? true,
+                requiresAck: (payload?.requiresAck as boolean) ?? true,
               });
             }
             break;
@@ -245,7 +263,7 @@ export class AutomationEngineService {
             if (payload?.url || payload?.message) {
               await this.notificationsService.sendNotification(
                 rule.productionId,
-                payload.message || `Automation Rule Triggered: ${rule.name}`,
+                (payload.message as string) || `Automation Rule Triggered: ${rule.name}`,
               );
             }
             break;
@@ -263,17 +281,18 @@ export class AutomationEngineService {
         rule.id,
         rule.productionId,
         'SUCCESS',
-        `Executed for ${context}`,
+        `Executed for ${context as string}`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       this.logger.error(
-        `Rule execution failed for rule ${rule.id}: ${error.message}`,
+        `Rule execution failed for rule ${rule.id}: ${err.message}`,
       );
       await this.logExecution(
         rule.id,
         rule.productionId,
         'ERROR',
-        error.message,
+        err.message,
       );
     }
   }

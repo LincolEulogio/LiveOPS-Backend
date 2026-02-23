@@ -15,7 +15,7 @@ export class VmixService {
   constructor(
     private prisma: PrismaService,
     private vmixManager: VmixConnectionManager,
-  ) {}
+  ) { }
 
   async saveConnection(productionId: string, dto: SaveVmixConnectionDto) {
     const connection = await this.prisma.vmixConnection.upsert({
@@ -70,9 +70,10 @@ export class VmixService {
         Input: dto.input,
       });
       return { success: true, input: dto.input, action: 'cut' };
-    } catch (e: any) {
-      this.logger.error(`Failed to change input: ${e.message}`);
-      throw new BadRequestException(`vMix Error: ${e.message || 'Unknown'}`);
+    } catch (e: unknown) {
+      const error = e as Error;
+      this.logger.error(`Failed to change input: ${error.message}`);
+      throw new BadRequestException(`vMix Error: ${error.message || 'Unknown'}`);
     }
   }
 
@@ -81,9 +82,10 @@ export class VmixService {
       // Triggers whatever is in Preview to cut to Active
       await this.vmixManager.sendCommand(productionId, 'Cut');
       return { success: true, action: 'cut' };
-    } catch (e: any) {
-      this.logger.error(`Failed to trigger cut: ${e.message}`);
-      throw new BadRequestException(`vMix Error: ${e.message || 'Unknown'}`);
+    } catch (e: unknown) {
+      const error = e as Error;
+      this.logger.error(`Failed to trigger cut: ${error.message}`);
+      throw new BadRequestException(`vMix Error: ${error.message || 'Unknown'}`);
     }
   }
 
@@ -93,9 +95,10 @@ export class VmixService {
       const params = dto?.duration ? { Duration: dto.duration } : undefined;
       await this.vmixManager.sendCommand(productionId, 'Fade', params);
       return { success: true, action: 'fade', duration: dto?.duration };
-    } catch (e: any) {
-      this.logger.error(`Failed to trigger fade: ${e.message}`);
-      throw new BadRequestException(`vMix Error: ${e.message || 'Unknown'}`);
+    } catch (e: unknown) {
+      const error = e as Error;
+      this.logger.error(`Failed to trigger fade: ${error.message}`);
+      throw new BadRequestException(`vMix Error: ${error.message || 'Unknown'}`);
     }
   }
 }

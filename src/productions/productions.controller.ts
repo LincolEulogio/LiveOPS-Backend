@@ -11,6 +11,7 @@ import {
   Query,
   Logger,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { ProductionsService } from './productions.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -23,26 +24,33 @@ import {
   GetProductionsQueryDto,
 } from './dto/production.dto';
 
+interface RequestWithUser extends Request {
+  user: {
+    userId: string;
+    tenantId: string;
+  };
+}
+
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions')
 export class ProductionsController {
   private readonly logger = new Logger(ProductionsController.name);
 
-  constructor(private readonly productionsService: ProductionsService) {}
+  constructor(private readonly productionsService: ProductionsService) { }
 
   @Post()
   @Permissions('production:create')
-  create(@Req() req: any, @Body() dto: CreateProductionDto) {
+  create(@Req() req: RequestWithUser, @Body() dto: CreateProductionDto) {
     return this.productionsService.create(req.user.userId, dto);
   }
 
   @Get()
-  findAll(@Req() req: any, @Query() query: GetProductionsQueryDto) {
+  findAll(@Req() req: RequestWithUser, @Query() query: GetProductionsQueryDto) {
     return this.productionsService.findAllForUser(req.user.userId, query);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Req() req: any) {
+  findOne(@Param('id') id: string, @Req() req: RequestWithUser) {
     return this.productionsService.findOne(id, req.user.userId);
   }
 

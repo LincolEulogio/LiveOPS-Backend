@@ -3,6 +3,10 @@ import { ObsService } from '../obs/obs.service';
 import { VmixService } from '../vmix/vmix.service';
 import { IntercomService } from '../intercom/intercom.service';
 import { NotificationsService } from '../notifications/notifications.service';
+interface EventPayload {
+    productionId: string;
+    [key: string]: string | number | boolean | undefined | null | Date | object;
+}
 export declare class AutomationEngineService {
     private prisma;
     private obsService;
@@ -12,7 +16,7 @@ export declare class AutomationEngineService {
     private readonly logger;
     constructor(prisma: PrismaService, obsService: ObsService, vmixService: VmixService, intercomService: IntercomService, notificationsService: NotificationsService);
     checkTimeTriggers(): Promise<void>;
-    handleEvent(eventPrefix: string, payload: any): Promise<void>;
+    handleEvent(eventPrefix: string, payload: EventPayload): Promise<void>;
     handleHardwareTrigger(payload: {
         productionId: string;
         mapKey: string;
@@ -21,3 +25,4 @@ export declare class AutomationEngineService {
     private executeActions;
     private logExecution;
 }
+export {};

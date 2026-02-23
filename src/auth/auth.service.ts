@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
+import { Prisma } from '@prisma/client';
 
 import { UsersService } from '../users/users.service';
 
@@ -44,7 +45,7 @@ export class AuthService {
     userId: string,
     data: { name?: string; password?: string },
   ) {
-    const updateData: any = {};
+    const updateData: Prisma.UserUpdateInput = {};
     if (data.name) updateData.name = data.name;
     if (data.password)
       updateData.password = await bcrypt.hash(data.password, 10);
@@ -160,7 +161,10 @@ export class AuthService {
           ipAddress,
         },
       })
-      .catch((e: any) => console.error('Failed to write audit log', e));
+      .catch((e: unknown) => {
+        const err = e as Error;
+        console.error('Failed to write audit log', err.message);
+      });
 
     const tokens = await this.generateTokens(user.id, user.tenantId);
     const fullUser = await this.prisma.user.findUnique({

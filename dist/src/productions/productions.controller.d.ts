@@ -1,10 +1,17 @@
+import { Request } from 'express';
 import { ProductionsService } from './productions.service';
 import { CreateProductionDto, UpdateProductionDto, UpdateProductionStateDto, AssignUserDto, GetProductionsQueryDto } from './dto/production.dto';
+interface RequestWithUser extends Request {
+    user: {
+        userId: string;
+        tenantId: string;
+    };
+}
 export declare class ProductionsController {
     private readonly productionsService;
     private readonly logger;
     constructor(productionsService: ProductionsService);
-    create(req: any, dto: CreateProductionDto): Promise<{
+    create(req: RequestWithUser, dto: CreateProductionDto): Promise<{
         id: string;
         name: string;
         createdAt: Date;
@@ -17,7 +24,7 @@ export declare class ProductionsController {
         isRehearsal: boolean;
         publicStatusEnabled: boolean;
     }>;
-    findAll(req: any, query: GetProductionsQueryDto): Promise<{
+    findAll(req: RequestWithUser, query: GetProductionsQueryDto): Promise<{
         data: ({
             users: ({
                 role: {
@@ -67,7 +74,7 @@ export declare class ProductionsController {
             lastPage: number;
         };
     }>;
-    findOne(id: string, req: any): Promise<{
+    findOne(id: string, req: RequestWithUser): Promise<{
         users: ({
             user: {
                 id: string;
@@ -186,3 +193,4 @@ export declare class ProductionsController {
         publicStatusEnabled: boolean;
     }>;
 }
+export {};

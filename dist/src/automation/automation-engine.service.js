@@ -122,14 +122,16 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
             include: {
                 rule: {
                     include: {
+                        triggers: true,
                         actions: { orderBy: { order: 'asc' } },
                     },
                 },
             },
         });
         if (mapping && mapping.rule && mapping.rule.isEnabled) {
-            this.logger.log(`Executing Rule "${mapping.rule.name}" via hardware mapping: ${payload.mapKey}`);
-            await this.executeActions(mapping.rule, { ...payload, isHardware: true });
+            const ruleWithActions = mapping.rule;
+            this.logger.log(`Executing Rule "${ruleWithActions.name}" via hardware mapping: ${payload.mapKey}`);
+            await this.executeActions(ruleWithActions, { ...payload, isHardware: true });
         }
     }
     evaluateTriggers(triggers, eventPrefix, payload) {
@@ -212,8 +214,9 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
             await this.logExecution(rule.id, rule.productionId, 'SUCCESS', `Executed for ${context}`);
         }
         catch (error) {
-            this.logger.error(`Rule execution failed for rule ${rule.id}: ${error.message}`);
-            await this.logExecution(rule.id, rule.productionId, 'ERROR', error.message);
+            const err = error;
+            this.logger.error(`Rule execution failed for rule ${rule.id}: ${err.message}`);
+            await this.logExecution(rule.id, rule.productionId, 'ERROR', err.message);
         }
     }
     async logExecution(ruleId, productionId, status, details) {

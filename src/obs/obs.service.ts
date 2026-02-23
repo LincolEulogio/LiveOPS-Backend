@@ -15,7 +15,7 @@ export class ObsService {
   constructor(
     private prisma: PrismaService,
     private obsManager: ObsConnectionManager,
-  ) {}
+  ) { }
 
   async saveConnection(productionId: string, dto: SaveObsConnectionDto) {
     const connection = await this.prisma.obsConnection.upsert({
@@ -82,9 +82,10 @@ export class ObsService {
     try {
       await obs.call('SetCurrentProgramScene', { sceneName: dto.sceneName });
       return { success: true, sceneName: dto.sceneName };
-    } catch (e: any) {
-      this.logger.error(`Failed to change scene: ${e.message}`);
-      throw new BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
+    } catch (e: unknown) {
+      const error = e as Error;
+      this.logger.error(`Failed to change scene: ${error.message}`);
+      throw new BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
     }
   }
 
@@ -93,9 +94,10 @@ export class ObsService {
     try {
       await obs.call('StartStream');
       return { success: true };
-    } catch (e: any) {
-      this.logger.error(`Failed to start stream: ${e.message}`);
-      throw new BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
+    } catch (e: unknown) {
+      const error = e as Error;
+      this.logger.error(`Failed to start stream: ${error.message}`);
+      throw new BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
     }
   }
 
@@ -104,9 +106,10 @@ export class ObsService {
     try {
       await obs.call('StopStream');
       return { success: true };
-    } catch (e: any) {
-      this.logger.error(`Failed to stop stream: ${e.message}`);
-      throw new BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
+    } catch (e: unknown) {
+      const error = e as Error;
+      this.logger.error(`Failed to stop stream: ${error.message}`);
+      throw new BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
     }
   }
 
@@ -115,9 +118,10 @@ export class ObsService {
     try {
       await obs.call('StartRecord');
       return { success: true };
-    } catch (e: any) {
-      this.logger.error(`Failed to start record: ${e.message}`);
-      throw new BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
+    } catch (e: unknown) {
+      const error = e as Error;
+      this.logger.error(`Failed to start record: ${error.message}`);
+      throw new BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
     }
   }
 
@@ -126,9 +130,10 @@ export class ObsService {
     try {
       await obs.call('StopRecord');
       return { success: true };
-    } catch (e: any) {
-      this.logger.error(`Failed to stop record: ${e.message}`);
-      throw new BadRequestException(`OBS Error: ${e.message || 'Unknown'}`);
+    } catch (e: unknown) {
+      const error = e as Error;
+      this.logger.error(`Failed to stop record: ${error.message}`);
+      throw new BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
     }
   }
 }

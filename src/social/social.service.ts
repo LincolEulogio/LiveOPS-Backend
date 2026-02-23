@@ -11,6 +11,12 @@ export interface SocialMessagePayload {
     externalId?: string;
 }
 
+interface PollOption {
+    id: string;
+    text: string;
+    votes: number;
+}
+
 @Injectable()
 export class SocialService {
     private readonly logger = new Logger(SocialService.name);
@@ -139,14 +145,14 @@ export class SocialService {
             throw new NotFoundException('Poll not found or inactive');
         }
 
-        const options = poll.options as any[];
+        const options = poll.options as unknown as PollOption[];
         const option = options.find(o => o.id === optionId);
 
         if (option) {
             option.votes += 1;
             const updatedPoll = await this.prisma.socialPoll.update({
                 where: { id: pollId },
-                data: { options },
+                data: { options: options as any },
             });
 
             this.eventEmitter.emit('social.poll.updated', updatedPoll);

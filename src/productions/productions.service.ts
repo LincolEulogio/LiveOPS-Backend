@@ -13,6 +13,7 @@ import {
   GetProductionsQueryDto,
 } from './dto/production.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProductionsService {
@@ -114,7 +115,7 @@ export class ProductionsService {
 
     const isSuperAdmin = user?.globalRole?.name === 'SUPERADMIN';
 
-    const where: any = {
+    const where: Prisma.ProductionWhereInput = {
       deletedAt: null,
       tenantId: user?.tenantId,
     };
@@ -127,7 +128,7 @@ export class ProductionsService {
     }
 
     if (query.status) {
-      where.status = query.status;
+      where.status = query.status as any; // Cast local para evitar conflicto de tipos del enum generado
     }
 
     if (query.search) {
@@ -180,7 +181,7 @@ export class ProductionsService {
 
     const isSuperAdmin = user?.globalRole?.name === 'SUPERADMIN';
 
-    const where: any = {
+    const where: Prisma.ProductionWhereInput = {
       id: productionId,
       deletedAt: null,
       tenantId: user?.tenantId,

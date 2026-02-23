@@ -178,7 +178,10 @@ let AuthService = class AuthService {
                 ipAddress,
             },
         })
-            .catch((e) => console.error('Failed to write audit log', e));
+            .catch((e) => {
+            const err = e;
+            console.error('Failed to write audit log', err.message);
+        });
         const tokens = await this.generateTokens(user.id, user.tenantId);
         const fullUser = await this.prisma.user.findUnique({
             where: { id: user.id },

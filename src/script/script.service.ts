@@ -27,10 +27,10 @@ export class ScriptService {
 
     return this.prisma.productionScript.upsert({
       where: { productionId },
-      update: { content: Buffer.from(mergedContent) as any },
+      update: { content: Buffer.from(mergedContent) },
       create: {
         productionId,
-        content: Buffer.from(mergedContent) as any,
+        content: Buffer.from(mergedContent),
       },
     });
   }

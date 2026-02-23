@@ -64,8 +64,9 @@ let VmixService = VmixService_1 = class VmixService {
             return { success: true, input: dto.input, action: 'cut' };
         }
         catch (e) {
-            this.logger.error(`Failed to change input: ${e.message}`);
-            throw new common_1.BadRequestException(`vMix Error: ${e.message || 'Unknown'}`);
+            const error = e;
+            this.logger.error(`Failed to change input: ${error.message}`);
+            throw new common_1.BadRequestException(`vMix Error: ${error.message || 'Unknown'}`);
         }
     }
     async cut(productionId) {
@@ -74,8 +75,9 @@ let VmixService = VmixService_1 = class VmixService {
             return { success: true, action: 'cut' };
         }
         catch (e) {
-            this.logger.error(`Failed to trigger cut: ${e.message}`);
-            throw new common_1.BadRequestException(`vMix Error: ${e.message || 'Unknown'}`);
+            const error = e;
+            this.logger.error(`Failed to trigger cut: ${error.message}`);
+            throw new common_1.BadRequestException(`vMix Error: ${error.message || 'Unknown'}`);
         }
     }
     async fade(productionId, dto) {
@@ -85,8 +87,9 @@ let VmixService = VmixService_1 = class VmixService {
             return { success: true, action: 'fade', duration: dto?.duration };
         }
         catch (e) {
-            this.logger.error(`Failed to trigger fade: ${e.message}`);
-            throw new common_1.BadRequestException(`vMix Error: ${e.message || 'Unknown'}`);
+            const error = e;
+            this.logger.error(`Failed to trigger fade: ${error.message}`);
+            throw new common_1.BadRequestException(`vMix Error: ${error.message || 'Unknown'}`);
         }
     }
 };

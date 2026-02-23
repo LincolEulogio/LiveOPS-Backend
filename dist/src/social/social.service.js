@@ -120,7 +120,7 @@ let SocialService = SocialService_1 = class SocialService {
             option.votes += 1;
             const updatedPoll = await this.prisma.socialPoll.update({
                 where: { id: pollId },
-                data: { options },
+                data: { options: options },
             });
             this.eventEmitter.emit('social.poll.updated', updatedPoll);
             return updatedPoll;

@@ -87,8 +87,9 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             this.logger.log(`Successfully dispatched notification to ${webhook.name} (${webhook.platform})`);
         }
         catch (error) {
-            this.logger.error(`Failed to dispatch notification to ${webhook.name}: ${error.message}`);
-            throw error;
+            const err = error;
+            this.logger.error(`Failed to dispatch notification to ${webhook.name}: ${err.message}`);
+            throw err;
         }
     }
 };
