@@ -45,7 +45,7 @@ let PermissionsGuard = class PermissionsGuard {
             throw new common_1.ForbiddenException('User record not found');
         }
         const globalRoleName = dbUser.globalRole?.name?.toUpperCase();
-        if (globalRoleName === 'SUPERADMIN') {
+        if (globalRoleName === 'SUPERADMIN' || globalRoleName === 'ADMIN') {
             return true;
         }
         const globalPermissions = dbUser.globalRole?.permissions.map((rp) => rp.permission.action) || [];
@@ -75,6 +75,10 @@ let PermissionsGuard = class PermissionsGuard {
                 },
             });
             if (productionUser) {
+                if (productionUser.role.name === 'SUPERADMIN' ||
+                    productionUser.role.name === 'ADMIN') {
+                    return true;
+                }
                 const productionPermissions = productionUser.role.permissions.map((rp) => rp.permission.action);
                 const hasProdPermission = requiredPermissions.every((perm) => productionPermissions.includes(perm));
                 if (hasProdPermission) {

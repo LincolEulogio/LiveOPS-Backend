@@ -47,6 +47,19 @@ export declare class IntercomService {
         color: string | null;
     }>;
     getCommandHistory(productionId: string, limit?: number): Promise<({
+        responses: ({
+            responder: {
+                id: string;
+                name: string | null;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            commandId: string;
+            response: string;
+            note: string | null;
+            responderId: string;
+        })[];
         sender: {
             id: string;
             name: string | null;
@@ -65,19 +78,6 @@ export declare class IntercomService {
             icon: string | null;
             color: string | null;
         } | null;
-        responses: ({
-            responder: {
-                id: string;
-                name: string | null;
-            };
-        } & {
-            id: string;
-            createdAt: Date;
-            commandId: string;
-            response: string;
-            note: string | null;
-            responderId: string;
-        })[];
     } & {
         id: string;
         createdAt: Date;

@@ -5,10 +5,10 @@ export declare class UsersController {
     constructor(usersService: UsersService);
     findAllUsers(): Promise<{
         id: string;
+        email: string;
         name: string | null;
         createdAt: Date;
         updatedAt: Date;
-        email: string;
         globalRoleId: string | null;
         globalRole: {
             name: string;
@@ -16,9 +16,9 @@ export declare class UsersController {
     }[]>;
     createUser(dto: CreateUserDto): Promise<{
         id: string;
+        email: string;
         name: string | null;
         createdAt: Date;
-        email: string;
         globalRoleId: string | null;
         globalRole: {
             name: string;
@@ -26,9 +26,9 @@ export declare class UsersController {
     }>;
     updateUser(id: string, dto: UpdateUserDto): Promise<{
         id: string;
+        email: string;
         name: string | null;
         updatedAt: Date;
-        email: string;
         globalRoleId: string | null;
         globalRole: {
             name: string;

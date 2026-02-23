@@ -49,7 +49,7 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const globalRoleName = dbUser.globalRole?.name?.toUpperCase();
-    if (globalRoleName === 'SUPERADMIN') {
+    if (globalRoleName === 'SUPERADMIN' || globalRoleName === 'ADMIN') {
       return true;
     }
 
@@ -92,6 +92,13 @@ export class PermissionsGuard implements CanActivate {
       });
 
       if (productionUser) {
+        if (
+          productionUser.role.name === 'SUPERADMIN' ||
+          productionUser.role.name === 'ADMIN'
+        ) {
+          return true;
+        }
+
         const productionPermissions = productionUser.role.permissions.map(
           (rp) => rp.permission.action,
         );

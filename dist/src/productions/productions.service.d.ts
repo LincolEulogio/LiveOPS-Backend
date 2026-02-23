@@ -10,8 +10,8 @@ export declare class ProductionsService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        tenantId: string | null;
         deletedAt: Date | null;
+        tenantId: string | null;
         description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
@@ -53,8 +53,8 @@ export declare class ProductionsService {
             name: string;
             createdAt: Date;
             updatedAt: Date;
-            tenantId: string | null;
             deletedAt: Date | null;
+            tenantId: string | null;
             description: string | null;
             engineType: import("@prisma/client").$Enums.EngineType;
             status: import("@prisma/client").$Enums.ProductionStatus;
@@ -70,17 +70,17 @@ export declare class ProductionsService {
     }>;
     findOne(productionId: string, userId: string): Promise<{
         users: ({
+            user: {
+                id: string;
+                email: string;
+                name: string | null;
+            };
             role: {
                 id: string;
                 name: string;
                 createdAt: Date;
                 updatedAt: Date;
                 description: string | null;
-            };
-            user: {
-                id: string;
-                name: string | null;
-                email: string;
             };
         } & {
             createdAt: Date;
@@ -91,19 +91,19 @@ export declare class ProductionsService {
         })[];
         obsConnection: {
             id: string;
+            password: string | null;
             createdAt: Date;
             updatedAt: Date;
-            password: string | null;
-            productionId: string;
             url: string;
+            productionId: string;
             isEnabled: boolean;
         } | null;
         vmixConnection: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            productionId: string;
             url: string;
+            productionId: string;
             isEnabled: boolean;
             pollingInterval: number;
         } | null;
@@ -112,8 +112,8 @@ export declare class ProductionsService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        tenantId: string | null;
         deletedAt: Date | null;
+        tenantId: string | null;
         description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
@@ -125,8 +125,8 @@ export declare class ProductionsService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        tenantId: string | null;
         deletedAt: Date | null;
+        tenantId: string | null;
         description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
@@ -138,8 +138,8 @@ export declare class ProductionsService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        tenantId: string | null;
         deletedAt: Date | null;
+        tenantId: string | null;
         description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
@@ -147,17 +147,17 @@ export declare class ProductionsService {
         publicStatusEnabled: boolean;
     }>;
     assignUser(productionId: string, dto: AssignUserDto): Promise<{
+        user: {
+            id: string;
+            email: string;
+            name: string | null;
+        };
         role: {
             id: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
             description: string | null;
-        };
-        user: {
-            id: string;
-            name: string | null;
-            email: string;
         };
     } & {
         createdAt: Date;
@@ -178,8 +178,8 @@ export declare class ProductionsService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        tenantId: string | null;
         deletedAt: Date | null;
+        tenantId: string | null;
         description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
@@ -191,8 +191,8 @@ export declare class ProductionsService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        tenantId: string | null;
         deletedAt: Date | null;
+        tenantId: string | null;
         description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;

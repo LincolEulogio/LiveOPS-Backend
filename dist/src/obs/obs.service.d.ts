@@ -8,20 +8,20 @@ export declare class ObsService {
     constructor(prisma: PrismaService, obsManager: ObsConnectionManager);
     saveConnection(productionId: string, dto: SaveObsConnectionDto): Promise<{
         id: string;
+        password: string | null;
         createdAt: Date;
         updatedAt: Date;
-        password: string | null;
-        productionId: string;
         url: string;
+        productionId: string;
         isEnabled: boolean;
     }>;
     getConnection(productionId: string): Promise<{
         id: string;
+        password: string | null;
         createdAt: Date;
         updatedAt: Date;
-        password: string | null;
-        productionId: string;
         url: string;
+        productionId: string;
         isEnabled: boolean;
     }>;
     isConnected(productionId: string): boolean;
