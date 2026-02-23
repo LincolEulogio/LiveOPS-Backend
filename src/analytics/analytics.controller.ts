@@ -1,48 +1,30 @@
-import { Controller, Get, Param, UseGuards, Res } from '@nestjs/common';
-import type { Response } from 'express';
+import { Controller, Get, Post, Param, Query, UseGuards } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Parser } from 'json2csv';
+import { Permissions } from '../common/decorators/permissions.decorator';
 
+@Controller('productions/:id/analytics')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
-@Controller('productions/:productionId/analytics')
 export class AnalyticsController {
-  constructor(private readonly analyticsService: AnalyticsService) {}
+  constructor(private readonly analyticsService: AnalyticsService) { }
 
-  @Get('dashboard')
-  getDashboardMetrics(@Param('productionId') productionId: string) {
-    return this.analyticsService.getDashboardMetrics(productionId);
+  @Get('telemetry')
+  @Permissions('production:view')
+  async getTelemetry(@Param('id') id: string, @Query('minutes') minutes?: string) {
+    const mins = minutes ? parseInt(minutes, 10) : 60;
+    return this.analyticsService.getTelemetryLogs(id, mins);
   }
 
-  @Get('logs')
-  getLogs(@Param('productionId') productionId: string) {
-    return this.analyticsService.getProductionLogs(productionId);
+  @Get('report')
+  @Permissions('production:view')
+  async getReport(@Param('id') id: string) {
+    return this.analyticsService.getShowReport(id);
   }
 
-  @Get('export')
-  async exportCsv(
-    @Param('productionId') productionId: string,
-    @Res() res: Response,
-  ) {
-    const logs = await this.analyticsService.getAllLogsForExport(productionId);
-
-    // Simple CSV generation
-    const header = 'id,productionId,eventType,createdAt,details\n';
-    const csvData = logs.map((log: any) => ({
-      id: log.id,
-      timestamp: log.createdAt.toISOString(),
-      eventType: log.eventType,
-      details: JSON.stringify(log.details),
-    }));
-
-    const parser = new Parser({
-      fields: ['id', 'timestamp', 'eventType', 'details'],
-    });
-    const csv = await parser.parse(csvData);
-
-    res.header('Content-Type', 'text/csv');
-    res.attachment(`production_${productionId}_log.csv`);
-    return res.send(csv);
+  @Post('report/generate')
+  @Permissions('production:manage')
+  async generateReport(@Param('id') id: string) {
+    return this.analyticsService.generateShowReport(id);
   }
 }

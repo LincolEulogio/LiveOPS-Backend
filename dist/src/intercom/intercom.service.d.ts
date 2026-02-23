@@ -7,42 +7,42 @@ export declare class IntercomService {
     constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
     createTemplate(productionId: string, dto: CreateCommandTemplateDto): Promise<{
         id: string;
-        productionId: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
         icon: string | null;
         color: string | null;
     }>;
     getTemplates(productionId: string): Promise<{
         id: string;
-        productionId: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
         icon: string | null;
         color: string | null;
     }[]>;
     private seedDefaultTemplates;
     updateTemplate(id: string, productionId: string, dto: CreateCommandTemplateDto): Promise<{
         id: string;
-        productionId: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
         icon: string | null;
         color: string | null;
     }>;
     deleteTemplate(id: string, productionId: string): Promise<{
         id: string;
-        productionId: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
         icon: string | null;
         color: string | null;
     }>;
@@ -57,11 +57,11 @@ export declare class IntercomService {
         } | null;
         template: {
             id: string;
-            productionId: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
             description: string | null;
+            productionId: string;
             icon: string | null;
             color: string | null;
         } | null;
@@ -73,16 +73,16 @@ export declare class IntercomService {
         } & {
             id: string;
             createdAt: Date;
-            response: string;
-            note: string | null;
             commandId: string;
             responderId: string;
+            response: string;
+            note: string | null;
         })[];
     } & {
         id: string;
-        productionId: string;
         createdAt: Date;
         status: string;
+        productionId: string;
         senderId: string;
         targetRoleId: string | null;
         targetUserId: string | null;
@@ -101,19 +101,19 @@ export declare class IntercomService {
         } | null;
         template: {
             id: string;
-            productionId: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
             description: string | null;
+            productionId: string;
             icon: string | null;
             color: string | null;
         } | null;
     } & {
         id: string;
-        productionId: string;
         createdAt: Date;
         status: string;
+        productionId: string;
         senderId: string;
         targetRoleId: string | null;
         targetUserId: string | null;

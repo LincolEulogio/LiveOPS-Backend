@@ -15,7 +15,7 @@ export class AutomationEngineService {
     private obsService: ObsService,
     private vmixService: VmixService,
     private intercomService: IntercomService,
-  ) {}
+  ) { }
 
   /**
    * Ticker that runs every second to check for time-based triggers.
@@ -116,7 +116,9 @@ export class AutomationEngineService {
         this.logger.log(
           `Executing Rule "${rule.name}" (${rule.id}) due to event ${eventPrefix}`,
         );
-        await this.executeActions(rule, payload);
+        // Add manual trigger context if applicable
+        const context = eventPrefix === 'manual.trigger' ? { ...payload, isManual: true } : payload;
+        await this.executeActions(rule, context);
       }
     }
   }

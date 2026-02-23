@@ -100,16 +100,22 @@ export class AuthService {
       await this.usersService.seedDefaultRoles();
     }
 
+    let defaultTenant = await this.prisma.tenant.findFirst();
+    if (!defaultTenant) {
+      defaultTenant = await this.prisma.tenant.create({ data: { name: 'System Default' } });
+    }
+
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
         password: hashedPassword,
         name: dto.name,
         globalRoleId: globalRoleId,
+        tenantId: defaultTenant.id,
       },
     });
 
-    const tokens = await this.generateTokens(user.id);
+    const tokens = await this.generateTokens(user.id, user.tenantId);
     const fullUser = await this.prisma.user.findUnique({
       where: { id: user.id },
       select: {
@@ -156,7 +162,7 @@ export class AuthService {
       })
       .catch((e: any) => console.error('Failed to write audit log', e));
 
-    const tokens = await this.generateTokens(user.id);
+    const tokens = await this.generateTokens(user.id, user.tenantId);
     const fullUser = await this.prisma.user.findUnique({
       where: { id: user.id },
       select: {
@@ -187,7 +193,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const tokens = await this.generateTokens(session.userId);
+    const user = await this.prisma.user.findUnique({ where: { id: session.userId } });
+    const tokens = await this.generateTokens(session.userId, user?.tenantId || null);
 
     // Revoke old session
     await this.prisma.session.update({
@@ -211,8 +218,8 @@ export class AuthService {
     return { setupRequired: userCount === 0 };
   }
 
-  private async generateTokens(userId: string) {
-    const payload = { sub: userId };
+  private async generateTokens(userId: string, tenantId?: string | null) {
+    const payload = { sub: userId, tenantId };
     const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
 
     const refreshToken = crypto.randomUUID();

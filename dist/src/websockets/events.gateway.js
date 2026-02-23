@@ -41,6 +41,27 @@ let EventsGateway = class EventsGateway {
         this.logger.log('WebSocket Gateway initialized');
     }
     async handleChatSend(data, client) {
+        if (data.message.startsWith('/')) {
+            const parts = data.message.split(' ');
+            const command = parts[0].toLowerCase();
+            const args = parts.slice(1).join(' ');
+            if (command === '/alert' && args.trim()) {
+                const intercomCommand = await this.intercomService.sendCommand({
+                    productionId: data.productionId,
+                    senderId: data.userId,
+                    message: args,
+                    requiresAck: true,
+                });
+                client.emit('chat.received', {
+                    id: `sys-${Date.now()}`,
+                    productionId: data.productionId,
+                    userId: null,
+                    message: `🚀 Comando ejecutado: Alerta enviada a todo el equipo.`,
+                    createdAt: new Date().toISOString(),
+                });
+                return { status: 'command_executed', commandId: intercomCommand.id };
+            }
+        }
         const message = await this.chatService.saveMessage(data.productionId, data.userId, data.message);
         this.server
             .to(`production_${data.productionId}`)

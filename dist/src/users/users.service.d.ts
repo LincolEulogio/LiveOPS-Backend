@@ -23,16 +23,16 @@ export declare class UsersService implements OnModuleInit {
         })[];
     } & {
         id: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
     }) | null>;
     findAllUsers(): Promise<{
         id: string;
+        name: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string | null;
         email: string;
         globalRoleId: string | null;
         globalRole: {
@@ -41,8 +41,8 @@ export declare class UsersService implements OnModuleInit {
     }[]>;
     createUser(dto: CreateUserDto): Promise<{
         id: string;
-        createdAt: Date;
         name: string | null;
+        createdAt: Date;
         email: string;
         globalRoleId: string | null;
         globalRole: {
@@ -51,8 +51,8 @@ export declare class UsersService implements OnModuleInit {
     }>;
     updateUser(id: string, dto: UpdateUserDto): Promise<{
         id: string;
-        updatedAt: Date;
         name: string | null;
+        updatedAt: Date;
         email: string;
         globalRoleId: string | null;
         globalRole: {
@@ -78,30 +78,30 @@ export declare class UsersService implements OnModuleInit {
         })[];
     } & {
         id: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
     })[]>;
     createRole(dto: CreateRoleDto): Promise<{
         id: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
     }>;
     updateRole(id: string, dto: UpdateRoleDto): Promise<{
         id: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
     }>;
     deleteRole(id: string): Promise<{
         id: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
     }>;
     findAllPermissions(): Promise<{

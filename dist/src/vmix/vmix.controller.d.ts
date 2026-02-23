@@ -6,19 +6,19 @@ export declare class VmixController {
     saveConnection(productionId: string, dto: SaveVmixConnectionDto): Promise<{
         url: string;
         id: string;
-        productionId: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
+        isEnabled: boolean;
         pollingInterval: number;
     }>;
     getConnection(productionId: string): Promise<{
         url: string;
         id: string;
-        productionId: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
+        isEnabled: boolean;
         pollingInterval: number;
     }>;
     changeInput(productionId: string, dto: ChangeInputDto): Promise<{

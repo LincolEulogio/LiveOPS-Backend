@@ -19,10 +19,10 @@ import { AutomationModule } from './automation/automation.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { StreamingModule } from './streaming/streaming.module';
 import { UsersModule } from './users/users.module';
+import { MediaModule } from './media/media.module';
 import { ChatModule } from './chat/chat.module';
 import { ScriptModule } from './script/script.module';
 import { SocialModule } from './social/social.module';
-import { MediaModule } from './media/media.module';
 
 @Module({
   imports: [
@@ -56,10 +56,10 @@ import { MediaModule } from './media/media.module';
     AnalyticsModule,
     StreamingModule,
     UsersModule,
+    MediaModule,
     ChatModule,
     ScriptModule,
     SocialModule,
-    MediaModule,
   ],
   controllers: [AppController],
   providers: [

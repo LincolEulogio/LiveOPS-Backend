@@ -170,9 +170,15 @@ model Production {
   rules            Rule[]
   timelineBlocks   TimelineBlock[]
   vmixConnection   VmixConnection?
+  telemetryLogs    TelemetryLog[]
+  showReport       ShowReport?
+
+  tenantId String? @db.Uuid
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([deletedAt])
   @@index([status])
+  @@index([tenantId])
 }
 
 model ProductionLog {
@@ -333,10 +339,14 @@ model User {
   sessions           Session[]
   globalRole         Role?              @relation(fields: [globalRoleId], references: [id])
 
+  tenantId String? @db.Uuid
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   receivedCommands Command[] @relation("CommandTarget")
 
   @@index([deletedAt])
   @@index([email])
+  @@index([tenantId])
 }
 
 model VmixConnection {
@@ -348,6 +358,41 @@ model VmixConnection {
   updatedAt       DateTime   @updatedAt
   pollingInterval Int        @default(500)
   production      Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+}
+
+model TelemetryLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  productionId  String   @db.Uuid
+  timestamp     DateTime @default(now())
+  cpuUsage      Float?
+  memoryUsage   Float?
+  fps           Float?
+  bitrate       Float?
+  droppedFrames Int?
+  isStreaming   Boolean  @default(false)
+  isRecording   Boolean  @default(false)
+
+  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
+  @@index([productionId])
+  @@index([timestamp])
+}
+
+model ShowReport {
+  id           String   @id @default(uuid()) @db.Uuid
+  productionId String   @unique @db.Uuid
+  generatedAt  DateTime @default(now())
+
+  startTime  DateTime?
+  endTime    DateTime?
+  durationMs Int?
+
+  peakViewers Int?
+  alertsCount Int?
+
+  metrics Json?
+
+  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
 }
 
 enum BlockStatus {
@@ -366,4 +411,14 @@ enum ProductionStatus {
   ACTIVE
   ARCHIVED
   DRAFT
+}
+
+model Tenant {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       User[]
+  productions Production[]
 }

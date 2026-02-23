@@ -5,41 +5,41 @@ export declare class IntercomController {
     constructor(intercomService: IntercomService);
     createTemplate(productionId: string, dto: CreateCommandTemplateDto): Promise<{
         id: string;
-        productionId: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
         icon: string | null;
         color: string | null;
     }>;
     getTemplates(productionId: string): Promise<{
         id: string;
-        productionId: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
         icon: string | null;
         color: string | null;
     }[]>;
     updateTemplate(productionId: string, id: string, dto: CreateCommandTemplateDto): Promise<{
         id: string;
-        productionId: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
         icon: string | null;
         color: string | null;
     }>;
     deleteTemplate(productionId: string, id: string): Promise<{
         id: string;
-        productionId: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
         icon: string | null;
         color: string | null;
     }>;
@@ -54,11 +54,11 @@ export declare class IntercomController {
         } | null;
         template: {
             id: string;
-            productionId: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
             description: string | null;
+            productionId: string;
             icon: string | null;
             color: string | null;
         } | null;
@@ -70,16 +70,16 @@ export declare class IntercomController {
         } & {
             id: string;
             createdAt: Date;
-            response: string;
-            note: string | null;
             commandId: string;
             responderId: string;
+            response: string;
+            note: string | null;
         })[];
     } & {
         id: string;
-        productionId: string;
         createdAt: Date;
         status: string;
+        productionId: string;
         senderId: string;
         targetRoleId: string | null;
         targetUserId: string | null;

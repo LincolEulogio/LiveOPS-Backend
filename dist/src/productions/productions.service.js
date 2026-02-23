@@ -35,6 +35,10 @@ let ProductionsService = class ProductionsService {
                 data: { name: 'ADMIN', description: 'Production Administrator' },
             });
         }
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user || !user.tenantId) {
+            throw new common_1.ConflictException('User does not belong to any tenant');
+        }
         return this.prisma.$transaction(async (tx) => {
             const production = await tx.production.create({
                 data: {
@@ -48,6 +52,7 @@ let ProductionsService = class ProductionsService {
                             roleId: adminRole.id,
                         },
                     },
+                    tenantId: user.tenantId,
                 },
             });
             if (dto.initialMembers && dto.initialMembers.length > 0) {
@@ -96,6 +101,7 @@ let ProductionsService = class ProductionsService {
         const isSuperAdmin = user?.globalRole?.name === 'SUPERADMIN';
         const where = {
             deletedAt: null,
+            tenantId: user?.tenantId,
         };
         if (!isSuperAdmin) {
             where.users = {
@@ -153,6 +159,7 @@ let ProductionsService = class ProductionsService {
         const where = {
             id: productionId,
             deletedAt: null,
+            tenantId: user?.tenantId,
         };
         if (!isSuperAdmin) {
             where.users = { some: { userId } };

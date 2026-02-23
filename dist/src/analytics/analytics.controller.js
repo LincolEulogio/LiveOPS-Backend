@@ -17,62 +17,52 @@ const common_1 = require("@nestjs/common");
 const analytics_service_1 = require("./analytics.service");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const permissions_guard_1 = require("../common/guards/permissions.guard");
-const json2csv_1 = require("json2csv");
+const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
 let AnalyticsController = class AnalyticsController {
     analyticsService;
     constructor(analyticsService) {
         this.analyticsService = analyticsService;
     }
-    getDashboardMetrics(productionId) {
-        return this.analyticsService.getDashboardMetrics(productionId);
+    async getTelemetry(id, minutes) {
+        const mins = minutes ? parseInt(minutes, 10) : 60;
+        return this.analyticsService.getTelemetryLogs(id, mins);
     }
-    getLogs(productionId) {
-        return this.analyticsService.getProductionLogs(productionId);
+    async getReport(id) {
+        return this.analyticsService.getShowReport(id);
     }
-    async exportCsv(productionId, res) {
-        const logs = await this.analyticsService.getAllLogsForExport(productionId);
-        const header = 'id,productionId,eventType,createdAt,details\n';
-        const csvData = logs.map((log) => ({
-            id: log.id,
-            timestamp: log.createdAt.toISOString(),
-            eventType: log.eventType,
-            details: JSON.stringify(log.details),
-        }));
-        const parser = new json2csv_1.Parser({
-            fields: ['id', 'timestamp', 'eventType', 'details'],
-        });
-        const csv = await parser.parse(csvData);
-        res.header('Content-Type', 'text/csv');
-        res.attachment(`production_${productionId}_log.csv`);
-        return res.send(csv);
+    async generateReport(id) {
+        return this.analyticsService.generateShowReport(id);
     }
 };
 exports.AnalyticsController = AnalyticsController;
 __decorate([
-    (0, common_1.Get)('dashboard'),
-    __param(0, (0, common_1.Param)('productionId')),
+    (0, common_1.Get)('telemetry'),
+    (0, permissions_decorator_1.Permissions)('production:view'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('minutes')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], AnalyticsController.prototype, "getDashboardMetrics", null);
-__decorate([
-    (0, common_1.Get)('logs'),
-    __param(0, (0, common_1.Param)('productionId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], AnalyticsController.prototype, "getLogs", null);
-__decorate([
-    (0, common_1.Get)('export'),
-    __param(0, (0, common_1.Param)('productionId')),
-    __param(1, (0, common_1.Res)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
-], AnalyticsController.prototype, "exportCsv", null);
+], AnalyticsController.prototype, "getTelemetry", null);
+__decorate([
+    (0, common_1.Get)('report'),
+    (0, permissions_decorator_1.Permissions)('production:view'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AnalyticsController.prototype, "getReport", null);
+__decorate([
+    (0, common_1.Post)('report/generate'),
+    (0, permissions_decorator_1.Permissions)('production:manage'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AnalyticsController.prototype, "generateReport", null);
 exports.AnalyticsController = AnalyticsController = __decorate([
+    (0, common_1.Controller)('productions/:id/analytics'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
-    (0, common_1.Controller)('productions/:productionId/analytics'),
     __metadata("design:paramtypes", [analytics_service_1.AnalyticsService])
 ], AnalyticsController);
 //# sourceMappingURL=analytics.controller.js.map

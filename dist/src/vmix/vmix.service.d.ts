@@ -9,19 +9,19 @@ export declare class VmixService {
     saveConnection(productionId: string, dto: SaveVmixConnectionDto): Promise<{
         url: string;
         id: string;
-        productionId: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
+        isEnabled: boolean;
         pollingInterval: number;
     }>;
     getConnection(productionId: string): Promise<{
         url: string;
         id: string;
-        productionId: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
+        isEnabled: boolean;
         pollingInterval: number;
     }>;
     isConnected(productionId: string): boolean;

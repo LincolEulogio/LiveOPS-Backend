@@ -1,30 +1,48 @@
 import { PrismaService } from '../prisma/prisma.service';
+import { EngineType } from '@prisma/client';
 export declare class AnalyticsService {
     private prisma;
     private readonly logger;
+    private lastWriteTime;
+    private readonly WRITE_INTERVAL_MS;
     constructor(prisma: PrismaService);
-    handleEvent(eventPrefix: string, payload: any): Promise<void>;
-    handleOperatorActivity(eventPrefix: string, payload: any): Promise<void>;
-    getDashboardMetrics(productionId: string): Promise<{
+    handleProductionHealthStats(payload: {
         productionId: string;
-        totalEvents: number;
-        breakdown: (import("@prisma/client").Prisma.PickEnumerable<import("@prisma/client").Prisma.ProductionLogGroupByOutputType, "eventType"[]> & {
-            _count: number;
-        })[];
-        totalOperatorActions: number;
+        engine: EngineType;
+        stats: any;
+    }): Promise<void>;
+    getTelemetryLogs(productionId: string, minutes?: number): Promise<{
+        id: string;
+        productionId: string;
+        isStreaming: boolean;
+        isRecording: boolean;
+        cpuUsage: number | null;
+        fps: number | null;
+        timestamp: Date;
+        memoryUsage: number | null;
+        bitrate: number | null;
+        droppedFrames: number | null;
+    }[]>;
+    generateShowReport(productionId: string): Promise<{
+        id: string;
+        productionId: string;
+        durationMs: number | null;
+        startTime: Date | null;
+        endTime: Date | null;
+        generatedAt: Date;
+        peakViewers: number | null;
+        alertsCount: number | null;
+        metrics: import("@prisma/client/runtime/client").JsonValue | null;
     }>;
-    getProductionLogs(productionId: string): Promise<{
+    getShowReport(productionId: string): Promise<{
         id: string;
         productionId: string;
-        createdAt: Date;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
-        eventType: string;
-    }[]>;
-    getAllLogsForExport(productionId: string): Promise<{
-        id: string;
-        productionId: string;
-        createdAt: Date;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
-        eventType: string;
-    }[]>;
+        durationMs: number | null;
+        startTime: Date | null;
+        endTime: Date | null;
+        generatedAt: Date;
+        peakViewers: number | null;
+        alertsCount: number | null;
+        metrics: import("@prisma/client/runtime/client").JsonValue | null;
+    } | null>;
 }

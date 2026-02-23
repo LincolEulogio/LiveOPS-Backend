@@ -9,8 +9,8 @@ export declare class AuthController {
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
             id: string;
-            createdAt: Date;
             name: string | null;
+            createdAt: Date;
             email: string;
             globalRole: {
                 id: string;
@@ -28,8 +28,8 @@ export declare class AuthController {
     }>;
     getProfile(req: any): Promise<{
         id: string;
-        createdAt: Date;
         name: string | null;
+        createdAt: Date;
         email: string;
         globalRole: {
             id: string;
@@ -46,8 +46,8 @@ export declare class AuthController {
         password?: string;
     }): Promise<{
         id: string;
-        createdAt: Date;
         name: string | null;
+        createdAt: Date;
         email: string;
         globalRole: {
             id: string;
@@ -64,8 +64,8 @@ export declare class AuthController {
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
             id: string;
-            createdAt: Date;
             name: string | null;
+            createdAt: Date;
             email: string;
             globalRole: {
                 id: string;

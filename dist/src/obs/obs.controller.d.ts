@@ -6,20 +6,20 @@ export declare class ObsController {
     saveConnection(productionId: string, dto: SaveObsConnectionDto): Promise<{
         url: string;
         id: string;
-        productionId: string;
-        password: string | null;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        password: string | null;
+        productionId: string;
+        isEnabled: boolean;
     }>;
     getConnection(productionId: string): Promise<{
         url: string;
         id: string;
-        productionId: string;
-        password: string | null;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        password: string | null;
+        productionId: string;
+        isEnabled: boolean;
     }>;
     changeScene(productionId: string, dto: ChangeSceneDto): Promise<{
         success: boolean;

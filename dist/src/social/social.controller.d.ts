@@ -1,8 +1,17 @@
-import { SocialService, SocialComment } from './social.service';
+import { SocialService } from './social.service';
 export declare class SocialController {
-    private socialService;
+    private readonly socialService;
     constructor(socialService: SocialService);
-    mockComment(productionId: string, comment: SocialComment): Promise<void>;
-    setOverlay(productionId: string, comment: SocialComment | null): Promise<void>;
-    getActiveOverlay(productionId: string): Promise<SocialComment | null>;
+    getMessages(productionId: string): import("./social.service").SocialMessage[];
+    injectMessage(productionId: string, payload: {
+        platform: 'twitch' | 'youtube';
+        author: string;
+        content: string;
+        avatarUrl?: string;
+    }): import("./social.service").SocialMessage;
+    updateStatus(productionId: string, id: string, status: 'pending' | 'approved' | 'rejected' | 'on-air'): import("./social.service").SocialMessage | null;
+    getBlacklist(productionId: string): string[];
+    updateBlacklist(productionId: string, words: string[]): {
+        words: string[];
+    };
 }

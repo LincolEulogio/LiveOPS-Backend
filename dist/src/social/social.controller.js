@@ -15,47 +15,76 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SocialController = void 0;
 const common_1 = require("@nestjs/common");
 const social_service_1 = require("./social.service");
+const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
+const permissions_guard_1 = require("../common/guards/permissions.guard");
 let SocialController = class SocialController {
     socialService;
     constructor(socialService) {
         this.socialService = socialService;
     }
-    async mockComment(productionId, comment) {
-        return this.socialService.handleIncomingComment(productionId, comment);
+    getMessages(productionId) {
+        return this.socialService.getMessages(productionId);
     }
-    async setOverlay(productionId, comment) {
-        return this.socialService.selectCommentForOverlay(productionId, comment);
+    injectMessage(productionId, payload) {
+        return this.socialService.ingestMessage(productionId, {
+            productionId,
+            ...payload
+        });
     }
-    async getActiveOverlay(productionId) {
-        return this.socialService.getActiveOverlay(productionId);
+    updateStatus(productionId, id, status) {
+        return this.socialService.updateMessageStatus(productionId, id, status);
+    }
+    getBlacklist(productionId) {
+        return this.socialService.getBlacklist(productionId);
+    }
+    updateBlacklist(productionId, words) {
+        this.socialService.setBlacklist(productionId, words);
+        return { words };
     }
 };
 exports.SocialController = SocialController;
 __decorate([
-    (0, common_1.Post)(':productionId/mock-comment'),
+    (0, common_1.Get)('messages'),
     __param(0, (0, common_1.Param)('productionId')),
-    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, social_service_1.SocialComment]),
-    __metadata("design:returntype", Promise)
-], SocialController.prototype, "mockComment", null);
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], SocialController.prototype, "getMessages", null);
 __decorate([
-    (0, common_1.Post)(':productionId/overlay'),
+    (0, common_1.Post)('messages'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", Promise)
-], SocialController.prototype, "setOverlay", null);
+    __metadata("design:returntype", void 0)
+], SocialController.prototype, "injectMessage", null);
 __decorate([
-    (0, common_1.Get)(':productionId/active-overlay'),
+    (0, common_1.Put)('messages/:id/status'),
+    __param(0, (0, common_1.Param)('productionId')),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)('status')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", void 0)
+], SocialController.prototype, "updateStatus", null);
+__decorate([
+    (0, common_1.Get)('blacklist'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], SocialController.prototype, "getActiveOverlay", null);
+    __metadata("design:returntype", void 0)
+], SocialController.prototype, "getBlacklist", null);
+__decorate([
+    (0, common_1.Put)('blacklist'),
+    __param(0, (0, common_1.Param)('productionId')),
+    __param(1, (0, common_1.Body)('words')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Array]),
+    __metadata("design:returntype", void 0)
+], SocialController.prototype, "updateBlacklist", null);
 exports.SocialController = SocialController = __decorate([
-    (0, common_1.Controller)('social'),
+    (0, common_1.Controller)('productions/:productionId/social'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     __metadata("design:paramtypes", [social_service_1.SocialService])
 ], SocialController);
 //# sourceMappingURL=social.controller.js.map

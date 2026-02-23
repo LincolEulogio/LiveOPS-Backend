@@ -23,12 +23,12 @@ export declare class AutomationService {
         }[];
     } & {
         id: string;
-        productionId: string;
-        isEnabled: boolean;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
+        isEnabled: boolean;
     })[]>;
     getRule(id: string, productionId: string): Promise<{
         triggers: {
@@ -50,20 +50,20 @@ export declare class AutomationService {
         }[];
         executionLogs: {
             id: string;
-            productionId: string;
             createdAt: Date;
             status: string;
+            productionId: string;
             details: string | null;
             ruleId: string;
         }[];
     } & {
         id: string;
-        productionId: string;
-        isEnabled: boolean;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
+        isEnabled: boolean;
     }>;
     createRule(productionId: string, dto: CreateRuleDto): Promise<{
         triggers: {
@@ -85,21 +85,21 @@ export declare class AutomationService {
         }[];
     } & {
         id: string;
-        productionId: string;
-        isEnabled: boolean;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
+        isEnabled: boolean;
     }>;
     updateRule(id: string, productionId: string, dto: UpdateRuleDto): Promise<{
         id: string;
-        productionId: string;
-        isEnabled: boolean;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
+        isEnabled: boolean;
     }>;
     deleteRule(id: string, productionId: string): Promise<{
         success: boolean;
@@ -110,9 +110,9 @@ export declare class AutomationService {
         };
     } & {
         id: string;
-        productionId: string;
         createdAt: Date;
         status: string;
+        productionId: string;
         details: string | null;
         ruleId: string;
     })[]>;

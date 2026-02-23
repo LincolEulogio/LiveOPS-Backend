@@ -15,9 +15,8 @@ let SocialModule = class SocialModule {
 exports.SocialModule = SocialModule;
 exports.SocialModule = SocialModule = __decorate([
     (0, common_1.Module)({
-        imports: [],
-        providers: [social_service_1.SocialService],
         controllers: [social_controller_1.SocialController],
+        providers: [social_service_1.SocialService],
         exports: [social_service_1.SocialService],
     })
 ], SocialModule);

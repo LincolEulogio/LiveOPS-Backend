@@ -102,7 +102,8 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
             const match = this.evaluateTriggers(rule.triggers, eventPrefix, payload);
             if (match) {
                 this.logger.log(`Executing Rule "${rule.name}" (${rule.id}) due to event ${eventPrefix}`);
-                await this.executeActions(rule, payload);
+                const context = eventPrefix === 'manual.trigger' ? { ...payload, isManual: true } : payload;
+                await this.executeActions(rule, context);
             }
         }
     }

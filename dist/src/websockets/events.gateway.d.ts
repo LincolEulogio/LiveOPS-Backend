@@ -22,7 +22,12 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         message: string;
     }, client: Socket): Promise<{
         status: string;
+        commandId: string;
+        messageId?: undefined;
+    } | {
+        status: string;
         messageId: string;
+        commandId?: undefined;
     }>;
     handleProductionJoin(data: {
         productionId: string;

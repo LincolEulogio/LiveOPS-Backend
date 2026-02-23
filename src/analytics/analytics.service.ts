@@ -1,104 +1,129 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
+import { EngineType } from '@prisma/client';
 
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  // Throttle writes: mapping productionId -> lastWriteTimestamp
+  private lastWriteTime: Map<string, number> = new Map();
+  private readonly WRITE_INTERVAL_MS = 5000; // Save telemetry every 5 seconds per production
 
-  /**
-   * Listen to all events and log them as ProductionLogs if they contain a productionId.
-   */
-  @OnEvent('**')
-  async handleEvent(eventPrefix: string, payload: any) {
-    // Ignore high-frequency polling events if any exist (e.g. basic heartbeat)
-    if (eventPrefix === 'obs.connection.state' && payload?.connected === true)
-      return; // Example filter
+  constructor(private prisma: PrismaService) { }
 
-    const productionId = payload?.productionId;
-    if (!productionId) return;
-
+  @OnEvent('production.health.stats')
+  async handleProductionHealthStats(payload: { productionId: string; engine: EngineType; stats: any }) {
     try {
-      await this.prisma.productionLog.create({
+      const now = Date.now();
+      const lastWrite = this.lastWriteTime.get(payload.productionId) || 0;
+
+      if (now - lastWrite < this.WRITE_INTERVAL_MS) {
+        return; // Skip if we wrote too recently
+      }
+
+      this.lastWriteTime.set(payload.productionId, now);
+
+      await this.prisma.telemetryLog.create({
         data: {
-          productionId,
-          eventType: eventPrefix,
-          details: payload,
+          productionId: payload.productionId,
+          cpuUsage: payload.stats.cpuUsage,
+          memoryUsage: payload.stats.memoryUsage,
+          fps: payload.stats.fps,
+          bitrate: payload.stats.bitrate || 0,
+          droppedFrames: payload.stats.droppedFrames,
+          isStreaming: payload.stats.isStreaming || false,
+          isRecording: payload.stats.isRecording || false,
         },
       });
-    } catch (error: any) {
-      this.logger.error(`Failed to log event ${eventPrefix}: ${error.message}`);
+    } catch (error) {
+      this.logger.error(`Failed to save telemetry for production ${payload.productionId}:`, error);
     }
   }
 
-  /**
-   * Specifically track operator actions like sending and acknowledging commands.
-   * This assumes the domain events have userId inside the payload.
-   */
-  @OnEvent('command.send')
-  @OnEvent('command.ack')
-  async handleOperatorActivity(eventPrefix: string, payload: any) {
-    const productionId = payload?.productionId || payload?.productionId; // Adjust based on your payload
-    const userId = payload?.userId; // Assuming user ID is passed
+  async getTelemetryLogs(productionId: string, minutes: number = 60) {
+    const since = new Date(Date.now() - minutes * 60 * 1000);
+    return this.prisma.telemetryLog.findMany({
+      where: {
+        productionId,
+        timestamp: { gte: since },
+      },
+      orderBy: { timestamp: 'asc' }
+    });
+  }
 
-    if (!productionId || !userId) return;
-
+  async generateShowReport(productionId: string) {
     try {
-      await this.prisma.operatorActivity.create({
+      // 1. Check if report already exists
+      const existing = await this.prisma.showReport.findUnique({
+        where: { productionId }
+      });
+      if (existing) return existing;
+
+      // 2. Fetch data (telemetry, alerts, timeline blocks)
+      const telemetry = await this.prisma.telemetryLog.findMany({
+        where: { productionId },
+        orderBy: { timestamp: 'asc' }
+      });
+
+      const timelineBlocks = await this.prisma.timelineBlock.findMany({
+        where: { productionId },
+        orderBy: { order: 'asc' }
+      });
+
+      // 3. Compute metrics
+      const streamingLogs = telemetry.filter(t => t.isStreaming);
+      let startTime = streamingLogs.length > 0 ? streamingLogs[0].timestamp : undefined;
+      let endTime = streamingLogs.length > 0 ? streamingLogs[streamingLogs.length - 1].timestamp : undefined;
+
+      let durationMs = 0;
+      if (startTime && endTime) {
+        durationMs = endTime.getTime() - startTime.getTime();
+      } else {
+        // Fallback to timeline blocks if stream wasn't detected
+        const firstBlock = timelineBlocks.find(b => b.startTime);
+        const lastBlock = timelineBlocks.reverse().find(b => b.endTime);
+        if (firstBlock?.startTime && lastBlock?.endTime) {
+          startTime = firstBlock.startTime;
+          endTime = lastBlock.endTime;
+          durationMs = endTime.getTime() - startTime.getTime();
+        }
+      }
+
+      const totalDroppedFrames = telemetry.reduce((sum, log) => sum + (log.droppedFrames || 0), 0);
+      const maxCpu = Math.max(...telemetry.map(t => t.cpuUsage || 0), 0);
+      const avgFps = telemetry.length ? telemetry.reduce((sum, log) => sum + (log.fps || 0), 0) / telemetry.length : 0;
+
+      // 4. Save Report
+      const report = await this.prisma.showReport.create({
         data: {
           productionId,
-          userId,
-          action: eventPrefix,
-          details: payload,
-        },
+          startTime,
+          endTime,
+          durationMs,
+          alertsCount: 0, // Placeholder
+          peakViewers: 0, // Placeholder
+          metrics: {
+            totalDroppedFrames,
+            maxCpu,
+            avgFps,
+            samples: telemetry.length
+          }
+        }
       });
-    } catch (error: any) {
-      this.logger.error(
-        `Failed to log operator activity ${eventPrefix}: ${error.message}`,
-      );
+
+      return report;
+
+    } catch (e) {
+      this.logger.error(`Error generating show report for ${productionId}`, e);
+      throw e;
     }
   }
 
-  // --- Querying & Reporting ---
-
-  async getDashboardMetrics(productionId: string) {
-    const totalLogs = await this.prisma.productionLog.count({
-      where: { productionId },
-    });
-
-    // Group logs by eventType
-    const eventCounts = await this.prisma.productionLog.groupBy({
-      by: ['eventType'],
-      where: { productionId },
-      _count: true,
-    });
-
-    const operatorActions = await this.prisma.operatorActivity.count({
-      where: { productionId },
-    });
-
-    return {
-      productionId,
-      totalEvents: totalLogs,
-      breakdown: eventCounts,
-      totalOperatorActions: operatorActions,
-    };
-  }
-
-  async getProductionLogs(productionId: string) {
-    return this.prisma.productionLog.findMany({
-      where: { productionId },
-      orderBy: { createdAt: 'desc' },
-      take: 500, // Limit for standard API response
-    });
-  }
-
-  async getAllLogsForExport(productionId: string) {
-    return this.prisma.productionLog.findMany({
-      where: { productionId },
-      orderBy: { createdAt: 'asc' },
+  async getShowReport(productionId: string) {
+    return this.prisma.showReport.findUnique({
+      where: { productionId }
     });
   }
 }

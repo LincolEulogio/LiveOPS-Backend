@@ -23,12 +23,12 @@ export declare class AutomationController {
         }[];
     } & {
         id: string;
-        productionId: string;
-        isEnabled: boolean;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
+        isEnabled: boolean;
     })[]>;
     createRule(productionId: string, dto: CreateRuleDto): Promise<{
         triggers: {
@@ -50,12 +50,12 @@ export declare class AutomationController {
         }[];
     } & {
         id: string;
-        productionId: string;
-        isEnabled: boolean;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
+        isEnabled: boolean;
     }>;
     getRule(productionId: string, id: string): Promise<{
         triggers: {
@@ -77,29 +77,29 @@ export declare class AutomationController {
         }[];
         executionLogs: {
             id: string;
-            productionId: string;
             createdAt: Date;
             status: string;
+            productionId: string;
             details: string | null;
             ruleId: string;
         }[];
     } & {
         id: string;
-        productionId: string;
-        isEnabled: boolean;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
+        isEnabled: boolean;
     }>;
     updateRule(productionId: string, id: string, dto: UpdateRuleDto): Promise<{
         id: string;
-        productionId: string;
-        isEnabled: boolean;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         description: string | null;
+        productionId: string;
+        isEnabled: boolean;
     }>;
     deleteRule(productionId: string, id: string): Promise<{
         success: boolean;
@@ -110,9 +110,9 @@ export declare class AutomationController {
         };
     } & {
         id: string;
-        productionId: string;
         createdAt: Date;
         status: string;
+        productionId: string;
         details: string | null;
         ruleId: string;
     })[]>;

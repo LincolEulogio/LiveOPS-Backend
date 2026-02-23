@@ -125,15 +125,20 @@ let AuthService = class AuthService {
             globalRoleId = superAdminRole.id;
             await this.usersService.seedDefaultRoles();
         }
+        let defaultTenant = await this.prisma.tenant.findFirst();
+        if (!defaultTenant) {
+            defaultTenant = await this.prisma.tenant.create({ data: { name: 'System Default' } });
+        }
         const user = await this.prisma.user.create({
             data: {
                 email: dto.email,
                 password: hashedPassword,
                 name: dto.name,
                 globalRoleId: globalRoleId,
+                tenantId: defaultTenant.id,
             },
         });
-        const tokens = await this.generateTokens(user.id);
+        const tokens = await this.generateTokens(user.id, user.tenantId);
         const fullUser = await this.prisma.user.findUnique({
             where: { id: user.id },
             select: {
@@ -174,7 +179,7 @@ let AuthService = class AuthService {
             },
         })
             .catch((e) => console.error('Failed to write audit log', e));
-        const tokens = await this.generateTokens(user.id);
+        const tokens = await this.generateTokens(user.id, user.tenantId);
         const fullUser = await this.prisma.user.findUnique({
             where: { id: user.id },
             select: {
@@ -202,7 +207,8 @@ let AuthService = class AuthService {
         if (!session || session.isRevoked || session.expiresAt < new Date()) {
             throw new common_1.UnauthorizedException('Invalid refresh token');
         }
-        const tokens = await this.generateTokens(session.userId);
+        const user = await this.prisma.user.findUnique({ where: { id: session.userId } });
+        const tokens = await this.generateTokens(session.userId, user?.tenantId || null);
         await this.prisma.session.update({
             where: { id: session.id },
             data: { isRevoked: true },
@@ -220,8 +226,8 @@ let AuthService = class AuthService {
         const userCount = await this.prisma.user.count();
         return { setupRequired: userCount === 0 };
     }
-    async generateTokens(userId) {
-        const payload = { sub: userId };
+    async generateTokens(userId, tenantId) {
+        const payload = { sub: userId, tenantId };
         const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
         const refreshToken = crypto.randomUUID();
         const expiresAt = new Date();

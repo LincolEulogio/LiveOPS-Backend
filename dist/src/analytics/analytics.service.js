@@ -17,94 +17,116 @@ const prisma_service_1 = require("../prisma/prisma.service");
 let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
     prisma;
     logger = new common_1.Logger(AnalyticsService_1.name);
+    lastWriteTime = new Map();
+    WRITE_INTERVAL_MS = 5000;
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async handleEvent(eventPrefix, payload) {
-        if (eventPrefix === 'obs.connection.state' && payload?.connected === true)
-            return;
-        const productionId = payload?.productionId;
-        if (!productionId)
-            return;
+    async handleProductionHealthStats(payload) {
         try {
-            await this.prisma.productionLog.create({
+            const now = Date.now();
+            const lastWrite = this.lastWriteTime.get(payload.productionId) || 0;
+            if (now - lastWrite < this.WRITE_INTERVAL_MS) {
+                return;
+            }
+            this.lastWriteTime.set(payload.productionId, now);
+            await this.prisma.telemetryLog.create({
                 data: {
-                    productionId,
-                    eventType: eventPrefix,
-                    details: payload,
+                    productionId: payload.productionId,
+                    cpuUsage: payload.stats.cpuUsage,
+                    memoryUsage: payload.stats.memoryUsage,
+                    fps: payload.stats.fps,
+                    bitrate: payload.stats.bitrate || 0,
+                    droppedFrames: payload.stats.droppedFrames,
+                    isStreaming: payload.stats.isStreaming || false,
+                    isRecording: payload.stats.isRecording || false,
                 },
             });
         }
         catch (error) {
-            this.logger.error(`Failed to log event ${eventPrefix}: ${error.message}`);
+            this.logger.error(`Failed to save telemetry for production ${payload.productionId}:`, error);
         }
     }
-    async handleOperatorActivity(eventPrefix, payload) {
-        const productionId = payload?.productionId || payload?.productionId;
-        const userId = payload?.userId;
-        if (!productionId || !userId)
-            return;
+    async getTelemetryLogs(productionId, minutes = 60) {
+        const since = new Date(Date.now() - minutes * 60 * 1000);
+        return this.prisma.telemetryLog.findMany({
+            where: {
+                productionId,
+                timestamp: { gte: since },
+            },
+            orderBy: { timestamp: 'asc' }
+        });
+    }
+    async generateShowReport(productionId) {
         try {
-            await this.prisma.operatorActivity.create({
+            const existing = await this.prisma.showReport.findUnique({
+                where: { productionId }
+            });
+            if (existing)
+                return existing;
+            const telemetry = await this.prisma.telemetryLog.findMany({
+                where: { productionId },
+                orderBy: { timestamp: 'asc' }
+            });
+            const timelineBlocks = await this.prisma.timelineBlock.findMany({
+                where: { productionId },
+                orderBy: { order: 'asc' }
+            });
+            const streamingLogs = telemetry.filter(t => t.isStreaming);
+            let startTime = streamingLogs.length > 0 ? streamingLogs[0].timestamp : undefined;
+            let endTime = streamingLogs.length > 0 ? streamingLogs[streamingLogs.length - 1].timestamp : undefined;
+            let durationMs = 0;
+            if (startTime && endTime) {
+                durationMs = endTime.getTime() - startTime.getTime();
+            }
+            else {
+                const firstBlock = timelineBlocks.find(b => b.startTime);
+                const lastBlock = timelineBlocks.reverse().find(b => b.endTime);
+                if (firstBlock?.startTime && lastBlock?.endTime) {
+                    startTime = firstBlock.startTime;
+                    endTime = lastBlock.endTime;
+                    durationMs = endTime.getTime() - startTime.getTime();
+                }
+            }
+            const totalDroppedFrames = telemetry.reduce((sum, log) => sum + (log.droppedFrames || 0), 0);
+            const maxCpu = Math.max(...telemetry.map(t => t.cpuUsage || 0), 0);
+            const avgFps = telemetry.length ? telemetry.reduce((sum, log) => sum + (log.fps || 0), 0) / telemetry.length : 0;
+            const report = await this.prisma.showReport.create({
                 data: {
                     productionId,
-                    userId,
-                    action: eventPrefix,
-                    details: payload,
-                },
+                    startTime,
+                    endTime,
+                    durationMs,
+                    alertsCount: 0,
+                    peakViewers: 0,
+                    metrics: {
+                        totalDroppedFrames,
+                        maxCpu,
+                        avgFps,
+                        samples: telemetry.length
+                    }
+                }
             });
+            return report;
         }
-        catch (error) {
-            this.logger.error(`Failed to log operator activity ${eventPrefix}: ${error.message}`);
+        catch (e) {
+            this.logger.error(`Error generating show report for ${productionId}`, e);
+            throw e;
         }
     }
-    async getDashboardMetrics(productionId) {
-        const totalLogs = await this.prisma.productionLog.count({
-            where: { productionId },
-        });
-        const eventCounts = await this.prisma.productionLog.groupBy({
-            by: ['eventType'],
-            where: { productionId },
-            _count: true,
-        });
-        const operatorActions = await this.prisma.operatorActivity.count({
-            where: { productionId },
-        });
-        return {
-            productionId,
-            totalEvents: totalLogs,
-            breakdown: eventCounts,
-            totalOperatorActions: operatorActions,
-        };
-    }
-    async getProductionLogs(productionId) {
-        return this.prisma.productionLog.findMany({
-            where: { productionId },
-            orderBy: { createdAt: 'desc' },
-            take: 500,
-        });
-    }
-    async getAllLogsForExport(productionId) {
-        return this.prisma.productionLog.findMany({
-            where: { productionId },
-            orderBy: { createdAt: 'asc' },
+    async getShowReport(productionId) {
+        return this.prisma.showReport.findUnique({
+            where: { productionId }
         });
     }
 };
 exports.AnalyticsService = AnalyticsService;
 __decorate([
-    (0, event_emitter_1.OnEvent)('**'),
+    (0, event_emitter_1.OnEvent)('production.health.stats'),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
-], AnalyticsService.prototype, "handleEvent", null);
-__decorate([
-    (0, event_emitter_1.OnEvent)('command.send'),
-    (0, event_emitter_1.OnEvent)('command.ack'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", Promise)
-], AnalyticsService.prototype, "handleOperatorActivity", null);
+], AnalyticsService.prototype, "handleProductionHealthStats", null);
 exports.AnalyticsService = AnalyticsService = AnalyticsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService])

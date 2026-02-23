@@ -57,6 +57,35 @@ export class EventsGateway
     data: { productionId: string; userId: string; message: string },
     @ConnectedSocket() client: Socket,
   ) {
+    // 1. Check for slash commands
+    if (data.message.startsWith('/')) {
+      const parts = data.message.split(' ');
+      const command = parts[0].toLowerCase();
+      const args = parts.slice(1).join(' ');
+
+      if (command === '/alert' && args.trim()) {
+        // Trigger a mass alarm via intercom service
+        const intercomCommand = await this.intercomService.sendCommand({
+          productionId: data.productionId,
+          senderId: data.userId,
+          message: args,
+          requiresAck: true,
+        });
+
+        // Notify the user who sent the command
+        client.emit('chat.received', {
+          id: `sys-${Date.now()}`,
+          productionId: data.productionId,
+          userId: null,
+          message: `🚀 Comando ejecutado: Alerta enviada a todo el equipo.`,
+          createdAt: new Date().toISOString(),
+        });
+
+        return { status: 'command_executed', commandId: intercomCommand.id };
+      }
+    }
+
+    // 2. Normal Chat Message
     const message = await this.chatService.saveMessage(
       data.productionId,
       data.userId,

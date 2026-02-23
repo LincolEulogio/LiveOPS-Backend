@@ -41,6 +41,11 @@ export class ProductionsService {
       });
     }
 
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.tenantId) {
+      throw new ConflictException('User does not belong to any tenant');
+    }
+
     return this.prisma.$transaction(async (tx) => {
       const production = await tx.production.create({
         data: {
@@ -54,6 +59,7 @@ export class ProductionsService {
               roleId: adminRole.id,
             },
           },
+          tenantId: user.tenantId,
         },
       });
 
@@ -110,6 +116,7 @@ export class ProductionsService {
 
     const where: any = {
       deletedAt: null,
+      tenantId: user?.tenantId,
     };
 
     // Only filter by user assignment if NOT a SUPERADMIN
@@ -176,6 +183,7 @@ export class ProductionsService {
     const where: any = {
       id: productionId,
       deletedAt: null,
+      tenantId: user?.tenantId,
     };
 
     if (!isSuperAdmin) {
