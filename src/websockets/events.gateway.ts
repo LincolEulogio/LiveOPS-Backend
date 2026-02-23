@@ -423,7 +423,7 @@ export class EventsGateway
     if (user) {
       this.activeUsers.set(client.id, {
         ...user,
-        status: `OK: ${data.responseType}`,
+        status: `ACK:${data.responseType}`,
       });
       const productionId = client.data.productionId;
       if (productionId) this.broadcastPresence(productionId);
