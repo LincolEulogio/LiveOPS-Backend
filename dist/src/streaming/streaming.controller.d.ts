@@ -1,8 +1,11 @@
 import { StreamingService } from './streaming.service';
+import { StreamingDestinationsService } from './streaming-destinations.service';
 import { StreamingCommandDto } from './dto/streaming-command.dto';
+import { CreateStreamingDestinationDto, UpdateStreamingDestinationDto } from './dto/streaming-destination.dto';
 export declare class StreamingController {
     private readonly streamingService;
-    constructor(streamingService: StreamingService);
+    private readonly destinationsService;
+    constructor(streamingService: StreamingService, destinationsService: StreamingDestinationsService);
     getState(productionId: string): Promise<{
         productionId: string;
         engineType: import("@prisma/client").$Enums.EngineType;
@@ -25,5 +28,53 @@ export declare class StreamingController {
     }>;
     sendCommand(productionId: string, dto: StreamingCommandDto): Promise<{
         success: boolean;
+    }>;
+    getDestinations(productionId: string): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productionId: string;
+        isEnabled: boolean;
+        platform: string;
+        rtmpUrl: string;
+        streamKey: string;
+        isActive: boolean;
+    }[]>;
+    createDestination(productionId: string, dto: CreateStreamingDestinationDto): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productionId: string;
+        isEnabled: boolean;
+        platform: string;
+        rtmpUrl: string;
+        streamKey: string;
+        isActive: boolean;
+    }>;
+    updateDestination(id: string, dto: UpdateStreamingDestinationDto): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productionId: string;
+        isEnabled: boolean;
+        platform: string;
+        rtmpUrl: string;
+        streamKey: string;
+        isActive: boolean;
+    }>;
+    removeDestination(id: string): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productionId: string;
+        isEnabled: boolean;
+        platform: string;
+        rtmpUrl: string;
+        streamKey: string;
+        isActive: boolean;
     }>;
 }

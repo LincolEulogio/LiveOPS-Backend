@@ -181,8 +181,9 @@ model Production {
   tenantId String? @db.Uuid
   tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  webhooks            Webhook[]
-  publicStatusEnabled Boolean   @default(false)
+  webhooks              Webhook[]
+  publicStatusEnabled   Boolean                @default(false)
+  streamingDestinations StreamingDestination[]
 
   @@index([deletedAt])
   @@index([status])
@@ -502,4 +503,21 @@ model OverlayTemplate {
 
   @@index([productionId])
   @@index([isActive])
+}
+
+model StreamingDestination {
+  id           String     @id @default(uuid()) @db.Uuid
+  productionId String     @db.Uuid
+  name         String
+  platform     String // "YOUTUBE", "TWITCH", "FACEBOOK", "CUSTOM"
+  rtmpUrl      String
+  streamKey    String
+  isEnabled    Boolean    @default(true)
+  isActive     Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
+  @@index([productionId])
+  @@index([isEnabled])
 }

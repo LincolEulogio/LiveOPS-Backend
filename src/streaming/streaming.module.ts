@@ -7,11 +7,12 @@ import { VmixModule } from '../vmix/vmix.module';
 import { WebsocketsModule } from '../websockets/websockets.module';
 import { TallyService } from './tally.service';
 import { AutomationService } from './automation.service';
+import { StreamingDestinationsService } from './streaming-destinations.service';
 
 @Module({
   imports: [ObsModule, VmixModule, WebsocketsModule],
   controllers: [StreamingController],
-  providers: [StreamingService, TallyService, AutomationService],
-  exports: [StreamingService, TallyService, AutomationService],
+  providers: [StreamingService, TallyService, AutomationService, StreamingDestinationsService],
+  exports: [StreamingService, TallyService, AutomationService, StreamingDestinationsService],
 })
-export class StreamingModule {}
+export class StreamingModule { }

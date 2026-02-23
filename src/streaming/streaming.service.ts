@@ -83,6 +83,16 @@ export class StreamingService {
         return this.obsService.startRecord(productionId);
       case 'STOP_RECORD':
         return this.obsService.stopRecord(productionId);
+      case 'START_DESTINATION': {
+        const payload = dto.payload as Record<string, any>;
+        if (!payload?.destId) throw new BadRequestException('destId is required');
+        return { success: true, destId: payload.destId };
+      }
+      case 'STOP_DESTINATION': {
+        const payload = dto.payload as Record<string, any>;
+        if (!payload?.destId) throw new BadRequestException('destId is required');
+        return { success: true, destId: payload.destId };
+      }
       default:
         throw new BadRequestException(`Unknown OBS command: ${dto.type}`);
     }
