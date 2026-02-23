@@ -7,8 +7,8 @@ export declare class SocialController {
         status: string;
         productionId: string;
         content: string;
-        timestamp: Date;
         platform: string;
+        timestamp: Date;
         author: string;
         authorAvatar: string | null;
         externalId: string | null;
@@ -24,8 +24,8 @@ export declare class SocialController {
         status: string;
         productionId: string;
         content: string;
-        timestamp: Date;
         platform: string;
+        timestamp: Date;
         author: string;
         authorAvatar: string | null;
         externalId: string | null;
@@ -35,8 +35,8 @@ export declare class SocialController {
         status: string;
         productionId: string;
         content: string;
-        timestamp: Date;
         platform: string;
+        timestamp: Date;
         author: string;
         authorAvatar: string | null;
         externalId: string | null;

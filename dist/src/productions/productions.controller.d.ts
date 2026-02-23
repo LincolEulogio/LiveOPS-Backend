@@ -15,6 +15,7 @@ export declare class ProductionsController {
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
+        publicStatusEnabled: boolean;
     }>;
     findAll(req: any, query: GetProductionsQueryDto): Promise<{
         data: ({
@@ -57,6 +58,7 @@ export declare class ProductionsController {
             engineType: import("@prisma/client").$Enums.EngineType;
             status: import("@prisma/client").$Enums.ProductionStatus;
             isRehearsal: boolean;
+            publicStatusEnabled: boolean;
         })[];
         meta: {
             total: number;
@@ -115,6 +117,7 @@ export declare class ProductionsController {
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
+        publicStatusEnabled: boolean;
     }>;
     update(id: string, dto: UpdateProductionDto): Promise<{
         id: string;
@@ -127,6 +130,7 @@ export declare class ProductionsController {
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
+        publicStatusEnabled: boolean;
     }>;
     updateState(id: string, dto: UpdateProductionStateDto): Promise<{
         id: string;
@@ -139,6 +143,7 @@ export declare class ProductionsController {
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
+        publicStatusEnabled: boolean;
     }>;
     assignUser(id: string, dto: AssignUserDto): Promise<{
         role: {
@@ -178,5 +183,6 @@ export declare class ProductionsController {
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
+        publicStatusEnabled: boolean;
     }>;
 }

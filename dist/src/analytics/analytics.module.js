@@ -10,6 +10,7 @@ exports.AnalyticsModule = void 0;
 const common_1 = require("@nestjs/common");
 const analytics_service_1 = require("./analytics.service");
 const analytics_controller_1 = require("./analytics.controller");
+const public_analytics_controller_1 = require("./public-analytics.controller");
 const prisma_module_1 = require("../prisma/prisma.module");
 let AnalyticsModule = class AnalyticsModule {
 };
@@ -17,7 +18,7 @@ exports.AnalyticsModule = AnalyticsModule;
 exports.AnalyticsModule = AnalyticsModule = __decorate([
     (0, common_1.Module)({
         imports: [prisma_module_1.PrismaModule],
-        controllers: [analytics_controller_1.AnalyticsController],
+        controllers: [analytics_controller_1.AnalyticsController, public_analytics_controller_1.PublicAnalyticsController],
         providers: [analytics_service_1.AnalyticsService],
         exports: [analytics_service_1.AnalyticsService],
     })

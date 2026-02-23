@@ -16,6 +16,7 @@ export declare class ProductionsService {
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
+        publicStatusEnabled: boolean;
     }>;
     findAllForUser(userId: string, query: GetProductionsQueryDto): Promise<{
         data: ({
@@ -58,6 +59,7 @@ export declare class ProductionsService {
             engineType: import("@prisma/client").$Enums.EngineType;
             status: import("@prisma/client").$Enums.ProductionStatus;
             isRehearsal: boolean;
+            publicStatusEnabled: boolean;
         })[];
         meta: {
             total: number;
@@ -116,6 +118,7 @@ export declare class ProductionsService {
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
+        publicStatusEnabled: boolean;
     }>;
     update(productionId: string, dto: UpdateProductionDto): Promise<{
         id: string;
@@ -128,6 +131,7 @@ export declare class ProductionsService {
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
+        publicStatusEnabled: boolean;
     }>;
     updateState(productionId: string, dto: UpdateProductionStateDto): Promise<{
         id: string;
@@ -140,6 +144,7 @@ export declare class ProductionsService {
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
+        publicStatusEnabled: boolean;
     }>;
     assignUser(productionId: string, dto: AssignUserDto): Promise<{
         role: {
@@ -179,6 +184,7 @@ export declare class ProductionsService {
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
+        publicStatusEnabled: boolean;
     }>;
     toggleRehearsal(productionId: string, enabled: boolean): Promise<{
         id: string;
@@ -191,5 +197,6 @@ export declare class ProductionsService {
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
+        publicStatusEnabled: boolean;
     }>;
 }
