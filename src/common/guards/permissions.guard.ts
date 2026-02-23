@@ -102,8 +102,19 @@ export class PermissionsGuard implements CanActivate {
         const productionPermissions = productionUser.role.permissions.map(
           (rp) => rp.permission.action,
         );
+
+        // Implicit baseline permissions for ANY user explicitly added to the production
+        // This prevents 403 errors on basic navigation if the role is missing these view strings
+        const implicitPermissions = [
+          'production:view',
+          'rundown:view',
+          'script:view',
+        ];
+
+        const allPermissions = [...productionPermissions, ...implicitPermissions];
+
         const hasProdPermission = requiredPermissions.every((perm) =>
-          productionPermissions.includes(perm),
+          allPermissions.includes(perm),
         );
         if (hasProdPermission) {
           return true;

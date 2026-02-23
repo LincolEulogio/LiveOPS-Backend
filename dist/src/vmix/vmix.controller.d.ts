@@ -7,8 +7,8 @@ export declare class VmixController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
         productionId: string;
+        url: string;
         isEnabled: boolean;
         pollingInterval: number;
     }>;
@@ -16,8 +16,8 @@ export declare class VmixController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
         productionId: string;
+        url: string;
         isEnabled: boolean;
         pollingInterval: number;
     }>;

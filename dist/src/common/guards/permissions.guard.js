@@ -80,7 +80,13 @@ let PermissionsGuard = class PermissionsGuard {
                     return true;
                 }
                 const productionPermissions = productionUser.role.permissions.map((rp) => rp.permission.action);
-                const hasProdPermission = requiredPermissions.every((perm) => productionPermissions.includes(perm));
+                const implicitPermissions = [
+                    'production:view',
+                    'rundown:view',
+                    'script:view',
+                ];
+                const allPermissions = [...productionPermissions, ...implicitPermissions];
+                const hasProdPermission = requiredPermissions.every((perm) => allPermissions.includes(perm));
                 if (hasProdPermission) {
                     return true;
                 }

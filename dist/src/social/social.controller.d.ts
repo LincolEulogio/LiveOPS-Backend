@@ -4,13 +4,13 @@ export declare class SocialController {
     constructor(socialService: SocialService);
     getMessages(productionId: string, status?: string): Promise<{
         id: string;
-        status: string;
         productionId: string;
-        content: string;
-        platform: string;
+        status: string;
         timestamp: Date;
+        platform: string;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
     }[]>;
     injectMessage(productionId: string, payload: {
@@ -21,24 +21,24 @@ export declare class SocialController {
         externalId?: string;
     }): Promise<{
         id: string;
-        status: string;
         productionId: string;
-        content: string;
-        platform: string;
+        status: string;
         timestamp: Date;
+        platform: string;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
     }>;
     updateStatus(productionId: string, id: string, status: string): Promise<{
         id: string;
-        status: string;
         productionId: string;
-        content: string;
-        platform: string;
+        status: string;
         timestamp: Date;
+        platform: string;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
     }>;
     createPoll(productionId: string, payload: {
@@ -49,36 +49,36 @@ export declare class SocialController {
         createdAt: Date;
         updatedAt: Date;
         productionId: string;
-        isActive: boolean;
         question: string;
         options: import("@prisma/client/runtime/client").JsonValue;
+        isActive: boolean;
     }>;
     getActivePoll(productionId: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         productionId: string;
-        isActive: boolean;
         question: string;
         options: import("@prisma/client/runtime/client").JsonValue;
+        isActive: boolean;
     } | null>;
     votePoll(id: string, optionId: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         productionId: string;
-        isActive: boolean;
         question: string;
         options: import("@prisma/client/runtime/client").JsonValue;
+        isActive: boolean;
     }>;
     closePoll(productionId: string, id: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         productionId: string;
-        isActive: boolean;
         question: string;
         options: import("@prisma/client/runtime/client").JsonValue;
+        isActive: boolean;
     }>;
     getBlacklist(productionId: string): string[];
     updateBlacklist(productionId: string, words: string[]): {
