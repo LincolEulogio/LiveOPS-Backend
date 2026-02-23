@@ -173,6 +173,7 @@ model Production {
   telemetryLogs    TelemetryLog[]
   showReport       ShowReport?
   hardwareMappings HardwareMapping[]
+  isRehearsal      Boolean           @default(false)
 
   tenantId String? @db.Uuid
   tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)

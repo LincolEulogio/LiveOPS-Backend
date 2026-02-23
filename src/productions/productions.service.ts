@@ -371,4 +371,11 @@ export class ProductionsService {
       data: { deletedAt: new Date() },
     });
   }
+
+  async toggleRehearsal(productionId: string, enabled: boolean) {
+    return this.prisma.production.update({
+      where: { id: productionId },
+      data: { isRehearsal: enabled },
+    });
+  }
 }

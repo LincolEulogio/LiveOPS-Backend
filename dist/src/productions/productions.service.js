@@ -316,6 +316,12 @@ let ProductionsService = class ProductionsService {
             data: { deletedAt: new Date() },
         });
     }
+    async toggleRehearsal(productionId, enabled) {
+        return this.prisma.production.update({
+            where: { id: productionId },
+            data: { isRehearsal: enabled },
+        });
+    }
 };
 exports.ProductionsService = ProductionsService;
 exports.ProductionsService = ProductionsService = __decorate([

@@ -14,6 +14,7 @@ export declare class ProductionsController {
         description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
+        isRehearsal: boolean;
     }>;
     findAll(req: any, query: GetProductionsQueryDto): Promise<{
         data: ({
@@ -55,6 +56,7 @@ export declare class ProductionsController {
             description: string | null;
             engineType: import("@prisma/client").$Enums.EngineType;
             status: import("@prisma/client").$Enums.ProductionStatus;
+            isRehearsal: boolean;
         })[];
         meta: {
             total: number;
@@ -112,6 +114,7 @@ export declare class ProductionsController {
         description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
+        isRehearsal: boolean;
     }>;
     update(id: string, dto: UpdateProductionDto): Promise<{
         id: string;
@@ -123,6 +126,7 @@ export declare class ProductionsController {
         description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
+        isRehearsal: boolean;
     }>;
     updateState(id: string, dto: UpdateProductionStateDto): Promise<{
         id: string;
@@ -134,6 +138,7 @@ export declare class ProductionsController {
         description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
+        isRehearsal: boolean;
     }>;
     assignUser(id: string, dto: AssignUserDto): Promise<{
         role: {
@@ -172,5 +177,6 @@ export declare class ProductionsController {
         description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
+        isRehearsal: boolean;
     }>;
 }
