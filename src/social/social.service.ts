@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 export interface SocialMessagePayload {
     productionId: string;
@@ -152,7 +153,7 @@ export class SocialService {
             option.votes += 1;
             const updatedPoll = await this.prisma.socialPoll.update({
                 where: { id: pollId },
-                data: { options: options as any },
+                data: { options: options as unknown as Prisma.InputJsonValue },
             });
 
             this.eventEmitter.emit('social.poll.updated', updatedPoll);

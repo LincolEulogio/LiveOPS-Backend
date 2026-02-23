@@ -13,7 +13,7 @@ import {
   GetProductionsQueryDto,
 } from './dto/production.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Prisma } from '@prisma/client';
+import { Prisma, ProductionStatus } from '@prisma/client';
 
 @Injectable()
 export class ProductionsService {
@@ -125,10 +125,8 @@ export class ProductionsService {
       where.users = {
         some: { userId },
       };
-    }
-
-    if (query.status) {
-      where.status = query.status as any; // Cast local para evitar conflicto de tipos del enum generado
+    } if (query.status) {
+      where.status = query.status as ProductionStatus;
     }
 
     if (query.search) {

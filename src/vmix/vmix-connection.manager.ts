@@ -192,9 +192,14 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
       : `${instance.url}/api`;
 
     // Build query string e.g., ?Function=Cut&Input=1
+    const stringParams: Record<string, string> = {};
+    Object.entries(params).forEach(([key, val]) => {
+      stringParams[key] = String(val);
+    });
+
     const query = new URLSearchParams({
       Function: command,
-      ...(params as any),
+      ...stringParams,
     }).toString();
 
     await axios.get(`${apiUrl}?${query}`);

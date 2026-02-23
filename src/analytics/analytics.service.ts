@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
-import { EngineType } from '@prisma/client';
+import type { ProductionHealthStats } from '../obs/obs-connection.manager';
 
 @Injectable()
 export class AnalyticsService {
@@ -14,7 +14,7 @@ export class AnalyticsService {
   constructor(private prisma: PrismaService) { }
 
   @OnEvent('production.health.stats')
-  async handleProductionHealthStats(payload: any) {
+  async handleProductionHealthStats(payload: ProductionHealthStats) {
     try {
       const { productionId } = payload;
       if (!productionId) return;
@@ -28,19 +28,16 @@ export class AnalyticsService {
 
       this.lastWriteTime.set(productionId, now);
 
-      // Extract stats either from payload.stats or payload root
-      const stats = payload.stats || payload;
-
       await this.prisma.telemetryLog.create({
         data: {
           productionId,
-          cpuUsage: stats.cpuUsage,
-          memoryUsage: stats.memoryUsage,
-          fps: stats.fps,
-          bitrate: stats.bitrate || 0,
-          droppedFrames: stats.droppedFrames || stats.skippedFrames || 0,
-          isStreaming: stats.isStreaming || false,
-          isRecording: stats.isRecording || false,
+          cpuUsage: payload.cpuUsage,
+          memoryUsage: payload.memoryUsage,
+          fps: payload.fps,
+          bitrate: payload.bitrate || 0,
+          droppedFrames: payload.skippedFrames || 0,
+          isStreaming: payload.isStreaming,
+          isRecording: payload.isRecording,
         },
       });
     } catch (error) {

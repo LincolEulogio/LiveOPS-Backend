@@ -8,7 +8,26 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import OBSWebSocket from 'obs-websocket-js';
 import { PrismaService } from '../prisma/prisma.service';
 import { OnEvent } from '@nestjs/event-emitter';
-import { EngineType } from '../productions/dto/production.dto';
+import { EngineType, ProductionStatus } from '@prisma/client';
+
+export interface ObsScene {
+  sceneName: string;
+  sceneIndex: number;
+}
+
+export interface ProductionHealthStats {
+  productionId: string;
+  engineType: EngineType;
+  cpuUsage: number;
+  fps: number;
+  bitrate: number;
+  skippedFrames: number;
+  totalFrames: number;
+  memoryUsage: number;
+  isStreaming: boolean;
+  isRecording: boolean;
+  timestamp: string;
+}
 
 interface ObsInstance {
   obs: OBSWebSocket;
@@ -140,8 +159,8 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       try {
         const sceneList = await obs.call('GetSceneList');
         if (instance.lastState) {
-          instance.lastState.scenes = sceneList.scenes.map(
-            (s: any) => s.sceneName,
+          instance.lastState.scenes = (sceneList.scenes as unknown as ObsScene[]).map(
+            (s) => s.sceneName,
           );
           instance.lastState.currentScene = sceneList.currentProgramSceneName;
         }
@@ -192,7 +211,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
 
       instance.lastState = {
         currentScene: sceneList.currentProgramSceneName,
-        scenes: sceneList.scenes.map((s: any) => s.sceneName),
+        scenes: (sceneList.scenes as unknown as ObsScene[]).map((s) => s.sceneName),
         isStreaming: streamStatus.outputActive,
         isRecording: recordStatus.outputActive,
         cpuUsage: stats.cpuUsage,
@@ -210,9 +229,10 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
         cpuUsage: stats.cpuUsage,
         fps: fps,
       });
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
-        `Failed to connect to OBS for production ${productionId}: ${error.message}`,
+        `Failed to connect to OBS for production ${productionId}: ${message}`,
       );
       this.scheduleReconnect(productionId, url, password);
     }
@@ -311,19 +331,21 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
           // but we focus on cpu and drops if available.
         }
 
-        this.eventEmitter.emit('production.health.stats', {
+        const healthStats: ProductionHealthStats = {
           productionId,
           engineType: EngineType.OBS,
           cpuUsage: stats.cpuUsage,
           fps: stats.activeFps,
-          bitrate: 0, // OBS v5 GetStreamStatus response varies, often doesn't have bitrate directly like v4
+          bitrate: 0,
           skippedFrames: streamStatus.outputSkippedFrames || 0,
           totalFrames: streamStatus.outputTotalFrames || 0,
           memoryUsage: stats.memoryUsage,
           isStreaming: streamStatus.outputActive,
           isRecording: (await instance.obs.call('GetRecordStatus')).outputActive,
           timestamp: new Date().toISOString(),
-        });
+        };
+
+        this.eventEmitter.emit('production.health.stats', healthStats);
       } catch (e) {
         this.logger.error(
           `Error polling OBS stats for ${productionId}: ${e.message}`,

@@ -1,5 +1,6 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 export interface SocialMessagePayload {
     productionId: string;
     platform: string;
@@ -56,7 +57,7 @@ export declare class SocialService {
         productionId: string;
         isActive: boolean;
         question: string;
-        options: import("@prisma/client/runtime/client").JsonValue;
+        options: Prisma.JsonValue;
     }>;
     getActivePoll(productionId: string): Promise<{
         id: string;
@@ -65,7 +66,7 @@ export declare class SocialService {
         productionId: string;
         isActive: boolean;
         question: string;
-        options: import("@prisma/client/runtime/client").JsonValue;
+        options: Prisma.JsonValue;
     } | null>;
     votePoll(pollId: string, optionId: string): Promise<{
         id: string;
@@ -74,7 +75,7 @@ export declare class SocialService {
         productionId: string;
         isActive: boolean;
         question: string;
-        options: import("@prisma/client/runtime/client").JsonValue;
+        options: Prisma.JsonValue;
     }>;
     closePoll(productionId: string, pollId: string): Promise<{
         id: string;
@@ -83,6 +84,6 @@ export declare class SocialService {
         productionId: string;
         isActive: boolean;
         question: string;
-        options: import("@prisma/client/runtime/client").JsonValue;
+        options: Prisma.JsonValue;
     }>;
 }

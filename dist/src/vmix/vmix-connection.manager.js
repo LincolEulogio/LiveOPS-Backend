@@ -137,9 +137,13 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
         const apiUrl = instance.url.endsWith('/')
             ? `${instance.url}api`
             : `${instance.url}/api`;
+        const stringParams = {};
+        Object.entries(params).forEach(([key, val]) => {
+            stringParams[key] = String(val);
+        });
         const query = new URLSearchParams({
             Function: command,
-            ...params,
+            ...stringParams,
         }).toString();
         await axios_1.default.get(`${apiUrl}?${query}`);
     }

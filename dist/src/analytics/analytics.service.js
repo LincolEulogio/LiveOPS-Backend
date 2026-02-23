@@ -33,17 +33,16 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
                 return;
             }
             this.lastWriteTime.set(productionId, now);
-            const stats = payload.stats || payload;
             await this.prisma.telemetryLog.create({
                 data: {
                     productionId,
-                    cpuUsage: stats.cpuUsage,
-                    memoryUsage: stats.memoryUsage,
-                    fps: stats.fps,
-                    bitrate: stats.bitrate || 0,
-                    droppedFrames: stats.droppedFrames || stats.skippedFrames || 0,
-                    isStreaming: stats.isStreaming || false,
-                    isRecording: stats.isRecording || false,
+                    cpuUsage: payload.cpuUsage,
+                    memoryUsage: payload.memoryUsage,
+                    fps: payload.fps,
+                    bitrate: payload.bitrate || 0,
+                    droppedFrames: payload.skippedFrames || 0,
+                    isStreaming: payload.isStreaming,
+                    isRecording: payload.isRecording,
                 },
             });
         }

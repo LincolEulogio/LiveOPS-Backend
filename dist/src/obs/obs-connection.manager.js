@@ -19,7 +19,7 @@ const event_emitter_1 = require("@nestjs/event-emitter");
 const obs_websocket_js_1 = __importDefault(require("obs-websocket-js"));
 const prisma_service_1 = require("../prisma/prisma.service");
 const event_emitter_2 = require("@nestjs/event-emitter");
-const production_dto_1 = require("../productions/dto/production.dto");
+const client_1 = require("@prisma/client");
 let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
     prisma;
     eventEmitter;
@@ -150,7 +150,8 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
             });
         }
         catch (error) {
-            this.logger.error(`Failed to connect to OBS for production ${productionId}: ${error.message}`);
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(`Failed to connect to OBS for production ${productionId}: ${message}`);
             this.scheduleReconnect(productionId, url, password);
         }
     }
@@ -186,7 +187,7 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
         }, 5000);
     }
     handleConnectionUpdate(payload) {
-        if (payload.type === production_dto_1.EngineType.OBS) {
+        if (payload.type === client_1.EngineType.OBS) {
             this.logger.log(`Received connection update for production ${payload.productionId} (OBS)`);
             this.connectObs(payload.productionId, payload.url, payload.password);
         }
@@ -208,9 +209,9 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
                         streamStatus.outputSkippedFrames;
                     instance.lastState.outputTotalFrames = streamStatus.outputTotalFrames;
                 }
-                this.eventEmitter.emit('production.health.stats', {
+                const healthStats = {
                     productionId,
-                    engineType: production_dto_1.EngineType.OBS,
+                    engineType: client_1.EngineType.OBS,
                     cpuUsage: stats.cpuUsage,
                     fps: stats.activeFps,
                     bitrate: 0,
@@ -220,7 +221,8 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
                     isStreaming: streamStatus.outputActive,
                     isRecording: (await instance.obs.call('GetRecordStatus')).outputActive,
                     timestamp: new Date().toISOString(),
-                });
+                };
+                this.eventEmitter.emit('production.health.stats', healthStats);
             }
             catch (e) {
                 this.logger.error(`Error polling OBS stats for ${productionId}: ${e.message}`);

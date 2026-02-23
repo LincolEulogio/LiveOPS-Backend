@@ -1,11 +1,12 @@
 import { PrismaService } from '../prisma/prisma.service';
+import type { ProductionHealthStats } from '../obs/obs-connection.manager';
 export declare class AnalyticsService {
     private prisma;
     private readonly logger;
     private lastWriteTime;
     private readonly WRITE_INTERVAL_MS;
     constructor(prisma: PrismaService);
-    handleProductionHealthStats(payload: any): Promise<void>;
+    handleProductionHealthStats(payload: ProductionHealthStats): Promise<void>;
     getTelemetryLogs(productionId: string, minutes?: number): Promise<{
         id: string;
         productionId: string;
