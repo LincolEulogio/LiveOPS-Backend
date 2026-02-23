@@ -71,6 +71,10 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         productionId: string;
         scrollPercentage: number;
     }, client: Socket): void;
+    handleHardwareTrigger(data: {
+        productionId: string;
+        mapKey: string;
+    }): void;
     handleConnection(client: Socket, ...args: any[]): Promise<void>;
     private broadcastPresence;
     handleDisconnect(client: Socket): void;

@@ -24,22 +24,26 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
     }
     async handleProductionHealthStats(payload) {
         try {
+            const { productionId } = payload;
+            if (!productionId)
+                return;
             const now = Date.now();
-            const lastWrite = this.lastWriteTime.get(payload.productionId) || 0;
+            const lastWrite = this.lastWriteTime.get(productionId) || 0;
             if (now - lastWrite < this.WRITE_INTERVAL_MS) {
                 return;
             }
-            this.lastWriteTime.set(payload.productionId, now);
+            this.lastWriteTime.set(productionId, now);
+            const stats = payload.stats || payload;
             await this.prisma.telemetryLog.create({
                 data: {
-                    productionId: payload.productionId,
-                    cpuUsage: payload.stats.cpuUsage,
-                    memoryUsage: payload.stats.memoryUsage,
-                    fps: payload.stats.fps,
-                    bitrate: payload.stats.bitrate || 0,
-                    droppedFrames: payload.stats.droppedFrames,
-                    isStreaming: payload.stats.isStreaming || false,
-                    isRecording: payload.stats.isRecording || false,
+                    productionId,
+                    cpuUsage: stats.cpuUsage,
+                    memoryUsage: stats.memoryUsage,
+                    fps: stats.fps,
+                    bitrate: stats.bitrate || 0,
+                    droppedFrames: stats.droppedFrames || stats.skippedFrames || 0,
+                    isStreaming: stats.isStreaming || false,
+                    isRecording: stats.isRecording || false,
                 },
             });
         }

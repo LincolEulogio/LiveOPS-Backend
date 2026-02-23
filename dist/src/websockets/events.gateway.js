@@ -132,6 +132,10 @@ let EventsGateway = class EventsGateway {
             scrollPercentage: data.scrollPercentage,
         });
     }
+    handleHardwareTrigger(data) {
+        this.logger.debug(`Hardware trigger socket received: ${data.mapKey}`);
+        this.eventEmitter.emit('hardware.trigger', data);
+    }
     async handleConnection(client, ...args) {
         const productionId = client.handshake.query.productionId;
         const userId = client.handshake.query.userId;
@@ -409,6 +413,13 @@ __decorate([
     __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
     __metadata("design:returntype", void 0)
 ], EventsGateway.prototype, "handleScriptScrollSync", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('hardware.trigger'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleHardwareTrigger", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('user.identify'),
     __param(0, (0, websockets_1.MessageBody)()),

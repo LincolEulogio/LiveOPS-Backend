@@ -86,20 +86,20 @@ export declare class ProductionsService {
             userId: string;
         })[];
         obsConnection: {
-            url: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
             password: string | null;
             productionId: string;
+            url: string;
             isEnabled: boolean;
         } | null;
         vmixConnection: {
-            url: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
             productionId: string;
+            url: string;
             isEnabled: boolean;
             pollingInterval: number;
         } | null;

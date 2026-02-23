@@ -217,6 +217,8 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
                     skippedFrames: streamStatus.outputSkippedFrames || 0,
                     totalFrames: streamStatus.outputTotalFrames || 0,
                     memoryUsage: stats.memoryUsage,
+                    isStreaming: streamStatus.outputActive,
+                    isRecording: (await instance.obs.call('GetRecordStatus')).outputActive,
                     timestamp: new Date().toISOString(),
                 });
             }

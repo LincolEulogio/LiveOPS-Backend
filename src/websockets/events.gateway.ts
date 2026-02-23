@@ -246,6 +246,14 @@ export class EventsGateway
       });
   }
 
+  @SubscribeMessage('hardware.trigger')
+  handleHardwareTrigger(
+    @MessageBody() data: { productionId: string; mapKey: string },
+  ) {
+    this.logger.debug(`Hardware trigger socket received: ${data.mapKey}`);
+    this.eventEmitter.emit('hardware.trigger', data);
+  }
+
   async handleConnection(client: Socket, ...args: any[]) {
     const productionId = client.handshake.query.productionId as string;
     const userId = client.handshake.query.userId as string;

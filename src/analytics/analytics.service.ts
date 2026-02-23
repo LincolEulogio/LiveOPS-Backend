@@ -14,27 +14,33 @@ export class AnalyticsService {
   constructor(private prisma: PrismaService) { }
 
   @OnEvent('production.health.stats')
-  async handleProductionHealthStats(payload: { productionId: string; engine: EngineType; stats: any }) {
+  async handleProductionHealthStats(payload: any) {
     try {
+      const { productionId } = payload;
+      if (!productionId) return;
+
       const now = Date.now();
-      const lastWrite = this.lastWriteTime.get(payload.productionId) || 0;
+      const lastWrite = this.lastWriteTime.get(productionId) || 0;
 
       if (now - lastWrite < this.WRITE_INTERVAL_MS) {
         return; // Skip if we wrote too recently
       }
 
-      this.lastWriteTime.set(payload.productionId, now);
+      this.lastWriteTime.set(productionId, now);
+
+      // Extract stats either from payload.stats or payload root
+      const stats = payload.stats || payload;
 
       await this.prisma.telemetryLog.create({
         data: {
-          productionId: payload.productionId,
-          cpuUsage: payload.stats.cpuUsage,
-          memoryUsage: payload.stats.memoryUsage,
-          fps: payload.stats.fps,
-          bitrate: payload.stats.bitrate || 0,
-          droppedFrames: payload.stats.droppedFrames,
-          isStreaming: payload.stats.isStreaming || false,
-          isRecording: payload.stats.isRecording || false,
+          productionId,
+          cpuUsage: stats.cpuUsage,
+          memoryUsage: stats.memoryUsage,
+          fps: stats.fps,
+          bitrate: stats.bitrate || 0,
+          droppedFrames: stats.droppedFrames || stats.skippedFrames || 0,
+          isStreaming: stats.isStreaming || false,
+          isRecording: stats.isRecording || false,
         },
       });
     } catch (error) {

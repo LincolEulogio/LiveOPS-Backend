@@ -32,6 +32,7 @@ const media_module_1 = require("./media/media.module");
 const chat_module_1 = require("./chat/chat.module");
 const script_module_1 = require("./script/script.module");
 const social_module_1 = require("./social/social.module");
+const hardware_module_1 = require("./hardware/hardware.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer.apply(production_middleware_1.ProductionMiddleware).forRoutes('*');
@@ -74,6 +75,7 @@ exports.AppModule = AppModule = __decorate([
             chat_module_1.ChatModule,
             script_module_1.ScriptModule,
             social_module_1.SocialModule,
+            hardware_module_1.HardwareModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

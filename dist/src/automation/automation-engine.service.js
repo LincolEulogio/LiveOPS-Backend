@@ -107,6 +107,28 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
             }
         }
     }
+    async handleHardwareTrigger(payload) {
+        this.logger.debug(`Hardware trigger received: ${payload.mapKey} for production ${payload.productionId}`);
+        const mapping = await this.prisma.hardwareMapping.findUnique({
+            where: {
+                productionId_mapKey: {
+                    productionId: payload.productionId,
+                    mapKey: payload.mapKey,
+                },
+            },
+            include: {
+                rule: {
+                    include: {
+                        actions: { orderBy: { order: 'asc' } },
+                    },
+                },
+            },
+        });
+        if (mapping && mapping.rule && mapping.rule.isEnabled) {
+            this.logger.log(`Executing Rule "${mapping.rule.name}" via hardware mapping: ${payload.mapKey}`);
+            await this.executeActions(mapping.rule, { ...payload, isHardware: true });
+        }
+    }
     evaluateTriggers(triggers, eventPrefix, payload) {
         const matchingTriggers = triggers.filter((t) => t.eventType === eventPrefix);
         for (const t of matchingTriggers) {
@@ -213,6 +235,12 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], AutomationEngineService.prototype, "handleEvent", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('hardware.trigger'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AutomationEngineService.prototype, "handleHardwareTrigger", null);
 exports.AutomationEngineService = AutomationEngineService = AutomationEngineService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,

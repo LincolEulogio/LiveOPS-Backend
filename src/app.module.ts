@@ -23,6 +23,7 @@ import { MediaModule } from './media/media.module';
 import { ChatModule } from './chat/chat.module';
 import { ScriptModule } from './script/script.module';
 import { SocialModule } from './social/social.module';
+import { HardwareModule } from './hardware/hardware.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { SocialModule } from './social/social.module';
     ChatModule,
     ScriptModule,
     SocialModule,
+    HardwareModule,
   ],
   controllers: [AppController],
   providers: [

@@ -172,6 +172,7 @@ model Production {
   vmixConnection   VmixConnection?
   telemetryLogs    TelemetryLog[]
   showReport       ShowReport?
+  hardwareMappings HardwareMapping[]
 
   tenantId String? @db.Uuid
   tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -241,17 +242,18 @@ model RolePermission {
 }
 
 model Rule {
-  id            String             @id @default(uuid()) @db.Uuid
-  productionId  String             @db.Uuid
-  name          String
-  description   String?
-  isEnabled     Boolean            @default(true)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  actions       Action[]
-  production    Production         @relation(fields: [productionId], references: [id], onDelete: Cascade)
-  executionLogs RuleExecutionLog[]
-  triggers      Trigger[]
+  id               String             @id @default(uuid()) @db.Uuid
+  productionId     String             @db.Uuid
+  name             String
+  description      String?
+  isEnabled        Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  actions          Action[]
+  production       Production         @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  executionLogs    RuleExecutionLog[]
+  triggers         Trigger[]
+  hardwareMappings HardwareMapping[]
 
   @@index([isEnabled])
   @@index([productionId])
@@ -421,4 +423,18 @@ model Tenant {
 
   users       User[]
   productions Production[]
+}
+
+model HardwareMapping {
+  id           String     @id @default(uuid()) @db.Uuid
+  productionId String     @db.Uuid
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  mapKey       String // e.g., "hid:Btn 1" or "midi:CC 10"
+  ruleId       String     @db.Uuid
+  rule         Rule       @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([productionId, mapKey])
+  @@index([productionId])
 }

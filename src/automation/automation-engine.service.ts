@@ -124,6 +124,35 @@ export class AutomationEngineService {
   }
 
   /**
+   * Dedicated listener for hardware inputs (Stream Deck, MIDI, etc.)
+   */
+  @OnEvent('hardware.trigger')
+  async handleHardwareTrigger(payload: { productionId: string; mapKey: string }) {
+    this.logger.debug(`Hardware trigger received: ${payload.mapKey} for production ${payload.productionId}`);
+
+    const mapping = await this.prisma.hardwareMapping.findUnique({
+      where: {
+        productionId_mapKey: {
+          productionId: payload.productionId,
+          mapKey: payload.mapKey,
+        },
+      },
+      include: {
+        rule: {
+          include: {
+            actions: { orderBy: { order: 'asc' } },
+          },
+        },
+      },
+    });
+
+    if (mapping && mapping.rule && mapping.rule.isEnabled) {
+      this.logger.log(`Executing Rule "${mapping.rule.name}" via hardware mapping: ${payload.mapKey}`);
+      await this.executeActions(mapping.rule, { ...payload, isHardware: true });
+    }
+  }
+
+  /**
    * Evaluates if any trigger condition matches the payload.
    * Basic implementation: JSON subset matching.
    */

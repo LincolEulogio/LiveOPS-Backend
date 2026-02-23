@@ -11,6 +11,10 @@ export declare class AutomationEngineService {
     constructor(prisma: PrismaService, obsService: ObsService, vmixService: VmixService, intercomService: IntercomService);
     checkTimeTriggers(): Promise<void>;
     handleEvent(eventPrefix: string, payload: any): Promise<void>;
+    handleHardwareTrigger(payload: {
+        productionId: string;
+        mapKey: string;
+    }): Promise<void>;
     private evaluateTriggers;
     private executeActions;
     private logExecution;
