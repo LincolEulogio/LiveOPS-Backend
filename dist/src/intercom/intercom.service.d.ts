@@ -2,11 +2,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PushNotificationsService } from '../notifications/push-notifications.service';
 import { CreateCommandTemplateDto, SendCommandDto } from './dto/intercom.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AuditService } from '../common/services/audit.service';
 export declare class IntercomService {
     private prisma;
     private eventEmitter;
     private pushService;
-    constructor(prisma: PrismaService, eventEmitter: EventEmitter2, pushService: PushNotificationsService);
+    private auditService;
+    constructor(prisma: PrismaService, eventEmitter: EventEmitter2, pushService: PushNotificationsService, auditService: AuditService);
     createTemplate(productionId: string, dto: CreateCommandTemplateDto): Promise<{
         id: string;
         name: string;

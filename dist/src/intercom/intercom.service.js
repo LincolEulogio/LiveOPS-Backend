@@ -14,14 +14,17 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const push_notifications_service_1 = require("../notifications/push-notifications.service");
 const event_emitter_1 = require("@nestjs/event-emitter");
+const audit_service_1 = require("../common/services/audit.service");
 let IntercomService = class IntercomService {
     prisma;
     eventEmitter;
     pushService;
-    constructor(prisma, eventEmitter, pushService) {
+    auditService;
+    constructor(prisma, eventEmitter, pushService, auditService) {
         this.prisma = prisma;
         this.eventEmitter = eventEmitter;
         this.pushService = pushService;
+        this.auditService = auditService;
     }
     async createTemplate(productionId, dto) {
         return this.prisma.commandTemplate.create({
@@ -141,6 +144,16 @@ let IntercomService = class IntercomService {
             command,
         });
         this.handlePushNotification(command);
+        this.auditService.log({
+            productionId: dto.productionId,
+            userId: dto.senderId,
+            action: audit_service_1.AuditAction.INTERCOM_SEND,
+            details: {
+                message: dto.message,
+                targetUser: dto.targetUserId,
+                targetRole: dto.targetRoleId,
+            },
+        });
         return command;
     }
     async handlePushNotification(command) {
@@ -172,6 +185,7 @@ exports.IntercomService = IntercomService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         event_emitter_1.EventEmitter2,
-        push_notifications_service_1.PushNotificationsService])
+        push_notifications_service_1.PushNotificationsService,
+        audit_service_1.AuditService])
 ], IntercomService);
 //# sourceMappingURL=intercom.service.js.map

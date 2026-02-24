@@ -35,6 +35,8 @@ const social_module_1 = require("./social/social.module");
 const hardware_module_1 = require("./hardware/hardware.module");
 const notifications_module_1 = require("./notifications/notifications.module");
 const overlays_module_1 = require("./overlays/overlays.module");
+const audit_service_1 = require("./common/services/audit.service");
+const audit_controller_1 = require("./audit/audit.controller");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer.apply(production_middleware_1.ProductionMiddleware).forRoutes('*');
@@ -81,14 +83,16 @@ exports.AppModule = AppModule = __decorate([
             notifications_module_1.NotificationsModule,
             overlays_module_1.OverlaysModule,
         ],
-        controllers: [app_controller_1.AppController],
+        controllers: [app_controller_1.AppController, audit_controller_1.AuditController],
         providers: [
             app_service_1.AppService,
             {
                 provide: core_1.APP_GUARD,
                 useClass: throttler_1.ThrottlerGuard,
             },
+            audit_service_1.AuditService,
         ],
+        exports: [audit_service_1.AuditService],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

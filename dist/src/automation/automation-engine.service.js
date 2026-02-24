@@ -19,19 +19,22 @@ const obs_service_1 = require("../obs/obs.service");
 const vmix_service_1 = require("../vmix/vmix.service");
 const intercom_service_1 = require("../intercom/intercom.service");
 const notifications_service_1 = require("../notifications/notifications.service");
+const audit_service_1 = require("../common/services/audit.service");
 let AutomationEngineService = AutomationEngineService_1 = class AutomationEngineService {
     prisma;
     obsService;
     vmixService;
     intercomService;
     notificationsService;
+    auditService;
     logger = new common_1.Logger(AutomationEngineService_1.name);
-    constructor(prisma, obsService, vmixService, intercomService, notificationsService) {
+    constructor(prisma, obsService, vmixService, intercomService, notificationsService, auditService) {
         this.prisma = prisma;
         this.obsService = obsService;
         this.vmixService = vmixService;
         this.intercomService = intercomService;
         this.notificationsService = notificationsService;
+        this.auditService = auditService;
     }
     async checkTimeTriggers() {
         const now = new Date();
@@ -239,6 +242,11 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
                 ? `Block: ${eventPayload.id}`
                 : 'Generic event';
             await this.logExecution(rule.id, rule.productionId, 'SUCCESS', `Executed for ${context}`);
+            this.auditService.log({
+                productionId: rule.productionId,
+                action: audit_service_1.AuditAction.AUTOMATION_TRIGGER,
+                details: { ruleName: rule.name, ruleId: rule.id, context },
+            });
         }
         catch (error) {
             const err = error;
@@ -282,6 +290,7 @@ exports.AutomationEngineService = AutomationEngineService = AutomationEngineServ
         obs_service_1.ObsService,
         vmix_service_1.VmixService,
         intercom_service_1.IntercomService,
-        notifications_service_1.NotificationsService])
+        notifications_service_1.NotificationsService,
+        audit_service_1.AuditService])
 ], AutomationEngineService);
 //# sourceMappingURL=automation-engine.service.js.map

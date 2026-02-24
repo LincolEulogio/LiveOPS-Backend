@@ -14,13 +14,16 @@ exports.ObsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const obs_connection_manager_1 = require("./obs-connection.manager");
+const audit_service_1 = require("../common/services/audit.service");
 let ObsService = ObsService_1 = class ObsService {
     prisma;
     obsManager;
+    auditService;
     logger = new common_1.Logger(ObsService_1.name);
-    constructor(prisma, obsManager) {
+    constructor(prisma, obsManager, auditService) {
         this.prisma = prisma;
         this.obsManager = obsManager;
+        this.auditService = auditService;
     }
     async saveConnection(productionId, dto) {
         const connection = await this.prisma.obsConnection.upsert({
@@ -70,6 +73,11 @@ let ObsService = ObsService_1 = class ObsService {
         const obs = this.getObs(productionId);
         try {
             await obs.call('SetCurrentProgramScene', { sceneName: dto.sceneName });
+            this.auditService.log({
+                productionId,
+                action: audit_service_1.AuditAction.SCENE_CHANGE,
+                details: { sceneName: dto.sceneName },
+            });
             return { success: true, sceneName: dto.sceneName };
         }
         catch (e) {
@@ -82,6 +90,10 @@ let ObsService = ObsService_1 = class ObsService {
         const obs = this.getObs(productionId);
         try {
             await obs.call('StartStream');
+            this.auditService.log({
+                productionId,
+                action: audit_service_1.AuditAction.STREAM_START,
+            });
             return { success: true };
         }
         catch (e) {
@@ -94,6 +106,10 @@ let ObsService = ObsService_1 = class ObsService {
         const obs = this.getObs(productionId);
         try {
             await obs.call('StopStream');
+            this.auditService.log({
+                productionId,
+                action: audit_service_1.AuditAction.STREAM_STOP,
+            });
             return { success: true };
         }
         catch (e) {
@@ -106,6 +122,10 @@ let ObsService = ObsService_1 = class ObsService {
         const obs = this.getObs(productionId);
         try {
             await obs.call('StartRecord');
+            this.auditService.log({
+                productionId,
+                action: audit_service_1.AuditAction.RECORD_START,
+            });
             return { success: true };
         }
         catch (e) {
@@ -118,6 +138,10 @@ let ObsService = ObsService_1 = class ObsService {
         const obs = this.getObs(productionId);
         try {
             await obs.call('StopRecord');
+            this.auditService.log({
+                productionId,
+                action: audit_service_1.AuditAction.RECORD_STOP,
+            });
             return { success: true };
         }
         catch (e) {
@@ -143,6 +167,7 @@ exports.ObsService = ObsService;
 exports.ObsService = ObsService = ObsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        obs_connection_manager_1.ObsConnectionManager])
+        obs_connection_manager_1.ObsConnectionManager,
+        audit_service_1.AuditService])
 ], ObsService);
 //# sourceMappingURL=obs.service.js.map

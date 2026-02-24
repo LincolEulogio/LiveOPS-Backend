@@ -7,6 +7,7 @@ import { VmixService } from '../vmix/vmix.service';
 import { IntercomService } from '../intercom/intercom.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Rule, Trigger, Action } from '@prisma/client';
+import { AuditService, AuditAction } from '../common/services/audit.service';
 
 interface TriggerCondition {
   secondsBefore?: number;
@@ -33,6 +34,7 @@ export class AutomationEngineService {
     private vmixService: VmixService,
     private intercomService: IntercomService,
     private notificationsService: NotificationsService,
+    private auditService: AuditService,
   ) { }
 
   /**
@@ -312,6 +314,13 @@ export class AutomationEngineService {
         'SUCCESS',
         `Executed for ${context as string}`,
       );
+
+      // Audit Log
+      this.auditService.log({
+        productionId: rule.productionId,
+        action: AuditAction.AUTOMATION_TRIGGER,
+        details: { ruleName: rule.name, ruleId: rule.id, context },
+      });
     } catch (error: unknown) {
       const err = error as Error;
       this.logger.error(

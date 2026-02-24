@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { ObsConnectionManager } from './obs-connection.manager';
 import { SaveObsConnectionDto, ChangeSceneDto } from './dto/obs.dto';
+import { AuditService, AuditAction } from '../common/services/audit.service';
 
 @Injectable()
 export class ObsService {
@@ -15,6 +16,7 @@ export class ObsService {
   constructor(
     private prisma: PrismaService,
     private obsManager: ObsConnectionManager,
+    private auditService: AuditService,
   ) { }
 
   async saveConnection(productionId: string, dto: SaveObsConnectionDto) {
@@ -81,6 +83,14 @@ export class ObsService {
     const obs = this.getObs(productionId);
     try {
       await obs.call('SetCurrentProgramScene', { sceneName: dto.sceneName });
+
+      // Audit Log
+      this.auditService.log({
+        productionId,
+        action: AuditAction.SCENE_CHANGE,
+        details: { sceneName: dto.sceneName },
+      });
+
       return { success: true, sceneName: dto.sceneName };
     } catch (e: unknown) {
       const error = e as Error;
@@ -93,6 +103,13 @@ export class ObsService {
     const obs = this.getObs(productionId);
     try {
       await obs.call('StartStream');
+
+      // Audit Log
+      this.auditService.log({
+        productionId,
+        action: AuditAction.STREAM_START,
+      });
+
       return { success: true };
     } catch (e: unknown) {
       const error = e as Error;
@@ -105,6 +122,13 @@ export class ObsService {
     const obs = this.getObs(productionId);
     try {
       await obs.call('StopStream');
+
+      // Audit Log
+      this.auditService.log({
+        productionId,
+        action: AuditAction.STREAM_STOP,
+      });
+
       return { success: true };
     } catch (e: unknown) {
       const error = e as Error;
@@ -117,6 +141,13 @@ export class ObsService {
     const obs = this.getObs(productionId);
     try {
       await obs.call('StartRecord');
+
+      // Audit Log
+      this.auditService.log({
+        productionId,
+        action: AuditAction.RECORD_START,
+      });
+
       return { success: true };
     } catch (e: unknown) {
       const error = e as Error;
@@ -129,6 +160,13 @@ export class ObsService {
     const obs = this.getObs(productionId);
     try {
       await obs.call('StopRecord');
+
+      // Audit Log
+      this.auditService.log({
+        productionId,
+        action: AuditAction.RECORD_STOP,
+      });
+
       return { success: true };
     } catch (e: unknown) {
       const error = e as Error;

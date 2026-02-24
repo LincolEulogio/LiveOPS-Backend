@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PushNotificationsService } from '../notifications/push-notifications.service';
 import { CreateCommandTemplateDto, SendCommandDto } from './dto/intercom.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AuditService, AuditAction } from '../common/services/audit.service';
 
 @Injectable()
 export class IntercomService {
@@ -10,6 +11,7 @@ export class IntercomService {
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
     private pushService: PushNotificationsService,
+    private auditService: AuditService,
   ) { }
 
   async createTemplate(productionId: string, dto: CreateCommandTemplateDto) {
@@ -149,6 +151,18 @@ export class IntercomService {
 
     // --- PWA Push Notification Logic ---
     this.handlePushNotification(command);
+
+    // --- Audit Logging ---
+    this.auditService.log({
+      productionId: dto.productionId,
+      userId: dto.senderId,
+      action: AuditAction.INTERCOM_SEND,
+      details: {
+        message: dto.message,
+        targetUser: dto.targetUserId,
+        targetRole: dto.targetRoleId,
+      },
+    });
 
     return command;
   }

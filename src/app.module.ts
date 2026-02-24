@@ -26,6 +26,8 @@ import { SocialModule } from './social/social.module';
 import { HardwareModule } from './hardware/hardware.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OverlaysModule } from './overlays/overlays.module';
+import { AuditService } from './common/services/audit.service';
+import { AuditController } from './audit/audit.controller';
 
 @Module({
   imports: [
@@ -67,14 +69,16 @@ import { OverlaysModule } from './overlays/overlays.module';
     NotificationsModule,
     OverlaysModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, AuditController],
   providers: [
     AppService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    AuditService,
   ],
+  exports: [AuditService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
