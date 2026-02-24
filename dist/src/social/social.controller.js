@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const social_service_1 = require("./social.service");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const permissions_guard_1 = require("../common/guards/permissions.guard");
+const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
 let SocialController = class SocialController {
     socialService;
     constructor(socialService) {
@@ -57,6 +58,7 @@ let SocialController = class SocialController {
 exports.SocialController = SocialController;
 __decorate([
     (0, common_1.Get)('messages'),
+    (0, permissions_decorator_1.Permissions)('social:view'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Param)('status')),
     __metadata("design:type", Function),
@@ -65,6 +67,7 @@ __decorate([
 ], SocialController.prototype, "getMessages", null);
 __decorate([
     (0, common_1.Post)('messages'),
+    (0, permissions_decorator_1.Permissions)('social:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -73,6 +76,7 @@ __decorate([
 ], SocialController.prototype, "injectMessage", null);
 __decorate([
     (0, common_1.Put)('messages/:id/status'),
+    (0, permissions_decorator_1.Permissions)('social:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)('status')),
@@ -82,6 +86,7 @@ __decorate([
 ], SocialController.prototype, "updateStatus", null);
 __decorate([
     (0, common_1.Post)('polls'),
+    (0, permissions_decorator_1.Permissions)('social:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -90,6 +95,7 @@ __decorate([
 ], SocialController.prototype, "createPoll", null);
 __decorate([
     (0, common_1.Get)('polls/active'),
+    (0, permissions_decorator_1.Permissions)('social:view'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -97,6 +103,7 @@ __decorate([
 ], SocialController.prototype, "getActivePoll", null);
 __decorate([
     (0, common_1.Post)('polls/:id/vote'),
+    (0, permissions_decorator_1.Permissions)('social:view'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)('optionId')),
     __metadata("design:type", Function),
@@ -105,6 +112,7 @@ __decorate([
 ], SocialController.prototype, "votePoll", null);
 __decorate([
     (0, common_1.Delete)('polls/:id'),
+    (0, permissions_decorator_1.Permissions)('social:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -113,6 +121,7 @@ __decorate([
 ], SocialController.prototype, "closePoll", null);
 __decorate([
     (0, common_1.Get)('blacklist'),
+    (0, permissions_decorator_1.Permissions)('social:view'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -120,6 +129,7 @@ __decorate([
 ], SocialController.prototype, "getBlacklist", null);
 __decorate([
     (0, common_1.Put)('blacklist'),
+    (0, permissions_decorator_1.Permissions)('social:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)('words')),
     __metadata("design:type", Function),

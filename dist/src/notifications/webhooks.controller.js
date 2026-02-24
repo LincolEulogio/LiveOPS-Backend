@@ -17,6 +17,9 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const notifications_service_1 = require("./notifications.service");
 const push_notifications_service_1 = require("./push-notifications.service");
+const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
+const permissions_guard_1 = require("../common/guards/permissions.guard");
+const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
 let WebhooksController = class WebhooksController {
     prisma;
     notificationsService;
@@ -65,6 +68,7 @@ let WebhooksController = class WebhooksController {
 exports.WebhooksController = WebhooksController;
 __decorate([
     (0, common_1.Get)('webhooks/:productionId'),
+    (0, permissions_decorator_1.Permissions)('webhook:view'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -72,6 +76,7 @@ __decorate([
 ], WebhooksController.prototype, "getWebhooks", null);
 __decorate([
     (0, common_1.Post)('webhooks'),
+    (0, permissions_decorator_1.Permissions)('webhook:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -80,6 +85,7 @@ __decorate([
 ], WebhooksController.prototype, "createWebhook", null);
 __decorate([
     (0, common_1.Patch)(':id'),
+    (0, permissions_decorator_1.Permissions)('webhook:manage'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -88,6 +94,7 @@ __decorate([
 ], WebhooksController.prototype, "updateWebhook", null);
 __decorate([
     (0, common_1.Delete)(':id'),
+    (0, permissions_decorator_1.Permissions)('webhook:manage'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -95,6 +102,7 @@ __decorate([
 ], WebhooksController.prototype, "deleteWebhook", null);
 __decorate([
     (0, common_1.Post)(':id/test'),
+    (0, permissions_decorator_1.Permissions)('webhook:manage'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -102,6 +110,7 @@ __decorate([
 ], WebhooksController.prototype, "testWebhook", null);
 exports.WebhooksController = WebhooksController = __decorate([
     (0, common_1.Controller)('notifications'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         notifications_service_1.NotificationsService,
         push_notifications_service_1.PushNotificationsService])

@@ -4,42 +4,42 @@ export declare class AuditController {
     constructor(auditService: AuditService);
     getGlobalLogs(limit?: string, page?: string): Promise<{
         id: string;
-        productionId: string;
-        eventType: string;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
         createdAt: Date;
+        productionId: string;
+        details: import("@prisma/client/runtime/client").JsonValue | null;
+        eventType: string;
     }[] | ({
         user: {
             id: string;
-            name: string | null;
             email: string;
+            name: string | null;
         } | null;
     } & {
         id: string;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
         createdAt: Date;
-        userId: string | null;
         action: string;
+        userId: string | null;
+        details: import("@prisma/client/runtime/client").JsonValue | null;
         ipAddress: string | null;
     })[]>;
     getProductionLogs(productionId: string, limit?: string, page?: string): Promise<{
         id: string;
-        productionId: string;
-        eventType: string;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
         createdAt: Date;
+        productionId: string;
+        details: import("@prisma/client/runtime/client").JsonValue | null;
+        eventType: string;
     }[] | ({
         user: {
             id: string;
-            name: string | null;
             email: string;
+            name: string | null;
         } | null;
     } & {
         id: string;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
         createdAt: Date;
-        userId: string | null;
         action: string;
+        userId: string | null;
+        details: import("@prisma/client/runtime/client").JsonValue | null;
         ipAddress: string | null;
     })[]>;
 }

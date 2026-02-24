@@ -8,13 +8,13 @@ export declare class WebhooksController {
     constructor(prisma: PrismaService, notificationsService: NotificationsService, pushService: PushNotificationsService);
     getWebhooks(productionId: string): Promise<{
         id: string;
-        productionId: string;
         name: string;
-        url: string;
-        platform: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        url: string;
+        productionId: string;
+        isEnabled: boolean;
+        platform: string;
     }[]>;
     createWebhook(productionId: string, data: {
         name: string;
@@ -22,13 +22,13 @@ export declare class WebhooksController {
         platform: string;
     }): Promise<{
         id: string;
-        productionId: string;
         name: string;
-        url: string;
-        platform: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        url: string;
+        productionId: string;
+        isEnabled: boolean;
+        platform: string;
     }>;
     updateWebhook(id: string, data: {
         name?: string;
@@ -36,23 +36,23 @@ export declare class WebhooksController {
         isEnabled?: boolean;
     }): Promise<{
         id: string;
-        productionId: string;
         name: string;
-        url: string;
-        platform: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        url: string;
+        productionId: string;
+        isEnabled: boolean;
+        platform: string;
     }>;
     deleteWebhook(id: string): Promise<{
         id: string;
-        productionId: string;
         name: string;
-        url: string;
-        platform: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        url: string;
+        productionId: string;
+        isEnabled: boolean;
+        platform: string;
     }>;
     testWebhook(id: string): Promise<{
         success: boolean;

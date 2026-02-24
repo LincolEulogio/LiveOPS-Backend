@@ -18,6 +18,7 @@ const vmix_service_1 = require("./vmix.service");
 const vmix_dto_1 = require("./dto/vmix.dto");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const permissions_guard_1 = require("../common/guards/permissions.guard");
+const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
 let VmixController = class VmixController {
     vmixService;
     constructor(vmixService) {
@@ -42,6 +43,7 @@ let VmixController = class VmixController {
 exports.VmixController = VmixController;
 __decorate([
     (0, common_1.Put)('connection'),
+    (0, permissions_decorator_1.Permissions)('vmix:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -50,6 +52,7 @@ __decorate([
 ], VmixController.prototype, "saveConnection", null);
 __decorate([
     (0, common_1.Get)('connection'),
+    (0, permissions_decorator_1.Permissions)('vmix:view'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -57,6 +60,7 @@ __decorate([
 ], VmixController.prototype, "getConnection", null);
 __decorate([
     (0, common_1.Post)('input'),
+    (0, permissions_decorator_1.Permissions)('vmix:control'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -65,6 +69,7 @@ __decorate([
 ], VmixController.prototype, "changeInput", null);
 __decorate([
     (0, common_1.Post)('transition/cut'),
+    (0, permissions_decorator_1.Permissions)('vmix:control'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -72,6 +77,7 @@ __decorate([
 ], VmixController.prototype, "cut", null);
 __decorate([
     (0, common_1.Post)('transition/fade'),
+    (0, permissions_decorator_1.Permissions)('vmix:control'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

@@ -24,22 +24,22 @@ export declare class AuditService {
     }): Promise<void>;
     getLogs(productionId?: string, limit?: number, page?: number): Promise<{
         id: string;
-        productionId: string;
-        eventType: string;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
         createdAt: Date;
+        productionId: string;
+        details: import("@prisma/client/runtime/client").JsonValue | null;
+        eventType: string;
     }[] | ({
         user: {
             id: string;
-            name: string | null;
             email: string;
+            name: string | null;
         } | null;
     } & {
         id: string;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
         createdAt: Date;
-        userId: string | null;
         action: string;
+        userId: string | null;
+        details: import("@prisma/client/runtime/client").JsonValue | null;
         ipAddress: string | null;
     })[]>;
 }

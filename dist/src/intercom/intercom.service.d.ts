@@ -12,63 +12,45 @@ export declare class IntercomService {
     createTemplate(productionId: string, dto: CreateCommandTemplateDto): Promise<{
         id: string;
         name: string;
-        description: string | null;
-        icon: string | null;
-        color: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
         productionId: string;
+        icon: string | null;
+        color: string | null;
     }>;
     getTemplates(productionId: string): Promise<{
         id: string;
         name: string;
-        description: string | null;
-        icon: string | null;
-        color: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
         productionId: string;
+        icon: string | null;
+        color: string | null;
     }[]>;
     private seedDefaultTemplates;
     updateTemplate(id: string, productionId: string, dto: CreateCommandTemplateDto): Promise<{
         id: string;
         name: string;
-        description: string | null;
-        icon: string | null;
-        color: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
         productionId: string;
+        icon: string | null;
+        color: string | null;
     }>;
     deleteTemplate(id: string, productionId: string): Promise<{
         id: string;
         name: string;
-        description: string | null;
-        icon: string | null;
-        color: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
         productionId: string;
+        icon: string | null;
+        color: string | null;
     }>;
     getCommandHistory(productionId: string, limit?: number): Promise<({
-        sender: {
-            id: string;
-            name: string | null;
-        };
-        targetRole: {
-            id: string;
-            name: string;
-        } | null;
-        template: {
-            id: string;
-            name: string;
-            description: string | null;
-            icon: string | null;
-            color: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            productionId: string;
-        } | null;
         responses: ({
             responder: {
                 id: string;
@@ -82,9 +64,28 @@ export declare class IntercomService {
             response: string;
             note: string | null;
         })[];
+        sender: {
+            id: string;
+            name: string | null;
+        };
+        targetRole: {
+            id: string;
+            name: string;
+        } | null;
+        template: {
+            id: string;
+            name: string;
+            createdAt: Date;
+            updatedAt: Date;
+            description: string | null;
+            productionId: string;
+            icon: string | null;
+            color: string | null;
+        } | null;
     } & {
         id: string;
         createdAt: Date;
+        status: string;
         productionId: string;
         senderId: string;
         targetRoleId: string | null;
@@ -92,7 +93,6 @@ export declare class IntercomService {
         templateId: string | null;
         message: string;
         requiresAck: boolean;
-        status: string;
     })[]>;
     sendCommand(dto: SendCommandDto): Promise<{
         sender: {
@@ -106,16 +106,17 @@ export declare class IntercomService {
         template: {
             id: string;
             name: string;
-            description: string | null;
-            icon: string | null;
-            color: string | null;
             createdAt: Date;
             updatedAt: Date;
+            description: string | null;
             productionId: string;
+            icon: string | null;
+            color: string | null;
         } | null;
     } & {
         id: string;
         createdAt: Date;
+        status: string;
         productionId: string;
         senderId: string;
         targetRoleId: string | null;
@@ -123,7 +124,6 @@ export declare class IntercomService {
         templateId: string | null;
         message: string;
         requiresAck: boolean;
-        status: string;
     }>;
     private handlePushNotification;
 }

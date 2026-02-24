@@ -16,6 +16,8 @@ exports.ChatController = void 0;
 const common_1 = require("@nestjs/common");
 const chat_service_1 = require("./chat.service");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
+const permissions_guard_1 = require("../common/guards/permissions.guard");
+const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
 let ChatController = class ChatController {
     chatService;
     constructor(chatService) {
@@ -28,6 +30,7 @@ let ChatController = class ChatController {
 exports.ChatController = ChatController;
 __decorate([
     (0, common_1.Get)(':productionId'),
+    (0, permissions_decorator_1.Permissions)('production:view'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
@@ -36,7 +39,7 @@ __decorate([
 ], ChatController.prototype, "getHistory", null);
 exports.ChatController = ChatController = __decorate([
     (0, common_1.Controller)('chats'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     __metadata("design:paramtypes", [chat_service_1.ChatService])
 ], ChatController);
 //# sourceMappingURL=chat.controller.js.map

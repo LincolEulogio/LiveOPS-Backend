@@ -12,6 +12,7 @@ import { AutomationService } from './automation.service';
 import { CreateRuleDto, UpdateRuleDto } from './dto/automation.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { Permissions } from '../common/decorators/permissions.decorator';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions/:productionId/automation')
@@ -19,11 +20,13 @@ export class AutomationController {
   constructor(private readonly automationService: AutomationService) { }
 
   @Get('rules')
+  @Permissions('automation:view')
   getRules(@Param('productionId') productionId: string) {
     return this.automationService.getRules(productionId);
   }
 
   @Post('rules')
+  @Permissions('automation:manage')
   createRule(
     @Param('productionId') productionId: string,
     @Body() dto: CreateRuleDto,
@@ -32,6 +35,7 @@ export class AutomationController {
   }
 
   @Get('rules/:id')
+  @Permissions('automation:view')
   getRule(
     @Param('productionId') productionId: string,
     @Param('id') id: string,
@@ -40,6 +44,7 @@ export class AutomationController {
   }
 
   @Put('rules/:id')
+  @Permissions('automation:manage')
   updateRule(
     @Param('productionId') productionId: string,
     @Param('id') id: string,
@@ -49,6 +54,7 @@ export class AutomationController {
   }
 
   @Delete('rules/:id')
+  @Permissions('automation:manage')
   deleteRule(
     @Param('productionId') productionId: string,
     @Param('id') id: string,
@@ -57,11 +63,13 @@ export class AutomationController {
   }
 
   @Get('logs')
+  @Permissions('automation:view')
   getExecutionLogs(@Param('productionId') productionId: string) {
     return this.automationService.getExecutionLogs(productionId);
   }
 
   @Post('instant-clip')
+  @Permissions('automation:manage')
   triggerInstantClip(@Param('productionId') productionId: string) {
     // We can use the event emitter to trigger the engine or call a specific method in a new service
     // For now, let's add a method to automation.service.ts

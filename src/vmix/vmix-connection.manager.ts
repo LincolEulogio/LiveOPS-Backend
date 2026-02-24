@@ -16,6 +16,8 @@ interface VmixInstance {
   pollInterval?: NodeJS.Timeout;
   activeInput?: number;
   previewInput?: number;
+  pollingFailureCount: number;
+  isConnected: boolean;
 }
 
 @Injectable()
@@ -58,7 +60,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
       this.disconnectVmix(productionId, existing);
     }
 
-    const instance: VmixInstance = { url };
+    const instance: VmixInstance = { url, pollingFailureCount: 0, isConnected: false };
     this.connections.set(productionId, instance);
 
     const interval = pollingInterval || this.POLLING_RATE_MS;
@@ -124,6 +126,12 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
       });
 
       // We consider it connected if the poll succeeded
+      if (!instance.isConnected) {
+        this.logger.log(`vMix connected/restored for production ${productionId}`);
+        instance.isConnected = true;
+      }
+      instance.pollingFailureCount = 0;
+
       this.eventEmitter.emit('vmix.connection.state', {
         productionId,
         connected: true,
@@ -138,12 +146,23 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
         isRecording,
         timestamp: new Date().toISOString(),
       });
-    } catch (error) {
-      // Log silently unless debugging, as this will spam if vMix is off
-      this.eventEmitter.emit('vmix.connection.state', {
-        productionId,
-        connected: false,
-      });
+    } catch (error: any) {
+      instance.pollingFailureCount++;
+
+      // If we fail 5 times (default 5s at 1s rate), mark as disconnected
+      if (instance.isConnected && instance.pollingFailureCount >= 5) {
+        this.logger.warn(`vMix connection lost for production ${productionId} after ${instance.pollingFailureCount} failures.`);
+        instance.isConnected = false;
+        this.eventEmitter.emit('vmix.connection.state', {
+          productionId,
+          connected: false,
+        });
+      }
+
+      // Log error only if it's the first few failures or we are transitioning to disconnected
+      if (instance.pollingFailureCount === 1 || instance.pollingFailureCount === 5) {
+        this.logger.debug(`vMix polling error for ${productionId}: ${error.message}`);
+      }
     }
   }
 

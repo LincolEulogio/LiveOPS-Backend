@@ -18,6 +18,7 @@ const obs_service_1 = require("./obs.service");
 const obs_dto_1 = require("./dto/obs.dto");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const permissions_guard_1 = require("../common/guards/permissions.guard");
+const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
 let ObsController = class ObsController {
     obsService;
     constructor(obsService) {
@@ -42,6 +43,7 @@ let ObsController = class ObsController {
 exports.ObsController = ObsController;
 __decorate([
     (0, common_1.Put)('connection'),
+    (0, permissions_decorator_1.Permissions)('obs:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -50,6 +52,7 @@ __decorate([
 ], ObsController.prototype, "saveConnection", null);
 __decorate([
     (0, common_1.Get)('connection'),
+    (0, permissions_decorator_1.Permissions)('obs:view'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -57,6 +60,7 @@ __decorate([
 ], ObsController.prototype, "getConnection", null);
 __decorate([
     (0, common_1.Post)('scene'),
+    (0, permissions_decorator_1.Permissions)('obs:control'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -65,6 +69,7 @@ __decorate([
 ], ObsController.prototype, "changeScene", null);
 __decorate([
     (0, common_1.Post)('stream/start'),
+    (0, permissions_decorator_1.Permissions)('obs:control'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -72,6 +77,7 @@ __decorate([
 ], ObsController.prototype, "startStream", null);
 __decorate([
     (0, common_1.Post)('stream/stop'),
+    (0, permissions_decorator_1.Permissions)('obs:control'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

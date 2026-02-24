@@ -19,6 +19,8 @@ const streaming_destinations_service_1 = require("./streaming-destinations.servi
 const streaming_command_dto_1 = require("./dto/streaming-command.dto");
 const streaming_destination_dto_1 = require("./dto/streaming-destination.dto");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
+const permissions_guard_1 = require("../common/guards/permissions.guard");
+const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
 let StreamingController = class StreamingController {
     streamingService;
     destinationsService;
@@ -48,6 +50,7 @@ let StreamingController = class StreamingController {
 exports.StreamingController = StreamingController;
 __decorate([
     (0, common_1.Get)(':id/state'),
+    (0, permissions_decorator_1.Permissions)('streaming:view'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -55,6 +58,7 @@ __decorate([
 ], StreamingController.prototype, "getState", null);
 __decorate([
     (0, common_1.Post)(':id/command'),
+    (0, permissions_decorator_1.Permissions)('streaming:control'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -63,6 +67,7 @@ __decorate([
 ], StreamingController.prototype, "sendCommand", null);
 __decorate([
     (0, common_1.Get)(':id/destinations'),
+    (0, permissions_decorator_1.Permissions)('streaming:view'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -70,6 +75,7 @@ __decorate([
 ], StreamingController.prototype, "getDestinations", null);
 __decorate([
     (0, common_1.Post)(':id/destinations'),
+    (0, permissions_decorator_1.Permissions)('streaming:manage'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -78,6 +84,7 @@ __decorate([
 ], StreamingController.prototype, "createDestination", null);
 __decorate([
     (0, common_1.Put)('destinations/:destId'),
+    (0, permissions_decorator_1.Permissions)('streaming:manage'),
     __param(0, (0, common_1.Param)('destId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -86,13 +93,14 @@ __decorate([
 ], StreamingController.prototype, "updateDestination", null);
 __decorate([
     (0, common_1.Delete)('destinations/:destId'),
+    (0, permissions_decorator_1.Permissions)('streaming:manage'),
     __param(0, (0, common_1.Param)('destId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], StreamingController.prototype, "removeDestination", null);
 exports.StreamingController = StreamingController = __decorate([
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     (0, common_1.Controller)('streaming'),
     __metadata("design:paramtypes", [streaming_service_1.StreamingService,
         streaming_destinations_service_1.StreamingDestinationsService])

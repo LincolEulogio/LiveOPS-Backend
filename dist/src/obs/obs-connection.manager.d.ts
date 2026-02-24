@@ -33,6 +33,8 @@ export declare class ObsConnectionManager implements OnModuleInit, OnModuleDestr
     private disconnectInstance;
     disconnectObs(productionId: string): Promise<void>;
     private scheduleReconnect;
+    private startHeartbeat;
+    private stopHeartbeat;
     handleConnectionUpdate(payload: {
         productionId: string;
         type: EngineType;

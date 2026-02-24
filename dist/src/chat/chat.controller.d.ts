@@ -11,7 +11,7 @@ export declare class ChatController {
         id: string;
         createdAt: Date;
         productionId: string;
-        message: string;
         userId: string | null;
+        message: string;
     })[]>;
 }

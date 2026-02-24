@@ -18,6 +18,7 @@ const intercom_service_1 = require("./intercom.service");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const intercom_dto_1 = require("./dto/intercom.dto");
 const permissions_guard_1 = require("../common/guards/permissions.guard");
+const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
 let IntercomController = class IntercomController {
     intercomService;
     constructor(intercomService) {
@@ -42,6 +43,7 @@ let IntercomController = class IntercomController {
 exports.IntercomController = IntercomController;
 __decorate([
     (0, common_1.Post)('templates'),
+    (0, permissions_decorator_1.Permissions)('intercom:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -50,6 +52,7 @@ __decorate([
 ], IntercomController.prototype, "createTemplate", null);
 __decorate([
     (0, common_1.Get)('templates'),
+    (0, permissions_decorator_1.Permissions)('intercom:view'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -57,6 +60,7 @@ __decorate([
 ], IntercomController.prototype, "getTemplates", null);
 __decorate([
     (0, common_1.Put)('templates/:id'),
+    (0, permissions_decorator_1.Permissions)('intercom:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
@@ -66,6 +70,7 @@ __decorate([
 ], IntercomController.prototype, "updateTemplate", null);
 __decorate([
     (0, common_1.Delete)('templates/:id'),
+    (0, permissions_decorator_1.Permissions)('intercom:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -74,6 +79,7 @@ __decorate([
 ], IntercomController.prototype, "deleteTemplate", null);
 __decorate([
     (0, common_1.Get)('history'),
+    (0, permissions_decorator_1.Permissions)('intercom:view'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

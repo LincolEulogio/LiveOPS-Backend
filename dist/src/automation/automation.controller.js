@@ -18,6 +18,7 @@ const automation_service_1 = require("./automation.service");
 const automation_dto_1 = require("./dto/automation.dto");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const permissions_guard_1 = require("../common/guards/permissions.guard");
+const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
 let AutomationController = class AutomationController {
     automationService;
     constructor(automationService) {
@@ -48,6 +49,7 @@ let AutomationController = class AutomationController {
 exports.AutomationController = AutomationController;
 __decorate([
     (0, common_1.Get)('rules'),
+    (0, permissions_decorator_1.Permissions)('automation:view'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -55,6 +57,7 @@ __decorate([
 ], AutomationController.prototype, "getRules", null);
 __decorate([
     (0, common_1.Post)('rules'),
+    (0, permissions_decorator_1.Permissions)('automation:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -63,6 +66,7 @@ __decorate([
 ], AutomationController.prototype, "createRule", null);
 __decorate([
     (0, common_1.Get)('rules/:id'),
+    (0, permissions_decorator_1.Permissions)('automation:view'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -71,6 +75,7 @@ __decorate([
 ], AutomationController.prototype, "getRule", null);
 __decorate([
     (0, common_1.Put)('rules/:id'),
+    (0, permissions_decorator_1.Permissions)('automation:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
@@ -80,6 +85,7 @@ __decorate([
 ], AutomationController.prototype, "updateRule", null);
 __decorate([
     (0, common_1.Delete)('rules/:id'),
+    (0, permissions_decorator_1.Permissions)('automation:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -88,6 +94,7 @@ __decorate([
 ], AutomationController.prototype, "deleteRule", null);
 __decorate([
     (0, common_1.Get)('logs'),
+    (0, permissions_decorator_1.Permissions)('automation:view'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -95,6 +102,7 @@ __decorate([
 ], AutomationController.prototype, "getExecutionLogs", null);
 __decorate([
     (0, common_1.Post)('instant-clip'),
+    (0, permissions_decorator_1.Permissions)('automation:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

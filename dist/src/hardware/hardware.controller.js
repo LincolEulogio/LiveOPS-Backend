@@ -17,6 +17,8 @@ const common_1 = require("@nestjs/common");
 const hardware_service_1 = require("./hardware.service");
 const hardware_mapping_dto_1 = require("./dto/hardware-mapping.dto");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
+const permissions_guard_1 = require("../common/guards/permissions.guard");
+const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
 let HardwareController = class HardwareController {
     hardwareService;
     constructor(hardwareService) {
@@ -35,6 +37,7 @@ let HardwareController = class HardwareController {
 exports.HardwareController = HardwareController;
 __decorate([
     (0, common_1.Get)('mappings'),
+    (0, permissions_decorator_1.Permissions)('hardware:view'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -42,6 +45,7 @@ __decorate([
 ], HardwareController.prototype, "getMappings", null);
 __decorate([
     (0, common_1.Post)('mappings'),
+    (0, permissions_decorator_1.Permissions)('hardware:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -50,6 +54,7 @@ __decorate([
 ], HardwareController.prototype, "saveMapping", null);
 __decorate([
     (0, common_1.Delete)('mappings/:mapKey'),
+    (0, permissions_decorator_1.Permissions)('hardware:manage'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Param)('mapKey')),
     __metadata("design:type", Function),
@@ -58,7 +63,7 @@ __decorate([
 ], HardwareController.prototype, "deleteMapping", null);
 exports.HardwareController = HardwareController = __decorate([
     (0, common_1.Controller)('productions/:productionId/hardware'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     __metadata("design:paramtypes", [hardware_service_1.HardwareService])
 ], HardwareController);
 //# sourceMappingURL=hardware.controller.js.map

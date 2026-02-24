@@ -12,6 +12,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MediaController = void 0;
 const common_1 = require("@nestjs/common");
 const media_service_1 = require("./media.service");
+const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
+const permissions_guard_1 = require("../common/guards/permissions.guard");
+const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
 let MediaController = class MediaController {
     mediaService;
     constructor(mediaService) {
@@ -24,12 +27,14 @@ let MediaController = class MediaController {
 exports.MediaController = MediaController;
 __decorate([
     (0, common_1.Get)('assets'),
+    (0, permissions_decorator_1.Permissions)('media:view'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], MediaController.prototype, "getAssets", null);
 exports.MediaController = MediaController = __decorate([
     (0, common_1.Controller)('media'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     __metadata("design:paramtypes", [media_service_1.MediaService])
 ], MediaController);
 //# sourceMappingURL=media.controller.js.map

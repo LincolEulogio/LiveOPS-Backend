@@ -11,13 +11,15 @@ import { ObsService } from './obs.service';
 import { SaveObsConnectionDto, ChangeSceneDto } from './dto/obs.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { Permissions } from '../common/decorators/permissions.decorator';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions/:productionId/obs')
 export class ObsController {
-  constructor(private readonly obsService: ObsService) {}
+  constructor(private readonly obsService: ObsService) { }
 
   @Put('connection')
+  @Permissions('obs:manage')
   saveConnection(
     @Param('productionId') productionId: string,
     @Body() dto: SaveObsConnectionDto,
@@ -27,6 +29,7 @@ export class ObsController {
   }
 
   @Get('connection')
+  @Permissions('obs:view')
   getConnection(@Param('productionId') productionId: string) {
     return this.obsService.getConnection(productionId);
   }
@@ -34,6 +37,7 @@ export class ObsController {
   // --- Commands ---
 
   @Post('scene')
+  @Permissions('obs:control')
   changeScene(
     @Param('productionId') productionId: string,
     @Body() dto: ChangeSceneDto,
@@ -42,11 +46,13 @@ export class ObsController {
   }
 
   @Post('stream/start')
+  @Permissions('obs:control')
   startStream(@Param('productionId') productionId: string) {
     return this.obsService.startStream(productionId);
   }
 
   @Post('stream/stop')
+  @Permissions('obs:control')
   stopStream(@Param('productionId') productionId: string) {
     return this.obsService.stopStream(productionId);
   }

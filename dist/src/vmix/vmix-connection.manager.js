@@ -54,7 +54,7 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
         if (existing) {
             this.disconnectVmix(productionId, existing);
         }
-        const instance = { url };
+        const instance = { url, pollingFailureCount: 0, isConnected: false };
         this.connections.set(productionId, instance);
         const interval = pollingInterval || this.POLLING_RATE_MS;
         this.logger.log(`Starting vMix polling for production ${productionId} at ${url} (${interval}ms)`);
@@ -102,6 +102,11 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
                 isExternal,
                 isMultiCorder,
             });
+            if (!instance.isConnected) {
+                this.logger.log(`vMix connected/restored for production ${productionId}`);
+                instance.isConnected = true;
+            }
+            instance.pollingFailureCount = 0;
             this.eventEmitter.emit('vmix.connection.state', {
                 productionId,
                 connected: true,
@@ -115,10 +120,18 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
             });
         }
         catch (error) {
-            this.eventEmitter.emit('vmix.connection.state', {
-                productionId,
-                connected: false,
-            });
+            instance.pollingFailureCount++;
+            if (instance.isConnected && instance.pollingFailureCount >= 5) {
+                this.logger.warn(`vMix connection lost for production ${productionId} after ${instance.pollingFailureCount} failures.`);
+                instance.isConnected = false;
+                this.eventEmitter.emit('vmix.connection.state', {
+                    productionId,
+                    connected: false,
+                });
+            }
+            if (instance.pollingFailureCount === 1 || instance.pollingFailureCount === 5) {
+                this.logger.debug(`vMix polling error for ${productionId}: ${error.message}`);
+            }
         }
     }
     handleConnectionUpdate(payload) {

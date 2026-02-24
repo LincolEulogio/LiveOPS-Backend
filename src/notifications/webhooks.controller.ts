@@ -14,9 +14,12 @@ import { NotificationPlatform, NotificationsService } from './notifications.serv
 import { PushNotificationsService } from './push-notifications.service'; // Added import
 import { CreateSubscriptionDto } from './dto/push-subscription.dto'; // Added import
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { Permissions } from '../common/decorators/permissions.decorator';
 import { Request } from 'express'; // Added import
 
 @Controller('notifications') // Changed controller path
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class WebhooksController {
     constructor(
         private prisma: PrismaService, // Kept prisma service
@@ -25,6 +28,7 @@ export class WebhooksController {
     ) { }
 
     @Get('webhooks/:productionId') // Modified path for getWebhooks
+    @Permissions('webhook:view')
     async getWebhooks(@Param('productionId') productionId: string) {
         // The original implementation for getWebhooks is moved here,
         // but the instruction only provided a placeholder comment.
@@ -36,6 +40,7 @@ export class WebhooksController {
     }
 
     @Post('webhooks') // Modified path for createWebhook
+    @Permissions('webhook:manage')
     async createWebhook(
         @Param('productionId') productionId: string,
         @Body() data: { name: string; url: string; platform: string },
@@ -49,6 +54,7 @@ export class WebhooksController {
     }
 
     @Patch(':id')
+    @Permissions('webhook:manage')
     async updateWebhook(
         @Param('id') id: string,
         @Body() data: { name?: string; url?: string; isEnabled?: boolean },
@@ -60,6 +66,7 @@ export class WebhooksController {
     }
 
     @Delete(':id')
+    @Permissions('webhook:manage')
     async deleteWebhook(@Param('id') id: string) {
         return this.prisma.webhook.delete({
             where: { id },
@@ -67,6 +74,7 @@ export class WebhooksController {
     }
 
     @Post(':id/test')
+    @Permissions('webhook:manage')
     async testWebhook(@Param('id') id: string) {
         const webhook = await this.prisma.webhook.findUnique({
             where: { id },

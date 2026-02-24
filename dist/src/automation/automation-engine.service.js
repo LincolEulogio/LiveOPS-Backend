@@ -171,73 +171,81 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
     }
     async executeActions(rule, eventPayload) {
         try {
-            for (const action of rule.actions) {
-                this.logger.debug(`Executing action ${action.actionType} for rule ${rule.name}`);
+            this.logger.log(`Starting execution of ${rule.actions.length} actions for rule "${rule.name}"`);
+            const executionPromises = rule.actions.map(async (action) => {
+                this.logger.debug(`Queueing action ${action.actionType} (order: ${action.order})`);
                 const payload = action.payload;
-                switch (action.actionType) {
-                    case 'obs.changeScene':
-                        if (payload?.sceneName) {
-                            await this.obsService.changeScene(rule.productionId, {
-                                sceneName: payload.sceneName,
-                            });
-                        }
-                        break;
-                    case 'vmix.cut':
-                        await this.vmixService.cut(rule.productionId);
-                        break;
-                    case 'vmix.fade':
-                        await this.vmixService.fade(rule.productionId, {
-                            duration: payload?.duration || 500,
-                        });
-                        break;
-                    case 'vmix.changeInput':
-                        if (payload?.input) {
-                            await this.vmixService.changeInput(rule.productionId, {
-                                input: payload.input,
-                            });
-                        }
-                        break;
-                    case 'intercom.send':
-                        if (payload?.templateId || payload?.message) {
-                            let message = payload.message;
-                            if (!message && payload.templateId) {
-                                const template = await this.prisma.commandTemplate.findUnique({
-                                    where: { id: payload.templateId },
+                try {
+                    switch (action.actionType) {
+                        case 'obs.changeScene':
+                            if (payload?.sceneName) {
+                                await this.obsService.changeScene(rule.productionId, {
+                                    sceneName: payload.sceneName,
                                 });
-                                message = template?.name || 'Automation Alert';
                             }
-                            await this.intercomService.sendCommand({
-                                productionId: rule.productionId,
-                                senderId: '00000000-0000-0000-0000-000000000000',
-                                targetRoleId: payload?.targetRoleId,
-                                templateId: payload?.templateId,
-                                message: message,
-                                requiresAck: payload?.requiresAck ?? true,
+                            break;
+                        case 'vmix.cut':
+                            await this.vmixService.cut(rule.productionId);
+                            break;
+                        case 'vmix.fade':
+                            await this.vmixService.fade(rule.productionId, {
+                                duration: payload?.duration || 500,
                             });
-                        }
-                        break;
-                    case 'webhook.call':
-                        if (payload?.url || payload?.message) {
-                            await this.notificationsService.sendNotification(rule.productionId, payload.message || `Automation Rule Triggered: ${rule.name}`);
-                        }
-                        break;
-                    case 'engine.instantClip':
-                        try {
-                            if (this.obsService.isConnected(rule.productionId)) {
-                                await this.obsService.saveReplayBuffer(rule.productionId);
+                            break;
+                        case 'vmix.changeInput':
+                            if (payload?.input) {
+                                await this.vmixService.changeInput(rule.productionId, {
+                                    input: payload.input,
+                                });
                             }
-                            else if (this.vmixService.isConnected(rule.productionId)) {
-                                await this.vmixService.saveVideoDelay(rule.productionId);
+                            break;
+                        case 'intercom.send':
+                            if (payload?.templateId || payload?.message) {
+                                let message = payload.message;
+                                if (!message && payload.templateId) {
+                                    const template = await this.prisma.commandTemplate.findUnique({
+                                        where: { id: payload.templateId },
+                                    });
+                                    message = template?.name || 'Automation Alert';
+                                }
+                                await this.intercomService.sendCommand({
+                                    productionId: rule.productionId,
+                                    senderId: '00000000-0000-0000-0000-000000000000',
+                                    targetRoleId: payload?.targetRoleId,
+                                    templateId: payload?.templateId,
+                                    message: message,
+                                    requiresAck: payload?.requiresAck ?? true,
+                                });
                             }
-                        }
-                        catch (e) {
-                            this.logger.error(`Failed to trigger instant clip: ${e.message}`);
-                        }
-                        break;
-                    default:
-                        this.logger.warn(`Unknown action type: ${action.actionType}`);
+                            break;
+                        case 'webhook.call':
+                            if (payload?.url || payload?.message) {
+                                await this.notificationsService.sendNotification(rule.productionId, payload.message || `Automation Rule Triggered: ${rule.name}`);
+                            }
+                            break;
+                        case 'engine.instantClip':
+                            try {
+                                if (this.obsService.isConnected(rule.productionId)) {
+                                    await this.obsService.saveReplayBuffer(rule.productionId);
+                                }
+                                else if (this.vmixService.isConnected(rule.productionId)) {
+                                    await this.vmixService.saveVideoDelay(rule.productionId);
+                                }
+                            }
+                            catch (e) {
+                                this.logger.error(`Failed to trigger instant clip: ${e.message}`);
+                            }
+                            break;
+                        default:
+                            this.logger.warn(`Unknown action type: ${action.actionType}`);
+                    }
                 }
-            }
+                catch (actionError) {
+                    this.logger.error(`Action ${action.actionType} failed: ${actionError.message}`);
+                    throw actionError;
+                }
+            });
+            await Promise.all(executionPromises);
             const context = eventPayload?.id
                 ? `Block: ${eventPayload.id}`
                 : 'Generic event';

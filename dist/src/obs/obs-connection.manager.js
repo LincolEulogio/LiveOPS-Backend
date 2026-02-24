@@ -53,7 +53,7 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
             this.disconnectInstance(productionId, existing);
         }
         const obs = new obs_websocket_js_1.default();
-        const instance = { obs, isConnected: false };
+        const instance = { obs, isConnected: false, reconnectAttempts: existing?.reconnectAttempts || 0 };
         this.connections.set(productionId, instance);
         obs.on('ConnectionClosed', (error) => {
             this.logger.warn(`OBS connection closed for production ${productionId}: ${error?.message || 'Unknown'}`);
@@ -116,6 +116,7 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
             await obs.connect(url, password);
             this.logger.log(`Successfully connected to OBS for production ${productionId}`);
             instance.isConnected = true;
+            instance.reconnectAttempts = 0;
             if (instance.reconnectTimeout) {
                 clearTimeout(instance.reconnectTimeout);
                 instance.reconnectTimeout = undefined;
@@ -142,6 +143,7 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
                 bitrate: streamStatus.outputSkippedFrames !== undefined ? 0 : undefined,
             };
             this.startStatsPolling(productionId, instance);
+            this.startHeartbeat(productionId, instance);
             this.eventEmitter.emit('obs.scene.changed', {
                 productionId,
                 sceneName: sceneList.currentProgramSceneName,
@@ -160,6 +162,7 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
             clearTimeout(instance.reconnectTimeout);
         }
         this.stopStatsPolling(instance);
+        this.stopHeartbeat(instance);
         instance.obs.removeAllListeners();
         instance.obs.disconnect().catch(() => { });
         this.connections.delete(productionId);
@@ -181,10 +184,33 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
         if (instance.reconnectTimeout) {
             clearTimeout(instance.reconnectTimeout);
         }
+        instance.reconnectAttempts++;
+        const delay = Math.min(Math.pow(2, instance.reconnectAttempts) * 1000, 30000);
+        this.logger.log(`Scheduling reconnect attempt ${instance.reconnectAttempts} for OBS (Production: ${productionId}) in ${delay / 1000}s`);
         instance.reconnectTimeout = setTimeout(() => {
-            this.logger.log(`Attempting to reconnect OBS for production ${productionId}...`);
             this.connectObs(productionId, url, password);
-        }, 5000);
+        }, delay);
+    }
+    startHeartbeat(productionId, instance) {
+        this.stopHeartbeat(instance);
+        instance.heartbeatInterval = setInterval(async () => {
+            if (!instance.isConnected)
+                return;
+            try {
+                await instance.obs.call('GetVersion');
+            }
+            catch (e) {
+                this.logger.warn(`Heartbeat failed for OBS (Production: ${productionId}), marking as disconnected.`);
+                instance.isConnected = false;
+                instance.obs.disconnect().catch(() => { });
+            }
+        }, 10000);
+    }
+    stopHeartbeat(instance) {
+        if (instance.heartbeatInterval) {
+            clearInterval(instance.heartbeatInterval);
+            instance.heartbeatInterval = undefined;
+        }
     }
     handleConnectionUpdate(payload) {
         if (payload.type === client_1.EngineType.OBS) {

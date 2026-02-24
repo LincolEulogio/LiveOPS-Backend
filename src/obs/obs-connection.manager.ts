@@ -33,7 +33,9 @@ interface ObsInstance {
   obs: OBSWebSocket;
   reconnectTimeout?: NodeJS.Timeout;
   statsInterval?: NodeJS.Timeout;
+  heartbeatInterval?: NodeJS.Timeout;
   isConnected: boolean;
+  reconnectAttempts: number;
   lastState?: {
     currentScene: string;
     scenes: string[];
@@ -98,7 +100,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     }
 
     const obs = new OBSWebSocket();
-    const instance: ObsInstance = { obs, isConnected: false };
+    const instance: ObsInstance = { obs, isConnected: false, reconnectAttempts: existing?.reconnectAttempts || 0 };
     this.connections.set(productionId, instance);
 
     // Setup Event Listeners
@@ -184,6 +186,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
 
       // Mark as connected IMMEDIATELY after handshake
       instance.isConnected = true;
+      instance.reconnectAttempts = 0; // Reset attempts on success
 
       // Clear any reconnect timeouts
       if (instance.reconnectTimeout) {
@@ -221,6 +224,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
 
       // Start polling immediately after connection, even if not streaming
       this.startStatsPolling(productionId, instance);
+      this.startHeartbeat(productionId, instance);
 
       // Re-emit scene change if we have one to populate frontend
       this.eventEmitter.emit('obs.scene.changed', {
@@ -246,6 +250,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       clearTimeout(instance.reconnectTimeout);
     }
     this.stopStatsPolling(instance);
+    this.stopHeartbeat(instance);
     // Remove listeners to prevent memory leaks or unwanted reconnects during manual disconnect
     instance.obs.removeAllListeners();
     instance.obs.disconnect().catch(() => { });
@@ -281,13 +286,41 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       clearTimeout(instance.reconnectTimeout);
     }
 
-    // Try reconnecting in 5 seconds
+    instance.reconnectAttempts++;
+    // Exponential backoff: 2s, 4s, 8s, 16s, up to 30s max
+    const delay = Math.min(Math.pow(2, instance.reconnectAttempts) * 1000, 30000);
+
+    this.logger.log(
+      `Scheduling reconnect attempt ${instance.reconnectAttempts} for OBS (Production: ${productionId}) in ${delay / 1000}s`,
+    );
+
     instance.reconnectTimeout = setTimeout(() => {
-      this.logger.log(
-        `Attempting to reconnect OBS for production ${productionId}...`,
-      );
       this.connectObs(productionId, url, password);
-    }, 5000);
+    }, delay);
+  }
+
+  private startHeartbeat(productionId: string, instance: ObsInstance) {
+    this.stopHeartbeat(instance);
+    instance.heartbeatInterval = setInterval(async () => {
+      if (!instance.isConnected) return;
+      try {
+        // Simple call to check if connection is still alive
+        await instance.obs.call('GetVersion');
+      } catch (e) {
+        this.logger.warn(`Heartbeat failed for OBS (Production: ${productionId}), marking as disconnected.`);
+        instance.isConnected = false;
+        // The ConnectionClosed event might not fire immediately, so we force-close
+        instance.obs.disconnect().catch(() => { });
+        // ConnectionClosed listener will trigger scheduleReconnect
+      }
+    }, 10000); // 10s heartbeat
+  }
+
+  private stopHeartbeat(instance: ObsInstance) {
+    if (instance.heartbeatInterval) {
+      clearInterval(instance.heartbeatInterval);
+      instance.heartbeatInterval = undefined;
+    }
   }
 
   /**
