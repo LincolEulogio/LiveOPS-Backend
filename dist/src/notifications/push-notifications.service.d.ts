@@ -15,8 +15,8 @@ export declare class PushNotificationsService implements OnModuleInit {
         userId: string;
         p256dh: string;
         auth: string;
-    }>;
-    unsubscribe(endpoint: string): Promise<import("@prisma/client").Prisma.BatchPayload>;
+    } | null>;
+    unsubscribe(endpoint: string): Promise<import("@prisma/client").Prisma.BatchPayload | null>;
     sendNotification(userId: string, payload: {
         title: string;
         body: string;

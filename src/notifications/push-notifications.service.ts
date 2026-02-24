@@ -32,32 +32,48 @@ export class PushNotificationsService implements OnModuleInit {
     async subscribe(userId: string, subscription: webpush.PushSubscription) {
         const { endpoint, keys } = subscription;
 
-        return this.prisma.pushSubscription.upsert({
-            where: { endpoint },
-            update: {
-                userId,
-                p256dh: keys.p256dh,
-                auth: keys.auth,
-            },
-            create: {
-                userId,
-                endpoint,
-                p256dh: keys.p256dh,
-                auth: keys.auth,
-            },
-        });
+        try {
+            return await this.prisma.pushSubscription.upsert({
+                where: { endpoint },
+                update: {
+                    userId,
+                    p256dh: keys.p256dh,
+                    auth: keys.auth,
+                },
+                create: {
+                    userId,
+                    endpoint,
+                    p256dh: keys.p256dh,
+                    auth: keys.auth,
+                },
+            });
+        } catch (error) {
+            this.logger.error(`Error subscribing user ${userId} to push notifications: ${error.message}`);
+            return null;
+        }
     }
 
     async unsubscribe(endpoint: string) {
-        return this.prisma.pushSubscription.deleteMany({
-            where: { endpoint },
-        });
+        try {
+            return await this.prisma.pushSubscription.deleteMany({
+                where: { endpoint },
+            });
+        } catch (error) {
+            this.logger.error(`Error unsubscribing from push notifications: ${error.message}`);
+            return null;
+        }
     }
 
     async sendNotification(userId: string, payload: { title: string; body: string; icon?: string; data?: any }) {
-        const subscriptions = await this.prisma.pushSubscription.findMany({
-            where: { userId },
-        });
+        let subscriptions = [];
+        try {
+            subscriptions = await this.prisma.pushSubscription.findMany({
+                where: { userId },
+            });
+        } catch (error) {
+            this.logger.error(`Error fetching push subscriptions for user ${userId}: ${error.message}`);
+            return;
+        }
 
         if (subscriptions.length === 0) {
             this.logger.debug(`No push subscriptions found for user ${userId}`);

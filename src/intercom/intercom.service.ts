@@ -168,29 +168,37 @@ export class IntercomService {
   }
 
   private async handlePushNotification(command: any) {
-    const { productionId, targetUserId, targetRoleId, message, sender } = command;
+    try {
+      const { productionId, targetUserId, targetRoleId, message, sender } = command;
 
-    if (targetUserId) {
-      // Direct notification to a specific user
-      await this.pushService.sendNotification(targetUserId, {
-        title: `Nuevo Comando de ${sender?.name || 'Director'}`,
-        body: message,
-        data: { productionId, commandId: command.id }
-      });
-    } else if (targetRoleId) {
-      // Notify all users with this role in the production
-      const usersInRole = await this.prisma.productionUser.findMany({
-        where: { productionId, roleId: targetRoleId },
-        select: { userId: true },
-      });
-
-      for (const { userId } of usersInRole) {
-        await this.pushService.sendNotification(userId, {
-          title: `Alerta de Producción: ${message}`,
-          body: 'Revisa tu panel para más detalles.',
+      if (targetUserId) {
+        // Direct notification to a specific user
+        await this.pushService.sendNotification(targetUserId, {
+          title: `Nuevo Comando de ${sender?.name || 'Director'}`,
+          body: message,
           data: { productionId, commandId: command.id }
         });
+      } else if (targetRoleId) {
+        // Notify all users with this role in the production
+        const usersInRole = await this.prisma.productionUser.findMany({
+          where: { productionId, roleId: targetRoleId },
+          select: { userId: true },
+        });
+
+        for (const { userId } of usersInRole) {
+          try {
+            await this.pushService.sendNotification(userId, {
+              title: `Alerta de Producción: ${message}`,
+              body: 'Revisa tu panel para más detalles.',
+              data: { productionId, commandId: command.id }
+            });
+          } catch (innerError) {
+            console.error(`[Intercom] Failed to send push to individual user ${userId}:`, innerError.message);
+          }
+        }
       }
+    } catch (error) {
+      console.error('[Intercom] Error in handlePushNotification:', error.message);
     }
   }
 }
