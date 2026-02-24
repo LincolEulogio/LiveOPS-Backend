@@ -354,6 +354,8 @@ model User {
 
   receivedCommands Command[] @relation("CommandTarget")
 
+  pushSubscriptions PushSubscription[]
+
   @@index([deletedAt])
   @@index([email])
   @@index([tenantId])
@@ -520,4 +522,16 @@ model StreamingDestination {
 
   @@index([productionId])
   @@index([isEnabled])
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

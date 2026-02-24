@@ -15,14 +15,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WebhooksController = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
-const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const notifications_service_1 = require("./notifications.service");
+const push_notifications_service_1 = require("./push-notifications.service");
 let WebhooksController = class WebhooksController {
     prisma;
     notificationsService;
-    constructor(prisma, notificationsService) {
+    pushService;
+    constructor(prisma, notificationsService, pushService) {
         this.prisma = prisma;
         this.notificationsService = notificationsService;
+        this.pushService = pushService;
     }
     async getWebhooks(productionId) {
         return this.prisma.webhook.findMany({
@@ -62,14 +64,14 @@ let WebhooksController = class WebhooksController {
 };
 exports.WebhooksController = WebhooksController;
 __decorate([
-    (0, common_1.Get)(),
+    (0, common_1.Get)('webhooks/:productionId'),
     __param(0, (0, common_1.Param)('productionId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], WebhooksController.prototype, "getWebhooks", null);
 __decorate([
-    (0, common_1.Post)(),
+    (0, common_1.Post)('webhooks'),
     __param(0, (0, common_1.Param)('productionId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -99,9 +101,9 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], WebhooksController.prototype, "testWebhook", null);
 exports.WebhooksController = WebhooksController = __decorate([
-    (0, common_1.Controller)('productions/:productionId/webhooks'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Controller)('notifications'),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        notifications_service_1.NotificationsService])
+        notifications_service_1.NotificationsService,
+        push_notifications_service_1.PushNotificationsService])
 ], WebhooksController);
 //# sourceMappingURL=webhooks.controller.js.map

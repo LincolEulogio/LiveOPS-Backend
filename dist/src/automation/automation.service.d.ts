@@ -11,26 +11,26 @@ export declare class AutomationService {
             createdAt: Date;
             updatedAt: Date;
             order: number;
-            ruleId: string;
             actionType: string;
             payload: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
         }[];
         triggers: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            ruleId: string;
             eventType: string;
             condition: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
         }[];
     } & {
         id: string;
-        productionId: string;
         name: string;
-        description: string | null;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
+        productionId: string;
+        isEnabled: boolean;
     })[]>;
     getRule(id: string, productionId: string): Promise<{
         actions: {
@@ -38,34 +38,34 @@ export declare class AutomationService {
             createdAt: Date;
             updatedAt: Date;
             order: number;
-            ruleId: string;
             actionType: string;
             payload: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
         }[];
         executionLogs: {
             id: string;
-            productionId: string;
             createdAt: Date;
-            ruleId: string;
             status: string;
+            productionId: string;
             details: string | null;
+            ruleId: string;
         }[];
         triggers: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            ruleId: string;
             eventType: string;
             condition: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
         }[];
     } & {
         id: string;
-        productionId: string;
         name: string;
-        description: string | null;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
+        productionId: string;
+        isEnabled: boolean;
     }>;
     createRule(productionId: string, dto: CreateRuleDto): Promise<{
         actions: {
@@ -73,35 +73,35 @@ export declare class AutomationService {
             createdAt: Date;
             updatedAt: Date;
             order: number;
-            ruleId: string;
             actionType: string;
             payload: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
         }[];
         triggers: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            ruleId: string;
             eventType: string;
             condition: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
         }[];
     } & {
         id: string;
-        productionId: string;
         name: string;
-        description: string | null;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
+        productionId: string;
+        isEnabled: boolean;
     }>;
     updateRule(id: string, productionId: string, dto: UpdateRuleDto): Promise<{
         id: string;
-        productionId: string;
         name: string;
-        description: string | null;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
+        productionId: string;
+        isEnabled: boolean;
     }>;
     deleteRule(id: string, productionId: string): Promise<{
         success: boolean;
@@ -112,11 +112,11 @@ export declare class AutomationService {
         };
     } & {
         id: string;
-        productionId: string;
         createdAt: Date;
-        ruleId: string;
         status: string;
+        productionId: string;
         details: string | null;
+        ruleId: string;
     })[]>;
     triggerInstantClip(productionId: string): Promise<{
         success: boolean;

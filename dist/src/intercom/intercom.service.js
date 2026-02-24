@@ -12,13 +12,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.IntercomService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const push_notifications_service_1 = require("../notifications/push-notifications.service");
 const event_emitter_1 = require("@nestjs/event-emitter");
 let IntercomService = class IntercomService {
     prisma;
     eventEmitter;
-    constructor(prisma, eventEmitter) {
+    pushService;
+    constructor(prisma, eventEmitter, pushService) {
         this.prisma = prisma;
         this.eventEmitter = eventEmitter;
+        this.pushService = pushService;
     }
     async createTemplate(productionId, dto) {
         return this.prisma.commandTemplate.create({
@@ -137,13 +140,38 @@ let IntercomService = class IntercomService {
             productionId: dto.productionId,
             command,
         });
+        this.handlePushNotification(command);
         return command;
+    }
+    async handlePushNotification(command) {
+        const { productionId, targetUserId, targetRoleId, message, sender } = command;
+        if (targetUserId) {
+            await this.pushService.sendNotification(targetUserId, {
+                title: `Nuevo Comando de ${sender?.name || 'Director'}`,
+                body: message,
+                data: { productionId, commandId: command.id }
+            });
+        }
+        else if (targetRoleId) {
+            const usersInRole = await this.prisma.productionUser.findMany({
+                where: { productionId, roleId: targetRoleId },
+                select: { userId: true },
+            });
+            for (const { userId } of usersInRole) {
+                await this.pushService.sendNotification(userId, {
+                    title: `Alerta de Producción: ${message}`,
+                    body: 'Revisa tu panel para más detalles.',
+                    data: { productionId, commandId: command.id }
+                });
+            }
+        }
     }
 };
 exports.IntercomService = IntercomService;
 exports.IntercomService = IntercomService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        event_emitter_1.EventEmitter2])
+        event_emitter_1.EventEmitter2,
+        push_notifications_service_1.PushNotificationsService])
 ], IntercomService);
 //# sourceMappingURL=intercom.service.js.map

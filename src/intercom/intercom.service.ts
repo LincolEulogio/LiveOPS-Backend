@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PushNotificationsService } from '../notifications/push-notifications.service';
 import { CreateCommandTemplateDto, SendCommandDto } from './dto/intercom.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
@@ -8,6 +9,7 @@ export class IntercomService {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
+    private pushService: PushNotificationsService,
   ) { }
 
   async createTemplate(productionId: string, dto: CreateCommandTemplateDto) {
@@ -139,11 +141,42 @@ export class IntercomService {
       },
     });
 
+    // Emit Internal Event (Gateway will listen to this)
     this.eventEmitter.emit('command.created', {
       productionId: dto.productionId,
       command,
     });
 
+    // --- PWA Push Notification Logic ---
+    this.handlePushNotification(command);
+
     return command;
+  }
+
+  private async handlePushNotification(command: any) {
+    const { productionId, targetUserId, targetRoleId, message, sender } = command;
+
+    if (targetUserId) {
+      // Direct notification to a specific user
+      await this.pushService.sendNotification(targetUserId, {
+        title: `Nuevo Comando de ${sender?.name || 'Director'}`,
+        body: message,
+        data: { productionId, commandId: command.id }
+      });
+    } else if (targetRoleId) {
+      // Notify all users with this role in the production
+      const usersInRole = await this.prisma.productionUser.findMany({
+        where: { productionId, roleId: targetRoleId },
+        select: { userId: true },
+      });
+
+      for (const { userId } of usersInRole) {
+        await this.pushService.sendNotification(userId, {
+          title: `Alerta de Producción: ${message}`,
+          body: 'Revisa tu panel para más detalles.',
+          data: { productionId, commandId: command.id }
+        });
+      }
+    }
   }
 }

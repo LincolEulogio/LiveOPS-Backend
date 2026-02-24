@@ -11,6 +11,7 @@ const common_1 = require("@nestjs/common");
 const notifications_service_1 = require("./notifications.service");
 const health_alert_service_1 = require("./health-alert.service");
 const webhooks_controller_1 = require("./webhooks.controller");
+const push_notifications_service_1 = require("./push-notifications.service");
 let NotificationsModule = class NotificationsModule {
 };
 exports.NotificationsModule = NotificationsModule;
@@ -18,8 +19,8 @@ exports.NotificationsModule = NotificationsModule = __decorate([
     (0, common_1.Global)(),
     (0, common_1.Module)({
         controllers: [webhooks_controller_1.WebhooksController],
-        providers: [notifications_service_1.NotificationsService, health_alert_service_1.HealthAlertService],
-        exports: [notifications_service_1.NotificationsService],
+        providers: [notifications_service_1.NotificationsService, health_alert_service_1.HealthAlertService, push_notifications_service_1.PushNotificationsService],
+        exports: [notifications_service_1.NotificationsService, push_notifications_service_1.PushNotificationsService],
     })
 ], NotificationsModule);
 //# sourceMappingURL=notifications.module.js.map

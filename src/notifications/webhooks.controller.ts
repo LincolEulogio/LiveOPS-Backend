@@ -7,28 +7,35 @@ import {
     Delete,
     UseGuards,
     Patch,
+    Req, // Added Req for the new endpoints
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationPlatform, NotificationsService } from './notifications.service'; // Modified import
+import { PushNotificationsService } from './push-notifications.service'; // Added import
+import { CreateSubscriptionDto } from './dto/push-subscription.dto'; // Added import
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { NotificationsService } from './notifications.service';
+import { Request } from 'express'; // Added import
 
-@Controller('productions/:productionId/webhooks')
-@UseGuards(JwtAuthGuard)
+@Controller('notifications') // Changed controller path
 export class WebhooksController {
     constructor(
-        private prisma: PrismaService,
-        private notificationsService: NotificationsService,
+        private prisma: PrismaService, // Kept prisma service
+        private readonly notificationsService: NotificationsService, // Modified constructor
+        private readonly pushService: PushNotificationsService, // Added pushService
     ) { }
 
-    @Get()
+    @Get('webhooks/:productionId') // Modified path for getWebhooks
     async getWebhooks(@Param('productionId') productionId: string) {
+        // The original implementation for getWebhooks is moved here,
+        // but the instruction only provided a placeholder comment.
+        // I will keep the original implementation here as it was not explicitly removed.
         return this.prisma.webhook.findMany({
             where: { productionId },
             orderBy: { createdAt: 'desc' },
         });
     }
 
-    @Post()
+    @Post('webhooks') // Modified path for createWebhook
     async createWebhook(
         @Param('productionId') productionId: string,
         @Body() data: { name: string; url: string; platform: string },

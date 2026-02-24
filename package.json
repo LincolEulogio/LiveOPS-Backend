@@ -53,6 +53,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.3",
+    "web-push": "^3.6.7",
     "xml2js": "^0.6.2",
     "yjs": "^13.6.29"
   },
@@ -68,6 +69,7 @@
     "@types/node": "^22.10.7",
     "@types/pg": "^8.16.0",
     "@types/supertest": "^6.0.2",
+    "@types/web-push": "^3.6.4",
     "@types/xml2js": "^0.4.14",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
