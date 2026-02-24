@@ -92,4 +92,14 @@ export class WebhooksController {
 
         return { success: true };
     }
+
+    @Post('push/subscribe')
+    async subscribe(@Req() req: any, @Body() subscription: CreateSubscriptionDto) {
+        return this.pushService.subscribe(req.user.id, subscription);
+    }
+
+    @Delete('push/unsubscribe')
+    async unsubscribe(@Body('endpoint') endpoint: string) {
+        return this.pushService.unsubscribe(endpoint);
+    }
 }

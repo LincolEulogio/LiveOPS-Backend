@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const notifications_service_1 = require("./notifications.service");
 const push_notifications_service_1 = require("./push-notifications.service");
+const push_subscription_dto_1 = require("./dto/push-subscription.dto");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const permissions_guard_1 = require("../common/guards/permissions.guard");
 const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
@@ -64,6 +65,12 @@ let WebhooksController = class WebhooksController {
         await this.notificationsService.sendNotification(webhook.productionId, `🔄 *LiveOPS Webhook Test*\nThis is a test notification for the ${webhook.name} integration.`, webhook.platform);
         return { success: true };
     }
+    async subscribe(req, subscription) {
+        return this.pushService.subscribe(req.user.id, subscription);
+    }
+    async unsubscribe(endpoint) {
+        return this.pushService.unsubscribe(endpoint);
+    }
 };
 exports.WebhooksController = WebhooksController;
 __decorate([
@@ -108,6 +115,21 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], WebhooksController.prototype, "testWebhook", null);
+__decorate([
+    (0, common_1.Post)('push/subscribe'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, push_subscription_dto_1.CreateSubscriptionDto]),
+    __metadata("design:returntype", Promise)
+], WebhooksController.prototype, "subscribe", null);
+__decorate([
+    (0, common_1.Delete)('push/unsubscribe'),
+    __param(0, (0, common_1.Body)('endpoint')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], WebhooksController.prototype, "unsubscribe", null);
 exports.WebhooksController = WebhooksController = __decorate([
     (0, common_1.Controller)('notifications'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
