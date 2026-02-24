@@ -139,6 +139,23 @@ export class AutomationEngineService {
         await this.executeActions(rule, context);
       }
     }
+
+    // Special case: Single action trigger without full rule (for Instant Clip)
+    if (eventPrefix === 'manual.trigger' && payload.actionType === 'engine.instantClip') {
+      this.logger.log(`Executing direct action engine.instantClip for production ${productionId}`);
+      // Create a dummy rule for action execution
+      const dummyRule: any = {
+        id: 'manual-trigger',
+        productionId,
+        name: 'Manual Instant Clip',
+        actions: [{
+          actionType: 'engine.instantClip',
+          payload: {},
+          order: 0
+        }]
+      };
+      await this.executeActions(dummyRule, { ...payload, isManual: true });
+    }
   }
 
   /**
@@ -265,6 +282,18 @@ export class AutomationEngineService {
                 rule.productionId,
                 (payload.message as string) || `Automation Rule Triggered: ${rule.name}`,
               );
+            }
+            break;
+
+          case 'engine.instantClip':
+            try {
+              if (this.obsService.isConnected(rule.productionId)) {
+                await this.obsService.saveReplayBuffer(rule.productionId);
+              } else if (this.vmixService.isConnected(rule.productionId)) {
+                await this.vmixService.saveVideoDelay(rule.productionId);
+              }
+            } catch (e) {
+              this.logger.error(`Failed to trigger instant clip: ${e.message}`);
             }
             break;
 

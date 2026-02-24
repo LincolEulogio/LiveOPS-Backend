@@ -8,21 +8,21 @@ export declare class ObsService {
     constructor(prisma: PrismaService, obsManager: ObsConnectionManager);
     saveConnection(productionId: string, dto: SaveObsConnectionDto): Promise<{
         id: string;
+        productionId: string;
+        url: string;
         password: string | null;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
-        productionId: string;
-        isEnabled: boolean;
     }>;
     getConnection(productionId: string): Promise<{
         id: string;
+        productionId: string;
+        url: string;
         password: string | null;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
-        productionId: string;
-        isEnabled: boolean;
     }>;
     isConnected(productionId: string): boolean;
     getRealTimeState(productionId: string): Promise<{
@@ -52,6 +52,9 @@ export declare class ObsService {
         success: boolean;
     }>;
     stopRecord(productionId: string): Promise<{
+        success: boolean;
+    }>;
+    saveReplayBuffer(productionId: string): Promise<{
         success: boolean;
     }>;
 }

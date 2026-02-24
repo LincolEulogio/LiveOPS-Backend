@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRuleDto, UpdateRuleDto } from './dto/automation.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class AutomationService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private eventEmitter: EventEmitter2
+  ) { }
 
   async getRules(productionId: string) {
     return this.prisma.rule.findMany({
@@ -37,10 +41,10 @@ export class AutomationService {
         description: dto.description,
         isEnabled: dto.isEnabled ?? true,
         triggers: {
-          create: dto.triggers as any, // Cast local para compatibilidad con Prisma Create Input
+          create: dto.triggers as any,
         },
         actions: {
-          create: dto.actions.map((a, idx) => ({
+          create: dto.actions.map((a: any, idx: number) => ({
             ...a,
             order: a.order ?? idx,
           })) as any,
@@ -51,8 +55,6 @@ export class AutomationService {
   }
 
   async updateRule(id: string, productionId: string, dto: UpdateRuleDto) {
-    // Basic update for name/description/isEnabled.
-    // Triggers and Actions would need separate endpoints or a more complex sync logic.
     const rule = await this.prisma.rule.findFirst({
       where: { id, productionId },
     });
@@ -81,5 +83,15 @@ export class AutomationService {
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+  }
+
+  async triggerInstantClip(productionId: string) {
+    // Simply emit the event that the engine is listening for
+    this.eventEmitter.emit('manual.trigger', {
+      productionId,
+      actionType: 'engine.instantClip',
+    });
+
+    return { success: true, message: 'Instant clip triggered' };
   }
 }

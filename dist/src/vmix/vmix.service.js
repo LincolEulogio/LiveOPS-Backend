@@ -92,6 +92,19 @@ let VmixService = VmixService_1 = class VmixService {
             throw new common_1.BadRequestException(`vMix Error: ${error.message || 'Unknown'}`);
         }
     }
+    async saveVideoDelay(productionId) {
+        try {
+            await this.vmixManager.sendCommand(productionId, 'VideoDelaySave', {
+                Input: -1,
+            });
+            return { success: true, action: 'videoDelaySave' };
+        }
+        catch (e) {
+            const error = e;
+            this.logger.error(`Failed to save video delay: ${error.message}`);
+            throw new common_1.BadRequestException(`vMix Error: ${error.message || 'Unknown'}`);
+        }
+    }
 };
 exports.VmixService = VmixService;
 exports.VmixService = VmixService = VmixService_1 = __decorate([

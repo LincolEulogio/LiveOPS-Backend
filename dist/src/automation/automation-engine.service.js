@@ -109,6 +109,20 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
                 await this.executeActions(rule, context);
             }
         }
+        if (eventPrefix === 'manual.trigger' && payload.actionType === 'engine.instantClip') {
+            this.logger.log(`Executing direct action engine.instantClip for production ${productionId}`);
+            const dummyRule = {
+                id: 'manual-trigger',
+                productionId,
+                name: 'Manual Instant Clip',
+                actions: [{
+                        actionType: 'engine.instantClip',
+                        payload: {},
+                        order: 0
+                    }]
+            };
+            await this.executeActions(dummyRule, { ...payload, isManual: true });
+        }
     }
     async handleHardwareTrigger(payload) {
         this.logger.debug(`Hardware trigger received: ${payload.mapKey} for production ${payload.productionId}`);
@@ -202,6 +216,19 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
                     case 'webhook.call':
                         if (payload?.url || payload?.message) {
                             await this.notificationsService.sendNotification(rule.productionId, payload.message || `Automation Rule Triggered: ${rule.name}`);
+                        }
+                        break;
+                    case 'engine.instantClip':
+                        try {
+                            if (this.obsService.isConnected(rule.productionId)) {
+                                await this.obsService.saveReplayBuffer(rule.productionId);
+                            }
+                            else if (this.vmixService.isConnected(rule.productionId)) {
+                                await this.vmixService.saveVideoDelay(rule.productionId);
+                            }
+                        }
+                        catch (e) {
+                            this.logger.error(`Failed to trigger instant clip: ${e.message}`);
                         }
                         break;
                     default:

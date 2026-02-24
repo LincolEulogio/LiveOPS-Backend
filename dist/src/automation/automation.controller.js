@@ -41,6 +41,9 @@ let AutomationController = class AutomationController {
     getExecutionLogs(productionId) {
         return this.automationService.getExecutionLogs(productionId);
     }
+    triggerInstantClip(productionId) {
+        return this.automationService.triggerInstantClip(productionId);
+    }
 };
 exports.AutomationController = AutomationController;
 __decorate([
@@ -90,6 +93,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], AutomationController.prototype, "getExecutionLogs", null);
+__decorate([
+    (0, common_1.Post)('instant-clip'),
+    __param(0, (0, common_1.Param)('productionId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AutomationController.prototype, "triggerInstantClip", null);
 exports.AutomationController = AutomationController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     (0, common_1.Controller)('productions/:productionId/automation'),

@@ -16,7 +16,7 @@ import { PermissionsGuard } from '../common/guards/permissions.guard';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions/:productionId/automation')
 export class AutomationController {
-  constructor(private readonly automationService: AutomationService) {}
+  constructor(private readonly automationService: AutomationService) { }
 
   @Get('rules')
   getRules(@Param('productionId') productionId: string) {
@@ -59,5 +59,12 @@ export class AutomationController {
   @Get('logs')
   getExecutionLogs(@Param('productionId') productionId: string) {
     return this.automationService.getExecutionLogs(productionId);
+  }
+
+  @Post('instant-clip')
+  triggerInstantClip(@Param('productionId') productionId: string) {
+    // We can use the event emitter to trigger the engine or call a specific method in a new service
+    // For now, let's add a method to automation.service.ts
+    return this.automationService.triggerInstantClip(productionId);
   }
 }

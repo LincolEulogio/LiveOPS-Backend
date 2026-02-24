@@ -101,4 +101,18 @@ export class VmixService {
       throw new BadRequestException(`vMix Error: ${error.message || 'Unknown'}`);
     }
   }
+
+  async saveVideoDelay(productionId: string) {
+    try {
+      // Saves all video delay inputs
+      await this.vmixManager.sendCommand(productionId, 'VideoDelaySave', {
+        Input: -1,
+      });
+      return { success: true, action: 'videoDelaySave' };
+    } catch (e: unknown) {
+      const error = e as Error;
+      this.logger.error(`Failed to save video delay: ${error.message}`);
+      throw new BadRequestException(`vMix Error: ${error.message || 'Unknown'}`);
+    }
+  }
 }

@@ -12,10 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AutomationService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const event_emitter_1 = require("@nestjs/event-emitter");
 let AutomationService = class AutomationService {
     prisma;
-    constructor(prisma) {
+    eventEmitter;
+    constructor(prisma, eventEmitter) {
         this.prisma = prisma;
+        this.eventEmitter = eventEmitter;
     }
     async getRules(productionId) {
         return this.prisma.rule.findMany({
@@ -87,10 +90,18 @@ let AutomationService = class AutomationService {
             take: 100,
         });
     }
+    async triggerInstantClip(productionId) {
+        this.eventEmitter.emit('manual.trigger', {
+            productionId,
+            actionType: 'engine.instantClip',
+        });
+        return { success: true, message: 'Instant clip triggered' };
+    }
 };
 exports.AutomationService = AutomationService;
 exports.AutomationService = AutomationService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        event_emitter_1.EventEmitter2])
 ], AutomationService);
 //# sourceMappingURL=automation.service.js.map

@@ -8,20 +8,20 @@ export declare class VmixService {
     constructor(prisma: PrismaService, vmixManager: VmixConnectionManager);
     saveConnection(productionId: string, dto: SaveVmixConnectionDto): Promise<{
         id: string;
+        productionId: string;
+        url: string;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
-        productionId: string;
-        isEnabled: boolean;
         pollingInterval: number;
     }>;
     getConnection(productionId: string): Promise<{
         id: string;
+        productionId: string;
+        url: string;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
-        productionId: string;
-        isEnabled: boolean;
         pollingInterval: number;
     }>;
     isConnected(productionId: string): boolean;
@@ -40,5 +40,9 @@ export declare class VmixService {
         success: boolean;
         action: string;
         duration: number | undefined;
+    }>;
+    saveVideoDelay(productionId: string): Promise<{
+        success: boolean;
+        action: string;
     }>;
 }

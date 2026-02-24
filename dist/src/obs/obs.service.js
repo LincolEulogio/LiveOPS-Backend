@@ -126,6 +126,18 @@ let ObsService = ObsService_1 = class ObsService {
             throw new common_1.BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
         }
     }
+    async saveReplayBuffer(productionId) {
+        const obs = this.getObs(productionId);
+        try {
+            await obs.call('SaveReplayBuffer');
+            return { success: true };
+        }
+        catch (e) {
+            const error = e;
+            this.logger.error(`Failed to save replay buffer: ${error.message}`);
+            throw new common_1.BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
+        }
+    }
 };
 exports.ObsService = ObsService;
 exports.ObsService = ObsService = ObsService_1 = __decorate([
