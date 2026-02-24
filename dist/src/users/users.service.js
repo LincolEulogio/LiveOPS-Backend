@@ -47,6 +47,7 @@ exports.UsersService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const bcrypt = __importStar(require("bcrypt"));
+const rbac_constants_1 = require("../common/constants/rbac.constants");
 let UsersService = UsersService_1 = class UsersService {
     prisma;
     logger = new common_1.Logger(UsersService_1.name);
@@ -75,20 +76,15 @@ let UsersService = UsersService_1 = class UsersService {
         }
     }
     async seedDefaultRoles() {
-        const permissions = [
-            { action: 'production:create', description: 'Create new productions' },
-            {
-                action: 'production:manage',
-                description: 'Full control over a production',
-            },
-            { action: 'user:manage', description: 'Manage global users' },
-            { action: 'role:manage', description: 'Manage roles and permissions' },
-        ];
-        for (const p of permissions) {
+        const allEnumPermissions = Object.values(rbac_constants_1.PermissionAction);
+        for (const action of allEnumPermissions) {
             await this.prisma.permission.upsert({
-                where: { action: p.action },
+                where: { action },
                 update: {},
-                create: p,
+                create: {
+                    action,
+                    description: `Permission for ${action.replace(':', ' ')}`,
+                },
             });
         }
         const defaultRoles = [

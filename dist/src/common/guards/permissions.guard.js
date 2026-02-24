@@ -31,68 +31,85 @@ let PermissionsGuard = class PermissionsGuard {
         if (!user) {
             throw new common_1.ForbiddenException('User not authenticated');
         }
-        const dbUser = await this.prisma.user.findUnique({
-            where: { id: user.userId },
-            include: {
-                globalRole: {
-                    include: {
-                        permissions: { include: { permission: true } },
-                    },
-                },
-            },
-        });
-        if (!dbUser) {
-            throw new common_1.ForbiddenException('User record not found');
-        }
-        const globalRoleName = dbUser.globalRole?.name?.toUpperCase();
-        if (globalRoleName === 'SUPERADMIN' || globalRoleName === 'ADMIN') {
-            return true;
-        }
-        const globalPermissions = dbUser.globalRole?.permissions.map((rp) => rp.permission.action) || [];
-        const hasGlobalPermission = requiredPermissions.every((perm) => globalPermissions.includes(perm));
-        if (hasGlobalPermission) {
-            return true;
-        }
-        const productionId = request.params.productionId ||
-            request.params.id ||
-            request.body.productionId;
-        if (productionId &&
-            typeof productionId === 'string' &&
-            productionId.length > 20) {
-            const productionUser = await this.prisma.productionUser.findUnique({
-                where: {
-                    userId_productionId: {
-                        userId: user.userId,
-                        productionId: productionId,
-                    },
-                },
+        try {
+            const dbUser = await this.prisma.user.findUnique({
+                where: { id: user.userId },
                 include: {
-                    role: {
+                    globalRole: {
                         include: {
                             permissions: { include: { permission: true } },
                         },
                     },
                 },
             });
-            if (productionUser) {
-                if (productionUser.role.name === 'SUPERADMIN' ||
-                    productionUser.role.name === 'ADMIN') {
-                    return true;
-                }
-                const productionPermissions = productionUser.role.permissions.map((rp) => rp.permission.action);
-                const implicitPermissions = [
-                    'production:view',
-                    'rundown:view',
-                    'script:view',
-                ];
-                const allPermissions = [...productionPermissions, ...implicitPermissions];
-                const hasProdPermission = requiredPermissions.every((perm) => allPermissions.includes(perm));
-                if (hasProdPermission) {
-                    return true;
+            if (!dbUser) {
+                throw new common_1.ForbiddenException('User record not found');
+            }
+            const globalRoleName = dbUser.globalRole?.name?.toUpperCase();
+            if (globalRoleName === 'SUPERADMIN' || globalRoleName === 'ADMIN') {
+                return true;
+            }
+            const globalPermissions = dbUser.globalRole?.permissions
+                .filter((rp) => rp.permission)
+                .map((rp) => rp.permission.action) || [];
+            const hasGlobalPermission = requiredPermissions.every((perm) => globalPermissions.includes(perm));
+            if (hasGlobalPermission) {
+                return true;
+            }
+            const productionId = request.params.productionId ||
+                request.params.id ||
+                request.body.productionId;
+            if (productionId &&
+                typeof productionId === 'string' &&
+                productionId.length > 20) {
+                const productionUser = await this.prisma.productionUser.findUnique({
+                    where: {
+                        userId_productionId: {
+                            userId: user.userId,
+                            productionId: productionId,
+                        },
+                    },
+                    include: {
+                        role: {
+                            include: {
+                                permissions: { include: { permission: true } },
+                            },
+                        },
+                    },
+                });
+                if (productionUser) {
+                    if (productionUser.role.name === 'SUPERADMIN' ||
+                        productionUser.role.name === 'ADMIN') {
+                        return true;
+                    }
+                    const productionPermissions = productionUser.role.permissions
+                        .filter((rp) => rp.permission)
+                        .map((rp) => rp.permission.action);
+                    const implicitPermissions = [
+                        'production:view',
+                        'rundown:view',
+                        'script:view',
+                        'intercom:view',
+                        'analytics:view',
+                    ];
+                    const allPermissions = [
+                        ...productionPermissions,
+                        ...implicitPermissions,
+                    ];
+                    const hasProdPermission = requiredPermissions.every((perm) => allPermissions.includes(perm));
+                    if (hasProdPermission) {
+                        return true;
+                    }
                 }
             }
+            throw new common_1.ForbiddenException('Insufficient permissions');
         }
-        throw new common_1.ForbiddenException('Insufficient permissions');
+        catch (error) {
+            if (error instanceof common_1.ForbiddenException)
+                throw error;
+            console.error('[PermissionsGuard] Crash detected:', error);
+            throw new common_1.ForbiddenException('Authorization system failure');
+        }
         return true;
     }
 };

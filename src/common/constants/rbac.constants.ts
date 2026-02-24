@@ -2,7 +2,7 @@ export enum PermissionAction {
   // Production permissions
   PRODUCTION_VIEW = 'production:view',
   PRODUCTION_EDIT = 'production:edit',
-  PRODUCTION_CONTROL = 'production:control', // Start/Stop streaming, scene switching
+  PRODUCTION_CONTROL = 'production:control',
 
   // Script permissions
   SCRIPT_VIEW = 'script:view',
@@ -11,7 +11,19 @@ export enum PermissionAction {
   // Rundown permissions
   RUNDOWN_VIEW = 'rundown:view',
   RUNDOWN_EDIT = 'rundown:edit',
-  RUNDOWN_CONTROL = 'rundown:control', // Start/Complete/Reset blocks
+  RUNDOWN_CONTROL = 'rundown:control',
+
+  // Intercom permissions
+  INTERCOM_VIEW = 'intercom:view',
+  INTERCOM_MANAGE = 'intercom:manage',
+  INTERCOM_SEND = 'intercom:send',
+
+  // Automation permissions
+  AUTOMATION_VIEW = 'automation:view',
+  AUTOMATION_MANAGE = 'automation:manage',
+
+  // Analytics permissions
+  ANALYTICS_VIEW = 'analytics:view',
 
   // Admin permissions
   ADMIN_ACCESS = 'admin:access',
@@ -34,6 +46,12 @@ export const StandardRoles = {
       PermissionAction.RUNDOWN_VIEW,
       PermissionAction.RUNDOWN_EDIT,
       PermissionAction.RUNDOWN_CONTROL,
+      PermissionAction.INTERCOM_VIEW,
+      PermissionAction.INTERCOM_MANAGE,
+      PermissionAction.INTERCOM_SEND,
+      PermissionAction.AUTOMATION_VIEW,
+      PermissionAction.AUTOMATION_MANAGE,
+      PermissionAction.ANALYTICS_VIEW,
     ],
   },
   OPERATOR: {
@@ -45,6 +63,10 @@ export const StandardRoles = {
       PermissionAction.SCRIPT_VIEW,
       PermissionAction.RUNDOWN_VIEW,
       PermissionAction.RUNDOWN_CONTROL,
+      PermissionAction.INTERCOM_VIEW,
+      PermissionAction.INTERCOM_SEND,
+      PermissionAction.AUTOMATION_VIEW,
+      PermissionAction.ANALYTICS_VIEW,
     ],
   },
   TALENT: {

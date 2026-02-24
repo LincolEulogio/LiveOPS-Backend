@@ -11,6 +11,12 @@ var PermissionAction;
     PermissionAction["RUNDOWN_VIEW"] = "rundown:view";
     PermissionAction["RUNDOWN_EDIT"] = "rundown:edit";
     PermissionAction["RUNDOWN_CONTROL"] = "rundown:control";
+    PermissionAction["INTERCOM_VIEW"] = "intercom:view";
+    PermissionAction["INTERCOM_MANAGE"] = "intercom:manage";
+    PermissionAction["INTERCOM_SEND"] = "intercom:send";
+    PermissionAction["AUTOMATION_VIEW"] = "automation:view";
+    PermissionAction["AUTOMATION_MANAGE"] = "automation:manage";
+    PermissionAction["ANALYTICS_VIEW"] = "analytics:view";
     PermissionAction["ADMIN_ACCESS"] = "admin:access";
 })(PermissionAction || (exports.PermissionAction = PermissionAction = {}));
 exports.StandardRoles = {
@@ -30,6 +36,12 @@ exports.StandardRoles = {
             PermissionAction.RUNDOWN_VIEW,
             PermissionAction.RUNDOWN_EDIT,
             PermissionAction.RUNDOWN_CONTROL,
+            PermissionAction.INTERCOM_VIEW,
+            PermissionAction.INTERCOM_MANAGE,
+            PermissionAction.INTERCOM_SEND,
+            PermissionAction.AUTOMATION_VIEW,
+            PermissionAction.AUTOMATION_MANAGE,
+            PermissionAction.ANALYTICS_VIEW,
         ],
     },
     OPERATOR: {
@@ -41,6 +53,10 @@ exports.StandardRoles = {
             PermissionAction.SCRIPT_VIEW,
             PermissionAction.RUNDOWN_VIEW,
             PermissionAction.RUNDOWN_CONTROL,
+            PermissionAction.INTERCOM_VIEW,
+            PermissionAction.INTERCOM_SEND,
+            PermissionAction.AUTOMATION_VIEW,
+            PermissionAction.ANALYTICS_VIEW,
         ],
     },
     TALENT: {

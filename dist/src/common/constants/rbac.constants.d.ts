@@ -7,6 +7,12 @@ export declare enum PermissionAction {
     RUNDOWN_VIEW = "rundown:view",
     RUNDOWN_EDIT = "rundown:edit",
     RUNDOWN_CONTROL = "rundown:control",
+    INTERCOM_VIEW = "intercom:view",
+    INTERCOM_MANAGE = "intercom:manage",
+    INTERCOM_SEND = "intercom:send",
+    AUTOMATION_VIEW = "automation:view",
+    AUTOMATION_MANAGE = "automation:manage",
+    ANALYTICS_VIEW = "analytics:view",
     ADMIN_ACCESS = "admin:access"
 }
 export declare const StandardRoles: {

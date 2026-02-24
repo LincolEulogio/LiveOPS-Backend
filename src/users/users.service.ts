@@ -14,6 +14,7 @@ import {
 } from './dto/users.dto';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
+import { PermissionAction } from '../common/constants/rbac.constants';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -46,22 +47,17 @@ export class UsersService implements OnModuleInit {
   }
 
   public async seedDefaultRoles() {
-    // Seed Permissions first
-    const permissions = [
-      { action: 'production:create', description: 'Create new productions' },
-      {
-        action: 'production:manage',
-        description: 'Full control over a production',
-      },
-      { action: 'user:manage', description: 'Manage global users' },
-      { action: 'role:manage', description: 'Manage roles and permissions' },
-    ];
+    // Seed all permissions defined in the enum
+    const allEnumPermissions = Object.values(PermissionAction) as string[];
 
-    for (const p of permissions) {
+    for (const action of allEnumPermissions) {
       await this.prisma.permission.upsert({
-        where: { action: p.action },
+        where: { action },
         update: {},
-        create: p,
+        create: {
+          action,
+          description: `Permission for ${action.replace(':', ' ')}`,
+        },
       });
     }
 
