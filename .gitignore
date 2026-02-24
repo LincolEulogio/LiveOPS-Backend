@@ -1,5 +1,17 @@
 node_modules
 # Keep environment variables out of version control
 .env
-
+.env.local
+.env.production
+.env.development
+.env.test
+.env.example
+/node_modules
+/dist
+/build
+/coverage
+/logs
+/prisma/migrations
+/prisma/dev.db
+/prisma/schema.prisma
 /generated/prisma
