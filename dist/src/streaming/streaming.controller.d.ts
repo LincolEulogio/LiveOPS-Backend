@@ -2,10 +2,16 @@ import { StreamingService } from './streaming.service';
 import { StreamingDestinationsService } from './streaming-destinations.service';
 import { StreamingCommandDto } from './dto/streaming-command.dto';
 import { CreateStreamingDestinationDto, UpdateStreamingDestinationDto } from './dto/streaming-destination.dto';
+import { LiveKitService } from './livekit.service';
 export declare class StreamingController {
     private readonly streamingService;
     private readonly destinationsService;
-    constructor(streamingService: StreamingService, destinationsService: StreamingDestinationsService);
+    private readonly liveKitService;
+    constructor(streamingService: StreamingService, destinationsService: StreamingDestinationsService, liveKitService: LiveKitService);
+    getToken(productionId: string, identity: string, name: string, isOperator?: boolean): Promise<{
+        token: string;
+        url: string;
+    }>;
     getState(productionId: string): Promise<{
         productionId: string;
         engineType: import("@prisma/client").$Enums.EngineType;

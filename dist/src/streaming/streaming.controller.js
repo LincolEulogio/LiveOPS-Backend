@@ -21,12 +21,19 @@ const streaming_destination_dto_1 = require("./dto/streaming-destination.dto");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const permissions_guard_1 = require("../common/guards/permissions.guard");
 const permissions_decorator_1 = require("../common/decorators/permissions.decorator");
+const livekit_service_1 = require("./livekit.service");
 let StreamingController = class StreamingController {
     streamingService;
     destinationsService;
-    constructor(streamingService, destinationsService) {
+    liveKitService;
+    constructor(streamingService, destinationsService, liveKitService) {
         this.streamingService = streamingService;
         this.destinationsService = destinationsService;
+        this.liveKitService = liveKitService;
+    }
+    async getToken(productionId, identity, name, isOperator) {
+        const token = await this.liveKitService.generateToken(productionId, identity, name, isOperator);
+        return { token, url: this.liveKitService.getLiveKitUrl() };
     }
     getState(productionId) {
         return this.streamingService.getStreamingState(productionId);
@@ -48,6 +55,17 @@ let StreamingController = class StreamingController {
     }
 };
 exports.StreamingController = StreamingController;
+__decorate([
+    (0, common_1.Post)(':id/token'),
+    (0, permissions_decorator_1.Permissions)('streaming:control'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('identity')),
+    __param(2, (0, common_1.Body)('name')),
+    __param(3, (0, common_1.Body)('isOperator')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, Boolean]),
+    __metadata("design:returntype", Promise)
+], StreamingController.prototype, "getToken", null);
 __decorate([
     (0, common_1.Get)(':id/state'),
     (0, permissions_decorator_1.Permissions)('streaming:view'),
@@ -103,6 +121,7 @@ exports.StreamingController = StreamingController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     (0, common_1.Controller)('streaming'),
     __metadata("design:paramtypes", [streaming_service_1.StreamingService,
-        streaming_destinations_service_1.StreamingDestinationsService])
+        streaming_destinations_service_1.StreamingDestinationsService,
+        livekit_service_1.LiveKitService])
 ], StreamingController);
 //# sourceMappingURL=streaming.controller.js.map

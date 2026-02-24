@@ -16,6 +16,7 @@ const websockets_module_1 = require("../websockets/websockets.module");
 const tally_service_1 = require("./tally.service");
 const automation_service_1 = require("./automation.service");
 const streaming_destinations_service_1 = require("./streaming-destinations.service");
+const livekit_service_1 = require("./livekit.service");
 let StreamingModule = class StreamingModule {
 };
 exports.StreamingModule = StreamingModule;
@@ -23,8 +24,8 @@ exports.StreamingModule = StreamingModule = __decorate([
     (0, common_1.Module)({
         imports: [obs_module_1.ObsModule, vmix_module_1.VmixModule, websockets_module_1.WebsocketsModule],
         controllers: [streaming_controller_1.StreamingController],
-        providers: [streaming_service_1.StreamingService, tally_service_1.TallyService, automation_service_1.AutomationService, streaming_destinations_service_1.StreamingDestinationsService],
-        exports: [streaming_service_1.StreamingService, tally_service_1.TallyService, automation_service_1.AutomationService, streaming_destinations_service_1.StreamingDestinationsService],
+        providers: [streaming_service_1.StreamingService, tally_service_1.TallyService, automation_service_1.AutomationService, streaming_destinations_service_1.StreamingDestinationsService, livekit_service_1.LiveKitService],
+        exports: [streaming_service_1.StreamingService, tally_service_1.TallyService, automation_service_1.AutomationService, streaming_destinations_service_1.StreamingDestinationsService, livekit_service_1.LiveKitService],
     })
 ], StreamingModule);
 //# sourceMappingURL=streaming.module.js.map
