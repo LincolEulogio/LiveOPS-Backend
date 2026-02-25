@@ -15,13 +15,13 @@ export declare class AuthController {
         accessToken: string;
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
-            name: string | null;
             id: string;
             createdAt: Date;
+            name: string | null;
             email: string;
             globalRole: {
-                name: string;
                 id: string;
+                name: string;
                 permissions: {
                     permission: {
                         action: string;
@@ -34,13 +34,13 @@ export declare class AuthController {
         setupRequired: boolean;
     }>;
     getProfile(req: RequestWithUser): Promise<{
-        name: string | null;
         id: string;
         createdAt: Date;
+        name: string | null;
         email: string;
         globalRole: {
-            name: string;
             id: string;
+            name: string;
             permissions: {
                 permission: {
                     action: string;
@@ -52,13 +52,13 @@ export declare class AuthController {
         name?: string;
         password?: string;
     }): Promise<{
-        name: string | null;
         id: string;
         createdAt: Date;
+        name: string | null;
         email: string;
         globalRole: {
-            name: string;
             id: string;
+            name: string;
             permissions: {
                 permission: {
                     action: string;
@@ -70,13 +70,13 @@ export declare class AuthController {
         accessToken: string;
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
-            name: string | null;
             id: string;
             createdAt: Date;
+            name: string | null;
             email: string;
             globalRole: {
-                name: string;
                 id: string;
+                name: string;
                 permissions: {
                     permission: {
                         action: string;

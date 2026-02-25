@@ -37,10 +37,10 @@ export declare class StreamingController {
     }>;
     getDestinations(productionId: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
-        updatedAt: Date;
+        name: string;
         productionId: string;
+        updatedAt: Date;
         isEnabled: boolean;
         platform: string;
         rtmpUrl: string;
@@ -49,10 +49,10 @@ export declare class StreamingController {
     }[]>;
     createDestination(productionId: string, dto: CreateStreamingDestinationDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
-        updatedAt: Date;
+        name: string;
         productionId: string;
+        updatedAt: Date;
         isEnabled: boolean;
         platform: string;
         rtmpUrl: string;
@@ -61,10 +61,10 @@ export declare class StreamingController {
     }>;
     updateDestination(id: string, dto: UpdateStreamingDestinationDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
-        updatedAt: Date;
+        name: string;
         productionId: string;
+        updatedAt: Date;
         isEnabled: boolean;
         platform: string;
         rtmpUrl: string;
@@ -73,10 +73,10 @@ export declare class StreamingController {
     }>;
     removeDestination(id: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
-        updatedAt: Date;
+        name: string;
         productionId: string;
+        updatedAt: Date;
         isEnabled: boolean;
         platform: string;
         rtmpUrl: string;

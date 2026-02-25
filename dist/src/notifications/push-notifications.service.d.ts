@@ -10,11 +10,11 @@ export declare class PushNotificationsService implements OnModuleInit {
     onModuleInit(): void;
     subscribe(userId: string, subscription: webpush.PushSubscription): Promise<{
         id: string;
-        createdAt: Date;
         endpoint: string;
         userId: string;
         p256dh: string;
         auth: string;
+        createdAt: Date;
     } | null>;
     unsubscribe(endpoint: string): Promise<import("@prisma/client").Prisma.BatchPayload | null>;
     sendNotification(userId: string, payload: {

@@ -6,24 +6,24 @@ export declare class TimelineController {
     getBlocks(productionId: string): Promise<({
         intercomTemplate: {
             id: string;
-            description: string | null;
             createdAt: Date;
-            updatedAt: Date;
             name: string;
             productionId: string;
+            updatedAt: Date;
+            description: string | null;
             icon: string | null;
             color: string | null;
         } | null;
     } & {
         id: string;
-        description: string | null;
         createdAt: Date;
-        updatedAt: Date;
         productionId: string;
-        title: string;
-        durationMs: number;
+        updatedAt: Date;
+        description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         order: number;
+        title: string;
+        durationMs: number;
         linkedScene: string | null;
         source: string | null;
         notes: string | null;
@@ -33,14 +33,14 @@ export declare class TimelineController {
     })[]>;
     createBlock(productionId: string, dto: CreateTimelineBlockDto): Promise<{
         id: string;
-        description: string | null;
         createdAt: Date;
-        updatedAt: Date;
         productionId: string;
-        title: string;
-        durationMs: number;
+        updatedAt: Date;
+        description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         order: number;
+        title: string;
+        durationMs: number;
         linkedScene: string | null;
         source: string | null;
         notes: string | null;
@@ -53,14 +53,14 @@ export declare class TimelineController {
     }>;
     updateBlock(productionId: string, id: string, dto: UpdateTimelineBlockDto): Promise<{
         id: string;
-        description: string | null;
         createdAt: Date;
-        updatedAt: Date;
         productionId: string;
-        title: string;
-        durationMs: number;
+        updatedAt: Date;
+        description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         order: number;
+        title: string;
+        durationMs: number;
         linkedScene: string | null;
         source: string | null;
         notes: string | null;
@@ -73,14 +73,14 @@ export declare class TimelineController {
     }>;
     startBlock(productionId: string, id: string): Promise<{
         id: string;
-        description: string | null;
         createdAt: Date;
-        updatedAt: Date;
         productionId: string;
-        title: string;
-        durationMs: number;
+        updatedAt: Date;
+        description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         order: number;
+        title: string;
+        durationMs: number;
         linkedScene: string | null;
         source: string | null;
         notes: string | null;
@@ -90,14 +90,14 @@ export declare class TimelineController {
     }>;
     completeBlock(productionId: string, id: string): Promise<{
         id: string;
-        description: string | null;
         createdAt: Date;
-        updatedAt: Date;
         productionId: string;
-        title: string;
-        durationMs: number;
+        updatedAt: Date;
+        description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         order: number;
+        title: string;
+        durationMs: number;
         linkedScene: string | null;
         source: string | null;
         notes: string | null;
@@ -107,14 +107,14 @@ export declare class TimelineController {
     }>;
     resetBlock(productionId: string, id: string): Promise<{
         id: string;
-        description: string | null;
         createdAt: Date;
-        updatedAt: Date;
         productionId: string;
-        title: string;
-        durationMs: number;
+        updatedAt: Date;
+        description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         order: number;
+        title: string;
+        durationMs: number;
         linkedScene: string | null;
         source: string | null;
         notes: string | null;

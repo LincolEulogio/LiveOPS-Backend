@@ -4,14 +4,14 @@ export declare class SocialController {
     constructor(socialService: SocialService);
     getMessages(productionId: string, status?: string): Promise<{
         id: string;
-        status: string;
         productionId: string;
-        content: string;
+        status: string;
         platform: string;
-        timestamp: Date;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
+        timestamp: Date;
     }[]>;
     injectMessage(productionId: string, payload: {
         platform: string;
@@ -21,25 +21,25 @@ export declare class SocialController {
         externalId?: string;
     }): Promise<{
         id: string;
-        status: string;
         productionId: string;
-        content: string;
+        status: string;
         platform: string;
-        timestamp: Date;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
+        timestamp: Date;
     }>;
     updateStatus(productionId: string, id: string, status: string): Promise<{
         id: string;
-        status: string;
         productionId: string;
-        content: string;
+        status: string;
         platform: string;
-        timestamp: Date;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
+        timestamp: Date;
     }>;
     createPoll(productionId: string, payload: {
         question: string;
@@ -47,8 +47,8 @@ export declare class SocialController {
     }): Promise<{
         id: string;
         createdAt: Date;
-        updatedAt: Date;
         productionId: string;
+        updatedAt: Date;
         isActive: boolean;
         question: string;
         options: import("@prisma/client/runtime/client").JsonValue;
@@ -56,8 +56,8 @@ export declare class SocialController {
     getActivePoll(productionId: string): Promise<{
         id: string;
         createdAt: Date;
-        updatedAt: Date;
         productionId: string;
+        updatedAt: Date;
         isActive: boolean;
         question: string;
         options: import("@prisma/client/runtime/client").JsonValue;
@@ -65,8 +65,8 @@ export declare class SocialController {
     votePoll(id: string, optionId: string): Promise<{
         id: string;
         createdAt: Date;
-        updatedAt: Date;
         productionId: string;
+        updatedAt: Date;
         isActive: boolean;
         question: string;
         options: import("@prisma/client/runtime/client").JsonValue;
@@ -74,8 +74,8 @@ export declare class SocialController {
     closePoll(productionId: string, id: string): Promise<{
         id: string;
         createdAt: Date;
-        updatedAt: Date;
         productionId: string;
+        updatedAt: Date;
         isActive: boolean;
         question: string;
         options: import("@prisma/client/runtime/client").JsonValue;

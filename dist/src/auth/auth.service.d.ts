@@ -9,13 +9,13 @@ export declare class AuthService {
     private usersService;
     constructor(prisma: PrismaService, jwtService: JwtService, usersService: UsersService);
     getProfile(userId: string): Promise<{
-        name: string | null;
         id: string;
         createdAt: Date;
+        name: string | null;
         email: string;
         globalRole: {
-            name: string;
             id: string;
+            name: string;
             permissions: {
                 permission: {
                     action: string;
@@ -27,13 +27,13 @@ export declare class AuthService {
         name?: string;
         password?: string;
     }): Promise<{
-        name: string | null;
         id: string;
         createdAt: Date;
+        name: string | null;
         email: string;
         globalRole: {
-            name: string;
             id: string;
+            name: string;
             permissions: {
                 permission: {
                     action: string;
@@ -45,13 +45,13 @@ export declare class AuthService {
         accessToken: string;
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
-            name: string | null;
             id: string;
             createdAt: Date;
+            name: string | null;
             email: string;
             globalRole: {
-                name: string;
                 id: string;
+                name: string;
                 permissions: {
                     permission: {
                         action: string;
@@ -64,13 +64,13 @@ export declare class AuthService {
         accessToken: string;
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
-            name: string | null;
             id: string;
             createdAt: Date;
+            name: string | null;
             email: string;
             globalRole: {
-                name: string;
                 id: string;
+                name: string;
                 permissions: {
                     permission: {
                         action: string;

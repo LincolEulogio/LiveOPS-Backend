@@ -9,9 +9,9 @@ export declare class ChatController {
         } | null;
     } & {
         id: string;
+        userId: string | null;
         createdAt: Date;
         productionId: string;
-        userId: string | null;
         message: string;
     })[]>;
 }
