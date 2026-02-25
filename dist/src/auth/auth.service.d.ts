@@ -1,8 +1,8 @@
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../prisma/prisma.service';
-import { RegisterUserDto } from './dto/register-user.dto';
-import { LoginUserDto } from './dto/login-user.dto';
-import { UsersService } from '../users/users.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import { RegisterUserDto } from '@/auth/dto/register-user.dto';
+import { LoginUserDto } from '@/auth/dto/login-user.dto';
+import { UsersService } from '@/users/users.service';
 export declare class AuthService {
     private prisma;
     private jwtService;
@@ -10,9 +10,9 @@ export declare class AuthService {
     constructor(prisma: PrismaService, jwtService: JwtService, usersService: UsersService);
     getProfile(userId: string): Promise<{
         id: string;
-        email: string;
-        name: string | null;
         createdAt: Date;
+        name: string | null;
+        email: string;
         globalRole: {
             id: string;
             name: string;
@@ -28,9 +28,9 @@ export declare class AuthService {
         password?: string;
     }): Promise<{
         id: string;
-        email: string;
-        name: string | null;
         createdAt: Date;
+        name: string | null;
+        email: string;
         globalRole: {
             id: string;
             name: string;
@@ -46,9 +46,9 @@ export declare class AuthService {
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
             id: string;
-            email: string;
-            name: string | null;
             createdAt: Date;
+            name: string | null;
+            email: string;
             globalRole: {
                 id: string;
                 name: string;
@@ -65,9 +65,9 @@ export declare class AuthService {
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
             id: string;
-            email: string;
-            name: string | null;
             createdAt: Date;
+            name: string | null;
+            email: string;
             globalRole: {
                 id: string;
                 name: string;

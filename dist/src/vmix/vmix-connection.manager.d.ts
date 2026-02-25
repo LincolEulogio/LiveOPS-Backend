@@ -1,6 +1,6 @@
 import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { EngineType } from '@prisma/client';
 export interface VmixInput {
     number: number;

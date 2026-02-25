@@ -1,7 +1,7 @@
 import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import OBSWebSocket from 'obs-websocket-js';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { EngineType } from '@prisma/client';
 export interface ObsScene {
     sceneName: string;

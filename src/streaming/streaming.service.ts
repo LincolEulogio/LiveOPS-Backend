@@ -3,10 +3,10 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { ObsService } from '../obs/obs.service';
-import { VmixService } from '../vmix/vmix.service';
-import { StreamingCommandDto } from './dto/streaming-command.dto';
+import { PrismaService } from '@/prisma/prisma.service';
+import { ObsService } from '@/obs/obs.service';
+import { VmixService } from '@/vmix/vmix.service';
+import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
 
 @Injectable()
 export class StreamingService {

@@ -7,11 +7,11 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { VmixService } from './vmix.service';
-import { SaveVmixConnectionDto, ChangeInputDto } from './dto/vmix.dto';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permissions } from '../common/decorators/permissions.decorator';
+import { VmixService } from '@/vmix/vmix.service';
+import { SaveVmixConnectionDto, ChangeInputDto } from '@/vmix/dto/vmix.dto';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions/:productionId/vmix')

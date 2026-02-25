@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { PushNotificationsService } from '../notifications/push-notifications.service';
-import { CreateCommandTemplateDto, SendCommandDto } from './dto/intercom.dto';
+import { PrismaService } from '@/prisma/prisma.service';
+import { PushNotificationsService } from '@/notifications/push-notifications.service';
+import { CreateCommandTemplateDto, SendCommandDto } from '@/intercom/dto/intercom.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { AuditService, AuditAction } from '../common/services/audit.service';
+import { AuditService, AuditAction } from '@/common/services/audit.service';
 
 @Injectable()
 export class IntercomService {

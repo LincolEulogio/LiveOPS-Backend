@@ -4,12 +4,12 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   CreateTimelineBlockDto,
   UpdateTimelineBlockDto,
-} from './dto/timeline.dto';
+} from '@/timeline/dto/timeline.dto';
 
 @Injectable()
 export class TimelineService {

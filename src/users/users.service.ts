@@ -5,16 +5,16 @@ import {
   OnModuleInit,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import {
   CreateUserDto,
   UpdateUserDto,
   CreateRoleDto,
   UpdateRoleDto,
-} from './dto/users.dto';
+} from '@/users/dto/users.dto';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
-import { PermissionAction } from '../common/constants/rbac.constants';
+import { PermissionAction } from '@/common/constants/rbac.constants';
 
 @Injectable()
 export class UsersService implements OnModuleInit {

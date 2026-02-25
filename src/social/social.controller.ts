@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Body, Param, Put, UseGuards, Delete } from '@nestjs/common';
-import { SocialService } from './social.service';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permissions } from '../common/decorators/permissions.decorator';
+import { SocialService } from '@/social/social.service';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Controller('productions/:productionId/social')
 @UseGuards(JwtAuthGuard, PermissionsGuard)

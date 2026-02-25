@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { HardwareService } from './hardware.service';
-import { HardwareController } from './hardware.controller';
-import { PrismaModule } from '../prisma/prisma.module';
+import { HardwareService } from '@/hardware/hardware.service';
+import { HardwareController } from '@/hardware/hardware.controller';
+import { PrismaModule } from '@/prisma/prisma.module';
 
 @Module({
     imports: [PrismaModule],

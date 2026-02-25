@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { AppModule } from '@/app.module';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { AllExceptionsFilter } from '@/common/filters/all-exceptions.filter';
 import { Logger } from 'nestjs-pino';
 import { ConfigService } from '@nestjs/config';
 

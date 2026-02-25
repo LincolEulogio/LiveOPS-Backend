@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
-import { StreamingController } from './streaming.controller';
-import { StreamingService } from './streaming.service';
-import { ObsModule } from '../obs/obs.module';
-import { VmixModule } from '../vmix/vmix.module';
+import { StreamingController } from '@/streaming/streaming.controller';
+import { StreamingService } from '@/streaming/streaming.service';
+import { ObsModule } from '@/obs/obs.module';
+import { VmixModule } from '@/vmix/vmix.module';
 
-import { WebsocketsModule } from '../websockets/websockets.module';
-import { TallyService } from './tally.service';
-import { AutomationService } from './automation.service';
-import { StreamingDestinationsService } from './streaming-destinations.service';
-import { LiveKitService } from './livekit.service';
+import { WebsocketsModule } from '@/websockets/websockets.module';
+import { TallyService } from '@/streaming/tally.service';
+import { AutomationService } from '@/streaming/automation.service';
+import { StreamingDestinationsService } from '@/streaming/streaming-destinations.service';
+import { LiveKitService } from '@/streaming/livekit.service';
 
 @Module({
   imports: [ObsModule, VmixModule, WebsocketsModule],

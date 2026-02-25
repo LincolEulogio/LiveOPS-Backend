@@ -1,6 +1,6 @@
 import { NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 interface RequestWithProduction extends Request {
     productionId?: string;
 }

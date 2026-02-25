@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { VmixController } from './vmix.controller';
+import { VmixController } from '@/vmix/vmix.controller';
 
 describe('VmixController', () => {
   let controller: VmixController;

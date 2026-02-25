@@ -1,6 +1,6 @@
-import { AuthService } from './auth.service';
-import { RegisterUserDto } from './dto/register-user.dto';
-import { LoginUserDto } from './dto/login-user.dto';
+import { AuthService } from '@/auth/auth.service';
+import { RegisterUserDto } from '@/auth/dto/register-user.dto';
+import { LoginUserDto } from '@/auth/dto/login-user.dto';
 import type { Request } from 'express';
 interface RequestWithUser extends Request {
     user: {
@@ -16,9 +16,9 @@ export declare class AuthController {
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
             id: string;
-            email: string;
-            name: string | null;
             createdAt: Date;
+            name: string | null;
+            email: string;
             globalRole: {
                 id: string;
                 name: string;
@@ -35,9 +35,9 @@ export declare class AuthController {
     }>;
     getProfile(req: RequestWithUser): Promise<{
         id: string;
-        email: string;
-        name: string | null;
         createdAt: Date;
+        name: string | null;
+        email: string;
         globalRole: {
             id: string;
             name: string;
@@ -53,9 +53,9 @@ export declare class AuthController {
         password?: string;
     }): Promise<{
         id: string;
-        email: string;
-        name: string | null;
         createdAt: Date;
+        name: string | null;
+        email: string;
         globalRole: {
             id: string;
             name: string;
@@ -71,9 +71,9 @@ export declare class AuthController {
         refreshToken: `${string}-${string}-${string}-${string}-${string}`;
         user: {
             id: string;
-            email: string;
-            name: string | null;
             createdAt: Date;
+            name: string | null;
+            email: string;
             globalRole: {
                 id: string;
                 name: string;

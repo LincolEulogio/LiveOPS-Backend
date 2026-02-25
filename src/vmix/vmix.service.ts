@@ -4,9 +4,9 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { VmixConnectionManager } from './vmix-connection.manager';
-import { SaveVmixConnectionDto, ChangeInputDto } from './dto/vmix.dto';
+import { PrismaService } from '@/prisma/prisma.service';
+import { VmixConnectionManager } from '@/vmix/vmix-connection.manager';
+import { SaveVmixConnectionDto, ChangeInputDto } from '@/vmix/dto/vmix.dto';
 
 @Injectable()
 export class VmixService {

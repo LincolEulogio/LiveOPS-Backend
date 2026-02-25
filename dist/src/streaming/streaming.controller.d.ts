@@ -1,8 +1,8 @@
-import { StreamingService } from './streaming.service';
-import { StreamingDestinationsService } from './streaming-destinations.service';
-import { StreamingCommandDto } from './dto/streaming-command.dto';
-import { CreateStreamingDestinationDto, UpdateStreamingDestinationDto } from './dto/streaming-destination.dto';
-import { LiveKitService } from './livekit.service';
+import { StreamingService } from '@/streaming/streaming.service';
+import { StreamingDestinationsService } from '@/streaming/streaming-destinations.service';
+import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
+import { CreateStreamingDestinationDto, UpdateStreamingDestinationDto } from '@/streaming/dto/streaming-destination.dto';
+import { LiveKitService } from '@/streaming/livekit.service';
 export declare class StreamingController {
     private readonly streamingService;
     private readonly destinationsService;
@@ -54,48 +54,48 @@ export declare class StreamingController {
         success: boolean;
     }>;
     getDestinations(productionId: string): Promise<{
-        productionId: string;
         id: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        productionId: string;
+        isEnabled: boolean;
         platform: string;
         rtmpUrl: string;
         streamKey: string;
         isActive: boolean;
     }[]>;
     createDestination(productionId: string, dto: CreateStreamingDestinationDto): Promise<{
-        productionId: string;
         id: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        productionId: string;
+        isEnabled: boolean;
         platform: string;
         rtmpUrl: string;
         streamKey: string;
         isActive: boolean;
     }>;
     updateDestination(id: string, dto: UpdateStreamingDestinationDto): Promise<{
-        productionId: string;
         id: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        productionId: string;
+        isEnabled: boolean;
         platform: string;
         rtmpUrl: string;
         streamKey: string;
         isActive: boolean;
     }>;
     removeDestination(id: string): Promise<{
-        productionId: string;
         id: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        productionId: string;
+        isEnabled: boolean;
         platform: string;
         rtmpUrl: string;
         streamKey: string;

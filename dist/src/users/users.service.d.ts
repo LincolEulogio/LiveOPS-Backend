@@ -1,6 +1,6 @@
 import { OnModuleInit } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateUserDto, UpdateUserDto, CreateRoleDto, UpdateRoleDto } from './dto/users.dto';
+import { PrismaService } from '@/prisma/prisma.service';
+import { CreateUserDto, UpdateUserDto, CreateRoleDto, UpdateRoleDto } from '@/users/dto/users.dto';
 export declare class UsersService implements OnModuleInit {
     private prisma;
     private readonly logger;
@@ -12,10 +12,10 @@ export declare class UsersService implements OnModuleInit {
         permissions: ({
             permission: {
                 id: string;
+                action: string;
+                description: string | null;
                 createdAt: Date;
                 updatedAt: Date;
-                description: string | null;
-                action: string;
             };
         } & {
             roleId: string;
@@ -23,17 +23,17 @@ export declare class UsersService implements OnModuleInit {
         })[];
     } & {
         id: string;
-        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        name: string;
     }) | null>;
     findAllUsers(): Promise<{
         id: string;
-        email: string;
-        name: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string | null;
+        email: string;
         globalRoleId: string | null;
         globalRole: {
             name: string;
@@ -41,9 +41,9 @@ export declare class UsersService implements OnModuleInit {
     }[]>;
     createUser(dto: CreateUserDto): Promise<{
         id: string;
-        email: string;
-        name: string | null;
         createdAt: Date;
+        name: string | null;
+        email: string;
         globalRoleId: string | null;
         globalRole: {
             name: string;
@@ -51,9 +51,9 @@ export declare class UsersService implements OnModuleInit {
     }>;
     updateUser(id: string, dto: UpdateUserDto): Promise<{
         id: string;
-        email: string;
-        name: string | null;
         updatedAt: Date;
+        name: string | null;
+        email: string;
         globalRoleId: string | null;
         globalRole: {
             name: string;
@@ -67,10 +67,10 @@ export declare class UsersService implements OnModuleInit {
         permissions: ({
             permission: {
                 id: string;
+                action: string;
+                description: string | null;
                 createdAt: Date;
                 updatedAt: Date;
-                description: string | null;
-                action: string;
             };
         } & {
             roleId: string;
@@ -78,37 +78,37 @@ export declare class UsersService implements OnModuleInit {
         })[];
     } & {
         id: string;
-        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        name: string;
     })[]>;
     createRole(dto: CreateRoleDto): Promise<{
         id: string;
-        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        name: string;
     }>;
     updateRole(id: string, dto: UpdateRoleDto): Promise<{
         id: string;
-        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        name: string;
     }>;
     deleteRole(id: string): Promise<{
         id: string;
-        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        name: string;
     }>;
     findAllPermissions(): Promise<{
         id: string;
+        action: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
-        action: string;
     }[]>;
 }

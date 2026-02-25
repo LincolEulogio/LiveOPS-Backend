@@ -1,7 +1,7 @@
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from './notifications.service';
-import { PushNotificationsService } from './push-notifications.service';
-import { CreateSubscriptionDto } from './dto/push-subscription.dto';
+import { PrismaService } from '@/prisma/prisma.service';
+import { NotificationsService } from '@/notifications/notifications.service';
+import { PushNotificationsService } from '@/notifications/push-notifications.service';
+import { CreateSubscriptionDto } from '@/notifications/dto/push-subscription.dto';
 export declare class WebhooksController {
     private prisma;
     private readonly notificationsService;
@@ -9,11 +9,11 @@ export declare class WebhooksController {
     constructor(prisma: PrismaService, notificationsService: NotificationsService, pushService: PushNotificationsService);
     getWebhooks(productionId: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
+        name: string;
         productionId: string;
+        url: string;
         isEnabled: boolean;
         platform: string;
     }[]>;
@@ -23,11 +23,11 @@ export declare class WebhooksController {
         platform: string;
     }): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
+        name: string;
         productionId: string;
+        url: string;
         isEnabled: boolean;
         platform: string;
     }>;
@@ -37,21 +37,21 @@ export declare class WebhooksController {
         isEnabled?: boolean;
     }): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
+        name: string;
         productionId: string;
+        url: string;
         isEnabled: boolean;
         platform: string;
     }>;
     deleteWebhook(id: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
+        name: string;
         productionId: string;
+        url: string;
         isEnabled: boolean;
         platform: string;
     }>;
@@ -61,10 +61,10 @@ export declare class WebhooksController {
     subscribe(req: any, subscription: CreateSubscriptionDto): Promise<{
         id: string;
         createdAt: Date;
-        endpoint: string;
         userId: string;
-        p256dh: string;
         auth: string;
+        endpoint: string;
+        p256dh: string;
     } | null>;
     unsubscribe(endpoint: string): Promise<import("@prisma/client").Prisma.BatchPayload | null>;
 }

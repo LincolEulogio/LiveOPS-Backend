@@ -9,16 +9,16 @@ import {
   UseGuards,
   Put as HttpPut,
 } from '@nestjs/common';
-import { TimelineService } from './timeline.service';
+import { TimelineService } from '@/timeline/timeline.service';
 import {
   CreateTimelineBlockDto,
   UpdateTimelineBlockDto,
   ReorderBlocksDto,
-} from './dto/timeline.dto';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permissions } from '../common/decorators/permissions.decorator';
-import { PermissionAction } from '../common/constants/rbac.constants';
+} from '@/timeline/dto/timeline.dto';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Permissions } from '@/common/decorators/permissions.decorator';
+import { PermissionAction } from '@/common/constants/rbac.constants';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions/:productionId/timeline')

@@ -1,4 +1,4 @@
-import { StreamingService } from './streaming.service';
+import { StreamingService } from '@/streaming/streaming.service';
 export declare class AutomationService {
     private streamingService;
     private readonly logger;

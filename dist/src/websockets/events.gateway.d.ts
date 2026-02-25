@@ -1,11 +1,11 @@
 import { OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PrismaService } from '../prisma/prisma.service';
-import { IntercomService } from '../intercom/intercom.service';
-import { ChatService } from '../chat/chat.service';
-import { ScriptService } from '../script/script.service';
-import type { WebRTCSignalPayload } from '../common/types/webrtc.types';
+import { PrismaService } from '@/prisma/prisma.service';
+import { IntercomService } from '@/intercom/intercom.service';
+import { ChatService } from '@/chat/chat.service';
+import { ScriptService } from '@/script/script.service';
+import type { WebRTCSignalPayload } from '@/common/types/webrtc.types';
 interface SocialComment {
     id: string;
     author: string;

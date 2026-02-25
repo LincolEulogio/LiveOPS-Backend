@@ -3,7 +3,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import {
   CreateProductionDto,
   UpdateProductionDto,
@@ -11,7 +11,7 @@ import {
   AssignUserDto,
   EngineType,
   GetProductionsQueryDto,
-} from './dto/production.dto';
+} from '@/productions/dto/production.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, ProductionStatus } from '@prisma/client';
 

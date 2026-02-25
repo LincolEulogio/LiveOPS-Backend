@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Interval } from '@nestjs/schedule';
-import { PrismaService } from '../prisma/prisma.service';
-import { ObsService } from '../obs/obs.service';
-import { VmixService } from '../vmix/vmix.service';
-import { IntercomService } from '../intercom/intercom.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import { ObsService } from '@/obs/obs.service';
+import { VmixService } from '@/vmix/vmix.service';
+import { IntercomService } from '@/intercom/intercom.service';
+import { NotificationsService } from '@/notifications/notifications.service';
 import { Rule, Trigger, Action } from '@prisma/client';
-import { AuditService, AuditAction } from '../common/services/audit.service';
+import { AuditService, AuditAction } from '@/common/services/audit.service';
 
 interface TriggerCondition {
   secondsBefore?: number;

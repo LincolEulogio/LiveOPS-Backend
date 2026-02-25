@@ -1,5 +1,5 @@
-import { AnalyticsService } from './analytics.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { AnalyticsService } from '@/analytics/analytics.service';
+import { PrismaService } from '@/prisma/prisma.service';
 export declare class PublicAnalyticsController {
     private readonly analyticsService;
     private readonly prisma;
@@ -10,16 +10,16 @@ export declare class PublicAnalyticsController {
         engineType: import("@prisma/client").$Enums.EngineType;
         activeSegment: string;
         telemetry: {
-            productionId: string;
             id: string;
-            isStreaming: boolean;
-            isRecording: boolean;
-            cpuUsage: number | null;
-            fps: number | null;
+            productionId: string;
             timestamp: Date;
+            cpuUsage: number | null;
             memoryUsage: number | null;
+            fps: number | null;
             bitrate: number | null;
             droppedFrames: number | null;
+            isStreaming: boolean;
+            isRecording: boolean;
         }[];
     }>;
 }

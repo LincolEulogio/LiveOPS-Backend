@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Param, Query, UseGuards } from '@nestjs/common';
-import { AnalyticsService } from './analytics.service';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permissions } from '../common/decorators/permissions.decorator';
+import { AnalyticsService } from '@/analytics/analytics.service';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Controller('productions/:id/analytics')
 @UseGuards(JwtAuthGuard, PermissionsGuard)

@@ -1,15 +1,15 @@
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateHardwareMappingDto } from './dto/hardware-mapping.dto';
+import { PrismaService } from '@/prisma/prisma.service';
+import { CreateHardwareMappingDto } from '@/hardware/dto/hardware-mapping.dto';
 export declare class HardwareService {
     private prisma;
     constructor(prisma: PrismaService);
     getMappings(productionId: string): Promise<({
         rule: {
             id: string;
-            name: string;
+            description: string | null;
             createdAt: Date;
             updatedAt: Date;
-            description: string | null;
+            name: string;
             productionId: string;
             isEnabled: boolean;
         };

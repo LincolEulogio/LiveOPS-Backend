@@ -1,24 +1,24 @@
-import { VmixService } from './vmix.service';
-import { SaveVmixConnectionDto, ChangeInputDto } from './dto/vmix.dto';
+import { VmixService } from '@/vmix/vmix.service';
+import { SaveVmixConnectionDto, ChangeInputDto } from '@/vmix/dto/vmix.dto';
 export declare class VmixController {
     private readonly vmixService;
     constructor(vmixService: VmixService);
     saveConnection(productionId: string, dto: SaveVmixConnectionDto): Promise<{
-        productionId: string;
         id: string;
-        url: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
+        url: string;
+        isEnabled: boolean;
         pollingInterval: number;
     }>;
     getConnection(productionId: string): Promise<{
-        productionId: string;
         id: string;
-        url: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
+        url: string;
+        isEnabled: boolean;
         pollingInterval: number;
     }>;
     changeInput(productionId: string, dto: ChangeInputDto): Promise<{

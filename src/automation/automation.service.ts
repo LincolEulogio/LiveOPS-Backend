@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateRuleDto, UpdateRuleDto } from './dto/automation.dto';
+import { PrismaService } from '@/prisma/prisma.service';
+import { CreateRuleDto, UpdateRuleDto } from '@/automation/dto/automation.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()

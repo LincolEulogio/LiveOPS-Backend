@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { IntercomService } from './intercom.service';
+import { IntercomService } from '@/intercom/intercom.service';
 
 describe('IntercomService', () => {
   let service: IntercomService;

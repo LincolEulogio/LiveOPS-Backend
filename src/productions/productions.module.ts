@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ProductionsService } from './productions.service';
-import { ProductionsController } from './productions.controller';
-import { RehearsalService } from './rehearsal.service';
+import { ProductionsService } from '@/productions/productions.service';
+import { ProductionsController } from '@/productions/productions.controller';
+import { RehearsalService } from '@/productions/rehearsal.service';
 
 @Module({
   providers: [ProductionsService, RehearsalService],

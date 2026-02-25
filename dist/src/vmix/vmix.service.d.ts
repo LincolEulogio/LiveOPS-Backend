@@ -1,27 +1,27 @@
-import { PrismaService } from '../prisma/prisma.service';
-import { VmixConnectionManager } from './vmix-connection.manager';
-import { SaveVmixConnectionDto, ChangeInputDto } from './dto/vmix.dto';
+import { PrismaService } from '@/prisma/prisma.service';
+import { VmixConnectionManager } from '@/vmix/vmix-connection.manager';
+import { SaveVmixConnectionDto, ChangeInputDto } from '@/vmix/dto/vmix.dto';
 export declare class VmixService {
     private prisma;
     private vmixManager;
     private readonly logger;
     constructor(prisma: PrismaService, vmixManager: VmixConnectionManager);
     saveConnection(productionId: string, dto: SaveVmixConnectionDto): Promise<{
-        productionId: string;
         id: string;
-        url: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
+        url: string;
+        isEnabled: boolean;
         pollingInterval: number;
     }>;
     getConnection(productionId: string): Promise<{
-        productionId: string;
         id: string;
-        url: string;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
+        url: string;
+        isEnabled: boolean;
         pollingInterval: number;
     }>;
     isConnected(productionId: string): boolean;
@@ -42,7 +42,7 @@ export declare class VmixService {
         isRecording: boolean;
         isExternal: boolean;
         isMultiCorder: boolean;
-        inputs: import("./vmix-connection.manager").VmixInput[];
+        inputs: import("@/vmix/vmix-connection.manager").VmixInput[];
     }>;
     changeInput(productionId: string, dto: ChangeInputDto): Promise<{
         success: boolean;

@@ -11,11 +11,11 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
-import { PrismaService } from '../prisma/prisma.service';
-import { IntercomService } from '../intercom/intercom.service';
-import { ChatService } from '../chat/chat.service';
-import { ScriptService } from '../script/script.service';
-import type { WebRTCSignalPayload, PresenceMember } from '../common/types/webrtc.types';
+import { PrismaService } from '@/prisma/prisma.service';
+import { IntercomService } from '@/intercom/intercom.service';
+import { ChatService } from '@/chat/chat.service';
+import { ScriptService } from '@/script/script.service';
+import type { WebRTCSignalPayload, PresenceMember } from '@/common/types/webrtc.types';
 
 
 interface UserPresence extends PresenceMember { }

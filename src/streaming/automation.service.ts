@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { StreamingService } from './streaming.service';
+import { StreamingService } from '@/streaming/streaming.service';
 
 @Injectable()
 export class AutomationService {

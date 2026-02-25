@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { PrismaService } from '../prisma/prisma.service';
-import type { ProductionHealthStats } from '../obs/obs-connection.manager';
+import { PrismaService } from '@/prisma/prisma.service';
+import type { ProductionHealthStats } from '@/streaming/streaming.types';
 
 @Injectable()
 export class AnalyticsService {

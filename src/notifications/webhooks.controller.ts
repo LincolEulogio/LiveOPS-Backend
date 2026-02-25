@@ -9,13 +9,13 @@ import {
     Patch,
     Req, // Added Req for the new endpoints
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationPlatform, NotificationsService } from './notifications.service'; // Modified import
-import { PushNotificationsService } from './push-notifications.service'; // Added import
-import { CreateSubscriptionDto } from './dto/push-subscription.dto'; // Added import
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permissions } from '../common/decorators/permissions.decorator';
+import { PrismaService } from '@/prisma/prisma.service';
+import { NotificationPlatform, NotificationsService } from '@/notifications/notifications.service'; // Modified import
+import { PushNotificationsService } from '@/notifications/push-notifications.service'; // Added import
+import { CreateSubscriptionDto } from '@/notifications/dto/push-subscription.dto'; // Added import
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Permissions } from '@/common/decorators/permissions.decorator';
 import { Request } from 'express'; // Added import
 
 @Controller('notifications') // Changed controller path

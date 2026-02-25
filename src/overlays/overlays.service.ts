@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateOverlayDto, UpdateOverlayDto } from './dto/overlay.dto';
+import { PrismaService } from '@/prisma/prisma.service';
+import { CreateOverlayDto, UpdateOverlayDto } from '@/overlays/dto/overlay.dto';
 
 @Injectable()
 export class OverlaysService {

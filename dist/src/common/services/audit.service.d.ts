@@ -1,4 +1,4 @@
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 export declare enum AuditAction {
     INTERCOM_SEND = "INTERCOM_SEND",
     STREAM_START = "STREAM_START",
@@ -26,20 +26,20 @@ export declare class AuditService {
         id: string;
         createdAt: Date;
         productionId: string;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
         eventType: string;
+        details: import("@prisma/client/runtime/client").JsonValue | null;
     }[] | ({
         user: {
             id: string;
-            email: string;
             name: string | null;
+            email: string;
         } | null;
     } & {
         id: string;
-        createdAt: Date;
-        action: string;
         userId: string | null;
+        createdAt: Date;
         details: import("@prisma/client/runtime/client").JsonValue | null;
+        action: string;
         ipAddress: string | null;
     })[]>;
 }

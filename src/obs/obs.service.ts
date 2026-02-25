@@ -4,10 +4,10 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { ObsConnectionManager } from './obs-connection.manager';
-import { SaveObsConnectionDto, ChangeSceneDto } from './dto/obs.dto';
-import { AuditService, AuditAction } from '../common/services/audit.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import { ObsConnectionManager } from '@/obs/obs-connection.manager';
+import { SaveObsConnectionDto, ChangeSceneDto } from '@/obs/dto/obs.dto';
+import { AuditService, AuditAction } from '@/common/services/audit.service';
 
 @Injectable()
 export class ObsService {

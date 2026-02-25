@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { VmixService } from './vmix.service';
+import { VmixService } from '@/vmix/vmix.service';
 
 describe('VmixService', () => {
   let service: VmixService;

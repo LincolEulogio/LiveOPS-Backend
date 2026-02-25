@@ -4,13 +4,13 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { RegisterUserDto } from './dto/register-user.dto';
-import { LoginUserDto } from './dto/login-user.dto';
+import { RegisterUserDto } from '@/auth/dto/register-user.dto';
+import { LoginUserDto } from '@/auth/dto/login-user.dto';
 import { Prisma } from '@prisma/client';
 
-import { UsersService } from '../users/users.service';
+import { UsersService } from '@/users/users.service';
 
 @Injectable()
 export class AuthService {

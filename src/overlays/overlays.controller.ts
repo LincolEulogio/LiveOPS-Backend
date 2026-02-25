@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
-import { OverlaysService } from './overlays.service';
-import { CreateOverlayDto, UpdateOverlayDto } from './dto/overlay.dto';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permissions } from '../common/decorators/permissions.decorator';
+import { OverlaysService } from '@/overlays/overlays.service';
+import { CreateOverlayDto, UpdateOverlayDto } from '@/overlays/dto/overlay.dto';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Controller('productions/:productionId/overlays')
 @UseGuards(JwtAuthGuard, PermissionsGuard)

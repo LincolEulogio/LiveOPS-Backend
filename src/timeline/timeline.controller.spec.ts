@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TimelineController } from './timeline.controller';
+import { TimelineController } from '@/timeline/timeline.controller';
 
 describe('TimelineController', () => {
   let controller: TimelineController;

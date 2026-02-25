@@ -1,13 +1,13 @@
 import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
-import { StreamingService } from './streaming.service';
-import { StreamingDestinationsService } from './streaming-destinations.service';
-import { StreamingCommandDto } from './dto/streaming-command.dto';
-import { CreateStreamingDestinationDto, UpdateStreamingDestinationDto } from './dto/streaming-destination.dto';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permissions } from '../common/decorators/permissions.decorator';
+import { StreamingService } from '@/streaming/streaming.service';
+import { StreamingDestinationsService } from '@/streaming/streaming-destinations.service';
+import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
+import { CreateStreamingDestinationDto, UpdateStreamingDestinationDto } from '@/streaming/dto/streaming-destination.dto';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Permissions } from '@/common/decorators/permissions.decorator';
 
-import { LiveKitService } from './livekit.service';
+import { LiveKitService } from '@/streaming/livekit.service';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('streaming')

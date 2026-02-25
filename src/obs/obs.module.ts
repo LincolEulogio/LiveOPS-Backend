@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '../prisma/prisma.module';
-import { ObsConnectionManager } from './obs-connection.manager';
-import { ObsService } from './obs.service';
-import { ObsController } from './obs.controller';
+import { PrismaModule } from '@/prisma/prisma.module';
+import { ObsConnectionManager } from '@/obs/obs-connection.manager';
+import { ObsService } from '@/obs/obs.service';
+import { ObsController } from '@/obs/obs.controller';
 
 @Module({
   imports: [PrismaModule],

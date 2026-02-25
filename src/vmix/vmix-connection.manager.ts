@@ -5,12 +5,12 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { OnEvent } from '@nestjs/event-emitter';
 import { EngineType } from '@prisma/client';
 import axios from 'axios';
 import { parseStringPromise } from 'xml2js';
-import { ProductionHealthStats } from '../streaming/streaming.types';
+import { ProductionHealthStats } from '@/streaming/streaming.types';
 
 export interface VmixInput {
   number: number;

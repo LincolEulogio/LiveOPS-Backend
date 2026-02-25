@@ -7,11 +7,11 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { ObsService } from './obs.service';
-import { SaveObsConnectionDto, ChangeSceneDto } from './dto/obs.dto';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permissions } from '../common/decorators/permissions.decorator';
+import { ObsService } from '@/obs/obs.service';
+import { SaveObsConnectionDto, ChangeSceneDto } from '@/obs/dto/obs.dto';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions/:productionId/obs')

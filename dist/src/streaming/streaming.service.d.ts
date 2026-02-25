@@ -1,7 +1,7 @@
-import { PrismaService } from '../prisma/prisma.service';
-import { ObsService } from '../obs/obs.service';
-import { VmixService } from '../vmix/vmix.service';
-import { StreamingCommandDto } from './dto/streaming-command.dto';
+import { PrismaService } from '@/prisma/prisma.service';
+import { ObsService } from '@/obs/obs.service';
+import { VmixService } from '@/vmix/vmix.service';
+import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
 export declare class StreamingService {
     private prisma;
     private obsService;

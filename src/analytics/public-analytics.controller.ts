@@ -1,6 +1,6 @@
 import { Controller, Get, Param, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { AnalyticsService } from './analytics.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { AnalyticsService } from '@/analytics/analytics.service';
+import { PrismaService } from '@/prisma/prisma.service';
 
 @Controller('public/productions/:id/status')
 export class PublicAnalyticsController {

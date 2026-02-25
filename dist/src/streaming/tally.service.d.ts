@@ -1,4 +1,4 @@
-import { EventsGateway } from '../websockets/events.gateway';
+import { EventsGateway } from '@/websockets/events.gateway';
 export interface TallyUpdate {
     productionId: string;
     engineType: 'OBS' | 'VMIX';

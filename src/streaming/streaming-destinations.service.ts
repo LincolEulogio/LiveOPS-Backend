@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateStreamingDestinationDto, UpdateStreamingDestinationDto } from './dto/streaming-destination.dto';
+import { PrismaService } from '@/prisma/prisma.service';
+import { CreateStreamingDestinationDto, UpdateStreamingDestinationDto } from '@/streaming/dto/streaming-destination.dto';
 
 @Injectable()
 export class StreamingDestinationsService {

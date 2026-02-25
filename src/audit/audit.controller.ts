@@ -1,8 +1,8 @@
 import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
-import { AuditService } from '../common/services/audit.service';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permissions } from '../common/decorators/permissions.decorator';
+import { AuditService } from '@/common/services/audit.service';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Controller('audit')
 @UseGuards(JwtAuthGuard, PermissionsGuard)

@@ -1,15 +1,15 @@
-import { HardwareService } from './hardware.service';
-import { CreateHardwareMappingDto } from './dto/hardware-mapping.dto';
+import { HardwareService } from '@/hardware/hardware.service';
+import { CreateHardwareMappingDto } from '@/hardware/dto/hardware-mapping.dto';
 export declare class HardwareController {
     private readonly hardwareService;
     constructor(hardwareService: HardwareService);
     getMappings(productionId: string): Promise<({
         rule: {
             id: string;
-            name: string;
+            description: string | null;
             createdAt: Date;
             updatedAt: Date;
-            description: string | null;
+            name: string;
             productionId: string;
             isEnabled: boolean;
         };

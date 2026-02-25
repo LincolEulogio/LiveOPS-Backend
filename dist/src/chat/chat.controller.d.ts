@@ -1,4 +1,4 @@
-import { ChatService } from './chat.service';
+import { ChatService } from '@/chat/chat.service';
 export declare class ChatController {
     private readonly chatService;
     constructor(chatService: ChatService);
@@ -11,7 +11,7 @@ export declare class ChatController {
         id: string;
         createdAt: Date;
         productionId: string;
-        userId: string | null;
         message: string;
+        userId: string | null;
     })[]>;
 }

@@ -1,5 +1,5 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 export interface SocialMessagePayload {
     productionId: string;
@@ -19,8 +19,8 @@ export declare class SocialService {
     getBlacklist(productionId: string): string[];
     ingestMessage(productionId: string, payload: SocialMessagePayload): Promise<{
         id: string;
-        status: string;
         productionId: string;
+        status: string;
         content: string;
         platform: string;
         timestamp: Date;
@@ -30,8 +30,8 @@ export declare class SocialService {
     }>;
     getMessages(productionId: string, status?: string): Promise<{
         id: string;
-        status: string;
         productionId: string;
+        status: string;
         content: string;
         platform: string;
         timestamp: Date;
@@ -41,8 +41,8 @@ export declare class SocialService {
     }[]>;
     updateMessageStatus(productionId: string, messageId: string, status: string): Promise<{
         id: string;
-        status: string;
         productionId: string;
+        status: string;
         content: string;
         platform: string;
         timestamp: Date;
@@ -53,8 +53,8 @@ export declare class SocialService {
     createPoll(productionId: string, question: string, options: string[]): Promise<{
         id: string;
         createdAt: Date;
-        updatedAt: Date;
         productionId: string;
+        updatedAt: Date;
         isActive: boolean;
         question: string;
         options: Prisma.JsonValue;
@@ -62,8 +62,8 @@ export declare class SocialService {
     getActivePoll(productionId: string): Promise<{
         id: string;
         createdAt: Date;
-        updatedAt: Date;
         productionId: string;
+        updatedAt: Date;
         isActive: boolean;
         question: string;
         options: Prisma.JsonValue;
@@ -71,8 +71,8 @@ export declare class SocialService {
     votePoll(pollId: string, optionId: string): Promise<{
         id: string;
         createdAt: Date;
-        updatedAt: Date;
         productionId: string;
+        updatedAt: Date;
         isActive: boolean;
         question: string;
         options: Prisma.JsonValue;
@@ -80,8 +80,8 @@ export declare class SocialService {
     closePoll(productionId: string, pollId: string): Promise<{
         id: string;
         createdAt: Date;
-        updatedAt: Date;
         productionId: string;
+        updatedAt: Date;
         isActive: boolean;
         question: string;
         options: Prisma.JsonValue;

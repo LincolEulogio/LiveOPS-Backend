@@ -1,16 +1,16 @@
-import { SocialService } from './social.service';
+import { SocialService } from '@/social/social.service';
 export declare class SocialController {
     private readonly socialService;
     constructor(socialService: SocialService);
     getMessages(productionId: string, status?: string): Promise<{
         id: string;
-        status: string;
         productionId: string;
-        content: string;
+        status: string;
         platform: string;
         timestamp: Date;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
     }[]>;
     injectMessage(productionId: string, payload: {
@@ -21,24 +21,24 @@ export declare class SocialController {
         externalId?: string;
     }): Promise<{
         id: string;
-        status: string;
         productionId: string;
-        content: string;
+        status: string;
         platform: string;
         timestamp: Date;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
     }>;
     updateStatus(productionId: string, id: string, status: string): Promise<{
         id: string;
-        status: string;
         productionId: string;
-        content: string;
+        status: string;
         platform: string;
         timestamp: Date;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
     }>;
     createPoll(productionId: string, payload: {

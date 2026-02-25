@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { EventsGateway } from '../websockets/events.gateway';
+import { EventsGateway } from '@/websockets/events.gateway';
 
 export interface TallyUpdate {
   productionId: string;

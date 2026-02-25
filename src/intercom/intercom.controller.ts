@@ -10,11 +10,11 @@ import {
   Req,
   Request,
 } from '@nestjs/common';
-import { IntercomService } from './intercom.service';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { CreateCommandTemplateDto } from './dto/intercom.dto';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permissions } from '../common/decorators/permissions.decorator';
+import { IntercomService } from '@/intercom/intercom.service';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { CreateCommandTemplateDto } from '@/intercom/dto/intercom.dto';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions/:productionId/intercom')

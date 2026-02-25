@@ -12,17 +12,17 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { ProductionsService } from './productions.service';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permissions } from '../common/decorators/permissions.decorator';
+import { ProductionsService } from '@/productions/productions.service';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Permissions } from '@/common/decorators/permissions.decorator';
 import {
   CreateProductionDto,
   UpdateProductionDto,
   UpdateProductionStateDto,
   AssignUserDto,
   GetProductionsQueryDto,
-} from './dto/production.dto';
+} from '@/productions/dto/production.dto';
 
 interface RequestWithUser extends Request {
   user: {

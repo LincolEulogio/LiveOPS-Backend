@@ -8,11 +8,11 @@ import {
   Param,
   UseGuards,
 } from '@nestjs/common';
-import { AutomationService } from './automation.service';
-import { CreateRuleDto, UpdateRuleDto } from './dto/automation.dto';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permissions } from '../common/decorators/permissions.decorator';
+import { AutomationService } from '@/automation/automation.service';
+import { CreateRuleDto, UpdateRuleDto } from '@/automation/dto/automation.dto';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions/:productionId/automation')

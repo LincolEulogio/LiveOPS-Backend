@@ -1,7 +1,7 @@
-import { PrismaService } from '../prisma/prisma.service';
-import { ObsConnectionManager } from './obs-connection.manager';
-import { SaveObsConnectionDto, ChangeSceneDto } from './dto/obs.dto';
-import { AuditService } from '../common/services/audit.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import { ObsConnectionManager } from '@/obs/obs-connection.manager';
+import { SaveObsConnectionDto, ChangeSceneDto } from '@/obs/dto/obs.dto';
+import { AuditService } from '@/common/services/audit.service';
 export declare class ObsService {
     private prisma;
     private obsManager;
@@ -9,22 +9,22 @@ export declare class ObsService {
     private readonly logger;
     constructor(prisma: PrismaService, obsManager: ObsConnectionManager, auditService: AuditService);
     saveConnection(productionId: string, dto: SaveObsConnectionDto): Promise<{
-        productionId: string;
         id: string;
-        url: string;
-        password: string | null;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
+        password: string | null;
+        url: string;
+        isEnabled: boolean;
     }>;
     getConnection(productionId: string): Promise<{
-        productionId: string;
         id: string;
-        url: string;
-        password: string | null;
-        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
+        password: string | null;
+        url: string;
+        isEnabled: boolean;
     }>;
     isConnected(productionId: string): boolean;
     getRealTimeState(productionId: string): Promise<{

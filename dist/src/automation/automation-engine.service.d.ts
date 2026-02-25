@@ -1,9 +1,9 @@
-import { PrismaService } from '../prisma/prisma.service';
-import { ObsService } from '../obs/obs.service';
-import { VmixService } from '../vmix/vmix.service';
-import { IntercomService } from '../intercom/intercom.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import { AuditService } from '../common/services/audit.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import { ObsService } from '@/obs/obs.service';
+import { VmixService } from '@/vmix/vmix.service';
+import { IntercomService } from '@/intercom/intercom.service';
+import { NotificationsService } from '@/notifications/notifications.service';
+import { AuditService } from '@/common/services/audit.service';
 interface EventPayload {
     productionId: string;
     [key: string]: string | number | boolean | undefined | null | Date | object;

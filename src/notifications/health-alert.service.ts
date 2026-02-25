@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { NotificationsService, NotificationPlatform } from './notifications.service';
+import { NotificationsService, NotificationPlatform } from '@/notifications/notifications.service';
 
 @Injectable()
 export class HealthAlertService {

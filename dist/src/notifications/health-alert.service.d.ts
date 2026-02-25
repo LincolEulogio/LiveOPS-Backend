@@ -1,4 +1,4 @@
-import { NotificationsService } from './notifications.service';
+import { NotificationsService } from '@/notifications/notifications.service';
 export declare class HealthAlertService {
     private notificationsService;
     private readonly logger;

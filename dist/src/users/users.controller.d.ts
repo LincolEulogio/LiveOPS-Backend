@@ -1,14 +1,14 @@
-import { UsersService } from './users.service';
-import { CreateUserDto, UpdateUserDto, CreateRoleDto, UpdateRoleDto } from './dto/users.dto';
+import { UsersService } from '@/users/users.service';
+import { CreateUserDto, UpdateUserDto, CreateRoleDto, UpdateRoleDto } from '@/users/dto/users.dto';
 export declare class UsersController {
     private readonly usersService;
     constructor(usersService: UsersService);
     findAllUsers(): Promise<{
         id: string;
-        email: string;
-        name: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string | null;
+        email: string;
         globalRoleId: string | null;
         globalRole: {
             name: string;
@@ -16,9 +16,9 @@ export declare class UsersController {
     }[]>;
     createUser(dto: CreateUserDto): Promise<{
         id: string;
-        email: string;
-        name: string | null;
         createdAt: Date;
+        name: string | null;
+        email: string;
         globalRoleId: string | null;
         globalRole: {
             name: string;
@@ -26,9 +26,9 @@ export declare class UsersController {
     }>;
     updateUser(id: string, dto: UpdateUserDto): Promise<{
         id: string;
-        email: string;
-        name: string | null;
         updatedAt: Date;
+        name: string | null;
+        email: string;
         globalRoleId: string | null;
         globalRole: {
             name: string;
@@ -42,10 +42,10 @@ export declare class UsersController {
         permissions: ({
             permission: {
                 id: string;
+                action: string;
+                description: string | null;
                 createdAt: Date;
                 updatedAt: Date;
-                description: string | null;
-                action: string;
             };
         } & {
             roleId: string;
@@ -53,24 +53,24 @@ export declare class UsersController {
         })[];
     } & {
         id: string;
-        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        name: string;
     })[]>;
     createRole(dto: CreateRoleDto): Promise<{
         id: string;
-        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        name: string;
     }>;
     updateRole(id: string, dto: UpdateRoleDto): Promise<{
         id: string;
-        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        name: string;
     }>;
     updateRolePermissions(id: string, data: {
         permissionIds: string[];
@@ -78,10 +78,10 @@ export declare class UsersController {
         permissions: ({
             permission: {
                 id: string;
+                action: string;
+                description: string | null;
                 createdAt: Date;
                 updatedAt: Date;
-                description: string | null;
-                action: string;
             };
         } & {
             roleId: string;
@@ -89,23 +89,23 @@ export declare class UsersController {
         })[];
     } & {
         id: string;
-        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        name: string;
     }) | null>;
     deleteRole(id: string): Promise<{
         id: string;
-        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        name: string;
     }>;
     findAllPermissions(): Promise<{
         id: string;
+        action: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
-        action: string;
     }[]>;
 }

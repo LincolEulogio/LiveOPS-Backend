@@ -6,11 +6,11 @@ import {
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import OBSWebSocket from 'obs-websocket-js';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { OnEvent } from '@nestjs/event-emitter';
 import { EngineType, ProductionStatus } from '@prisma/client';
 
-import { ProductionHealthStats } from '../streaming/streaming.types';
+import { ProductionHealthStats } from '@/streaming/streaming.types';
 
 export interface ObsScene {
   sceneName: string;

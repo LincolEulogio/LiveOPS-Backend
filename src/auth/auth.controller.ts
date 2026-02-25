@@ -9,10 +9,10 @@ import {
   UseGuards,
   Patch,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { RegisterUserDto } from './dto/register-user.dto';
-import { LoginUserDto } from './dto/login-user.dto';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { AuthService } from '@/auth/auth.service';
+import { RegisterUserDto } from '@/auth/dto/register-user.dto';
+import { LoginUserDto } from '@/auth/dto/login-user.dto';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import type { Request } from 'express';
 
 interface RequestWithUser extends Request {

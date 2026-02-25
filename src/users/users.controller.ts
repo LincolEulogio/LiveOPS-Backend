@@ -8,16 +8,16 @@ import {
   Delete,
   UseGuards,
 } from '@nestjs/common';
-import { UsersService } from './users.service';
+import { UsersService } from '@/users/users.service';
 import {
   CreateUserDto,
   UpdateUserDto,
   CreateRoleDto,
   UpdateRoleDto,
-} from './dto/users.dto';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permissions } from '../common/decorators/permissions.decorator';
+} from '@/users/dto/users.dto';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, PermissionsGuard)

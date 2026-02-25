@@ -7,11 +7,11 @@ import {
     Param,
     UseGuards,
 } from '@nestjs/common';
-import { HardwareService } from './hardware.service';
-import { CreateHardwareMappingDto } from './dto/hardware-mapping.dto';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permissions } from '../common/decorators/permissions.decorator';
+import { HardwareService } from '@/hardware/hardware.service';
+import { CreateHardwareMappingDto } from '@/hardware/dto/hardware-mapping.dto';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Controller('productions/:productionId/hardware')
 @UseGuards(JwtAuthGuard, PermissionsGuard)

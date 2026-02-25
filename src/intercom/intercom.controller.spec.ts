@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { IntercomController } from './intercom.controller';
+import { IntercomController } from '@/intercom/intercom.controller';
 
 describe('IntercomController', () => {
   let controller: IntercomController;
