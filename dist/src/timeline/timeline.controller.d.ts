@@ -10,9 +10,9 @@ export declare class TimelineController {
             createdAt: Date;
             updatedAt: Date;
             name: string;
+            productionId: string;
             icon: string | null;
             color: string | null;
-            productionId: string;
         } | null;
     } & {
         id: string;
@@ -20,9 +20,9 @@ export declare class TimelineController {
         createdAt: Date;
         updatedAt: Date;
         productionId: string;
-        status: import("@prisma/client").$Enums.BlockStatus;
         title: string;
         durationMs: number;
+        status: import("@prisma/client").$Enums.BlockStatus;
         order: number;
         linkedScene: string | null;
         source: string | null;
@@ -37,9 +37,9 @@ export declare class TimelineController {
         createdAt: Date;
         updatedAt: Date;
         productionId: string;
-        status: import("@prisma/client").$Enums.BlockStatus;
         title: string;
         durationMs: number;
+        status: import("@prisma/client").$Enums.BlockStatus;
         order: number;
         linkedScene: string | null;
         source: string | null;
@@ -57,9 +57,9 @@ export declare class TimelineController {
         createdAt: Date;
         updatedAt: Date;
         productionId: string;
-        status: import("@prisma/client").$Enums.BlockStatus;
         title: string;
         durationMs: number;
+        status: import("@prisma/client").$Enums.BlockStatus;
         order: number;
         linkedScene: string | null;
         source: string | null;
@@ -77,9 +77,9 @@ export declare class TimelineController {
         createdAt: Date;
         updatedAt: Date;
         productionId: string;
-        status: import("@prisma/client").$Enums.BlockStatus;
         title: string;
         durationMs: number;
+        status: import("@prisma/client").$Enums.BlockStatus;
         order: number;
         linkedScene: string | null;
         source: string | null;
@@ -94,9 +94,9 @@ export declare class TimelineController {
         createdAt: Date;
         updatedAt: Date;
         productionId: string;
-        status: import("@prisma/client").$Enums.BlockStatus;
         title: string;
         durationMs: number;
+        status: import("@prisma/client").$Enums.BlockStatus;
         order: number;
         linkedScene: string | null;
         source: string | null;
@@ -111,9 +111,9 @@ export declare class TimelineController {
         createdAt: Date;
         updatedAt: Date;
         productionId: string;
-        status: import("@prisma/client").$Enums.BlockStatus;
         title: string;
         durationMs: number;
+        status: import("@prisma/client").$Enums.BlockStatus;
         order: number;
         linkedScene: string | null;
         source: string | null;

@@ -11,46 +11,59 @@ export declare class IntercomService {
     constructor(prisma: PrismaService, eventEmitter: EventEmitter2, pushService: PushNotificationsService, auditService: AuditService);
     createTemplate(productionId: string, dto: CreateCommandTemplateDto): Promise<{
         id: string;
-        description: string | null;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        description: string | null;
+        productionId: string;
         icon: string | null;
         color: string | null;
-        productionId: string;
     }>;
     getTemplates(productionId: string): Promise<{
         id: string;
-        description: string | null;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        description: string | null;
+        productionId: string;
         icon: string | null;
         color: string | null;
-        productionId: string;
     }[]>;
     private seedDefaultTemplates;
     updateTemplate(id: string, productionId: string, dto: CreateCommandTemplateDto): Promise<{
         id: string;
-        description: string | null;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        description: string | null;
+        productionId: string;
         icon: string | null;
         color: string | null;
-        productionId: string;
     }>;
     deleteTemplate(id: string, productionId: string): Promise<{
         id: string;
-        description: string | null;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        description: string | null;
+        productionId: string;
         icon: string | null;
         color: string | null;
-        productionId: string;
     }>;
     getCommandHistory(productionId: string, limit?: number): Promise<({
+        responses: ({
+            responder: {
+                id: string;
+                name: string | null;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            commandId: string;
+            response: string;
+            note: string | null;
+            responderId: string;
+        })[];
         sender: {
             id: string;
             name: string | null;
@@ -61,30 +74,18 @@ export declare class IntercomService {
         } | null;
         template: {
             id: string;
-            description: string | null;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
+            description: string | null;
+            productionId: string;
             icon: string | null;
             color: string | null;
-            productionId: string;
         } | null;
-        responses: ({
-            responder: {
-                id: string;
-                name: string | null;
-            };
-        } & {
-            id: string;
-            createdAt: Date;
-            commandId: string;
-            responderId: string;
-            response: string;
-            note: string | null;
-        })[];
     } & {
         id: string;
         createdAt: Date;
+        status: string;
         productionId: string;
         senderId: string;
         targetRoleId: string | null;
@@ -92,7 +93,6 @@ export declare class IntercomService {
         templateId: string | null;
         message: string;
         requiresAck: boolean;
-        status: string;
     })[]>;
     sendCommand(dto: SendCommandDto): Promise<{
         sender: {
@@ -105,17 +105,18 @@ export declare class IntercomService {
         } | null;
         template: {
             id: string;
-            description: string | null;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
+            description: string | null;
+            productionId: string;
             icon: string | null;
             color: string | null;
-            productionId: string;
         } | null;
     } & {
         id: string;
         createdAt: Date;
+        status: string;
         productionId: string;
         senderId: string;
         targetRoleId: string | null;
@@ -123,7 +124,6 @@ export declare class IntercomService {
         templateId: string | null;
         message: string;
         requiresAck: boolean;
-        status: string;
     }>;
     private handlePushNotification;
 }

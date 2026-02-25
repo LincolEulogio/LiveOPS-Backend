@@ -115,6 +115,7 @@ export class PermissionsGuard implements CanActivate {
             'script:view',
             'intercom:view',
             'analytics:view',
+            'social:view',
           ];
 
           const allPermissions = [

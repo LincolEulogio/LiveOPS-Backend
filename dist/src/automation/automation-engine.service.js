@@ -91,6 +91,20 @@ let AutomationEngineService = AutomationEngineService_1 = class AutomationEngine
         const productionId = payload?.productionId;
         if (!productionId)
             return;
+        if (payload?.ruleId) {
+            const rule = await this.prisma.rule.findUnique({
+                where: { id: payload.ruleId },
+                include: {
+                    triggers: true,
+                    actions: { orderBy: { order: 'asc' } },
+                },
+            });
+            if (rule && rule.productionId === productionId) {
+                this.logger.log(`Manual execution of rule "${rule.name}" (${rule.id})`);
+                await this.executeActions(rule, { ...payload, isManual: true });
+                return;
+            }
+        }
         const rules = await this.prisma.rule.findMany({
             where: {
                 productionId,

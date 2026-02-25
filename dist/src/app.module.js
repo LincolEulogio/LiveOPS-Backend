@@ -36,6 +36,7 @@ const hardware_module_1 = require("./hardware/hardware.module");
 const notifications_module_1 = require("./notifications/notifications.module");
 const overlays_module_1 = require("./overlays/overlays.module");
 const audit_module_1 = require("./audit/audit.module");
+const ai_module_1 = require("./ai/ai.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer.apply(production_middleware_1.ProductionMiddleware).forRoutes('*');
@@ -45,6 +46,7 @@ exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            ai_module_1.AiModule,
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
             }),

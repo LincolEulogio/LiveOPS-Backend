@@ -94,4 +94,20 @@ export class AutomationService {
 
     return { success: true, message: 'Instant clip triggered' };
   }
+
+  async runRuleManual(productionId: string, ruleId: string) {
+    const rule = await this.prisma.rule.findFirst({
+      where: { id: ruleId, productionId },
+    });
+    if (!rule) throw new NotFoundException('Rule not found');
+
+    // Emit event that the automation engine listens for
+    this.eventEmitter.emit('manual.trigger', {
+      productionId,
+      ruleId,
+      isManual: true,
+    });
+
+    return { success: true, message: `Macro "${rule.name}" triggered` };
+  }
 }

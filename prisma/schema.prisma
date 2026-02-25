@@ -402,7 +402,8 @@ model ShowReport {
   peakViewers Int?
   alertsCount Int?
 
-  metrics Json?
+  metrics    Json?
+  aiAnalysis String? @db.Text
 
   production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
 }
@@ -459,6 +460,8 @@ model SocialMessage {
   status       String     @default("PENDING") // PENDING, APPROVED, REJECTED, ON_AIR
   externalId   String?    @unique
   timestamp    DateTime   @default(now())
+  aiSentiment  String?
+  aiCategory   String?
   production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
 
   @@index([productionId])

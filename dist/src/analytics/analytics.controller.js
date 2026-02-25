@@ -24,8 +24,14 @@ let AnalyticsController = class AnalyticsController {
         this.analyticsService = analyticsService;
     }
     async getTelemetry(id, minutes) {
-        const mins = minutes ? parseInt(minutes, 10) : 60;
-        return this.analyticsService.getTelemetryLogs(id, mins);
+        try {
+            const mins = minutes ? parseInt(minutes, 10) : 60;
+            return await this.analyticsService.getTelemetryLogs(id, mins);
+        }
+        catch (error) {
+            console.error(`Telemetry Fetch Error for ${id}:`, error);
+            throw error;
+        }
     }
     async getReport(id) {
         return this.analyticsService.getShowReport(id);

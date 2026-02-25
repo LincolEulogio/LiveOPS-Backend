@@ -75,4 +75,13 @@ export class AutomationController {
     // For now, let's add a method to automation.service.ts
     return this.automationService.triggerInstantClip(productionId);
   }
+
+  @Post('rules/:id/trigger')
+  @Permissions('automation:manage')
+  triggerRule(
+    @Param('productionId') productionId: string,
+    @Param('id') id: string,
+  ) {
+    return this.automationService.runRuleManual(productionId, id);
+  }
 }

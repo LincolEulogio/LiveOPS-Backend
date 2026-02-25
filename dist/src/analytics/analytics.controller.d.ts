@@ -24,6 +24,7 @@ export declare class AnalyticsController {
         peakViewers: number | null;
         alertsCount: number | null;
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
+        aiAnalysis: string | null;
     } | null>;
     generateReport(id: string): Promise<{
         id: string;
@@ -35,5 +36,6 @@ export declare class AnalyticsController {
         peakViewers: number | null;
         alertsCount: number | null;
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
+        aiAnalysis: string | null;
     }>;
 }

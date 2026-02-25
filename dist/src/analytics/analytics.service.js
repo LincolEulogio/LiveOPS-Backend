@@ -14,13 +14,16 @@ exports.AnalyticsService = void 0;
 const common_1 = require("@nestjs/common");
 const event_emitter_1 = require("@nestjs/event-emitter");
 const prisma_service_1 = require("../prisma/prisma.service");
+const ai_service_1 = require("../ai/ai.service");
 let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
     prisma;
+    aiService;
     logger = new common_1.Logger(AnalyticsService_1.name);
     lastWriteTime = new Map();
     WRITE_INTERVAL_MS = 5000;
-    constructor(prisma) {
+    constructor(prisma, aiService) {
         this.prisma = prisma;
+        this.aiService = aiService;
     }
     async handleProductionHealthStats(payload) {
         try {
@@ -110,7 +113,18 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
                     }
                 }
             });
-            return report;
+            const aiAnalysis = await this.aiService.analyzeShowPerformance({
+                durationMs,
+                avgFps,
+                maxCpu,
+                totalDroppedFrames,
+                samples: telemetry.length
+            });
+            const updatedReport = await this.prisma.showReport.update({
+                where: { id: report.id },
+                data: { aiAnalysis }
+            });
+            return updatedReport;
         }
         catch (e) {
             this.logger.error(`Error generating show report for ${productionId}`, e);
@@ -132,6 +146,7 @@ __decorate([
 ], AnalyticsService.prototype, "handleProductionHealthStats", null);
 exports.AnalyticsService = AnalyticsService = AnalyticsService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        ai_service_1.AiService])
 ], AnalyticsService);
 //# sourceMappingURL=analytics.service.js.map

@@ -6,10 +6,10 @@ export declare class HardwareController {
     getMappings(productionId: string): Promise<({
         rule: {
             id: string;
-            description: string | null;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
+            description: string | null;
             productionId: string;
             isEnabled: boolean;
         };

@@ -26,9 +26,9 @@ let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
             statusCode: status,
             timestamp: new Date().toISOString(),
             path: request.url,
-            message: status === common_1.HttpStatus.INTERNAL_SERVER_ERROR
-                ? 'Internal server error'
-                : message,
+            message: exception instanceof common_1.HttpException
+                ? (typeof message === 'object' && message.message ? message.message : message)
+                : 'Internal server error',
         });
     }
 };

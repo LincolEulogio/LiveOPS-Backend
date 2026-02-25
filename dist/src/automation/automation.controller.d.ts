@@ -9,24 +9,24 @@ export declare class AutomationController {
             createdAt: Date;
             updatedAt: Date;
             order: number;
-            ruleId: string;
             actionType: string;
             payload: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
         }[];
         triggers: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            ruleId: string;
             eventType: string;
             condition: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
         }[];
     } & {
         id: string;
-        description: string | null;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        description: string | null;
         productionId: string;
         isEnabled: boolean;
     })[]>;
@@ -36,24 +36,24 @@ export declare class AutomationController {
             createdAt: Date;
             updatedAt: Date;
             order: number;
-            ruleId: string;
             actionType: string;
             payload: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
         }[];
         triggers: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            ruleId: string;
             eventType: string;
             condition: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
         }[];
     } & {
         id: string;
-        description: string | null;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        description: string | null;
         productionId: string;
         isEnabled: boolean;
     }>;
@@ -63,41 +63,41 @@ export declare class AutomationController {
             createdAt: Date;
             updatedAt: Date;
             order: number;
-            ruleId: string;
             actionType: string;
             payload: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
         }[];
         executionLogs: {
             id: string;
             createdAt: Date;
             productionId: string;
             status: string;
-            details: string | null;
             ruleId: string;
+            details: string | null;
         }[];
         triggers: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            ruleId: string;
             eventType: string;
             condition: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
         }[];
     } & {
         id: string;
-        description: string | null;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        description: string | null;
         productionId: string;
         isEnabled: boolean;
     }>;
     updateRule(productionId: string, id: string, dto: UpdateRuleDto): Promise<{
         id: string;
-        description: string | null;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        description: string | null;
         productionId: string;
         isEnabled: boolean;
     }>;
@@ -113,10 +113,14 @@ export declare class AutomationController {
         createdAt: Date;
         productionId: string;
         status: string;
-        details: string | null;
         ruleId: string;
+        details: string | null;
     })[]>;
     triggerInstantClip(productionId: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    triggerRule(productionId: string, id: string): Promise<{
         success: boolean;
         message: string;
     }>;

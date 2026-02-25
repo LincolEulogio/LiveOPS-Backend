@@ -115,7 +115,24 @@ export class AutomationEngineService {
     const productionId = payload?.productionId;
     if (!productionId) return;
 
-    // Fetch enabled rules with triggers matching this eventType
+    // 1. If we have a specific ruleId, trigger only that one
+    if (payload?.ruleId) {
+      const rule = await this.prisma.rule.findUnique({
+        where: { id: payload.ruleId as string },
+        include: {
+          triggers: true,
+          actions: { orderBy: { order: 'asc' } },
+        },
+      });
+
+      if (rule && rule.productionId === productionId) {
+        this.logger.log(`Manual execution of rule "${rule.name}" (${rule.id})`);
+        await this.executeActions(rule as RuleWithActions, { ...payload, isManual: true });
+        return; // Don't check for event matches if we triggered by ID
+      }
+    }
+
+    // 2. Otherwise, fetch enabled rules with triggers matching this eventType
     const rules = await this.prisma.rule.findMany({
       where: {
         productionId,

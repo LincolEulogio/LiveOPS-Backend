@@ -91,6 +91,7 @@ let PermissionsGuard = class PermissionsGuard {
                         'script:view',
                         'intercom:view',
                         'analytics:view',
+                        'social:view',
                     ];
                     const allPermissions = [
                         ...productionPermissions,

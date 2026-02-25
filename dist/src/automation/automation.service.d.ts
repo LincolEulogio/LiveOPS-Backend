@@ -25,12 +25,12 @@ export declare class AutomationService {
         }[];
     } & {
         id: string;
+        productionId: string;
+        name: string;
         description: string | null;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        productionId: string;
-        isEnabled: boolean;
     })[]>;
     getRule(id: string, productionId: string): Promise<{
         actions: {
@@ -44,11 +44,11 @@ export declare class AutomationService {
         }[];
         executionLogs: {
             id: string;
-            createdAt: Date;
             productionId: string;
+            createdAt: Date;
+            ruleId: string;
             status: string;
             details: string | null;
-            ruleId: string;
         }[];
         triggers: {
             id: string;
@@ -60,12 +60,12 @@ export declare class AutomationService {
         }[];
     } & {
         id: string;
+        productionId: string;
+        name: string;
         description: string | null;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        productionId: string;
-        isEnabled: boolean;
     }>;
     createRule(productionId: string, dto: CreateRuleDto): Promise<{
         actions: {
@@ -87,21 +87,21 @@ export declare class AutomationService {
         }[];
     } & {
         id: string;
+        productionId: string;
+        name: string;
         description: string | null;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        productionId: string;
-        isEnabled: boolean;
     }>;
     updateRule(id: string, productionId: string, dto: UpdateRuleDto): Promise<{
         id: string;
+        productionId: string;
+        name: string;
         description: string | null;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        productionId: string;
-        isEnabled: boolean;
     }>;
     deleteRule(id: string, productionId: string): Promise<{
         success: boolean;
@@ -112,13 +112,17 @@ export declare class AutomationService {
         };
     } & {
         id: string;
-        createdAt: Date;
         productionId: string;
+        createdAt: Date;
+        ruleId: string;
         status: string;
         details: string | null;
-        ruleId: string;
     })[]>;
     triggerInstantClip(productionId: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    runRuleManual(productionId: string, ruleId: string): Promise<{
         success: boolean;
         message: string;
     }>;

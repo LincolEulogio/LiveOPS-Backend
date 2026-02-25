@@ -27,9 +27,11 @@ import { HardwareModule } from '@/hardware/hardware.module';
 import { NotificationsModule } from '@/notifications/notifications.module';
 import { OverlaysModule } from '@/overlays/overlays.module';
 import { AuditModule } from '@/audit/audit.module';
+import { AiModule } from '@/ai/ai.module';
 
 @Module({
   imports: [
+    AiModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),

@@ -17,6 +17,8 @@ var PermissionAction;
     PermissionAction["AUTOMATION_VIEW"] = "automation:view";
     PermissionAction["AUTOMATION_MANAGE"] = "automation:manage";
     PermissionAction["ANALYTICS_VIEW"] = "analytics:view";
+    PermissionAction["SOCIAL_VIEW"] = "social:view";
+    PermissionAction["SOCIAL_MANAGE"] = "social:manage";
     PermissionAction["ADMIN_ACCESS"] = "admin:access";
 })(PermissionAction || (exports.PermissionAction = PermissionAction = {}));
 exports.StandardRoles = {
@@ -42,6 +44,8 @@ exports.StandardRoles = {
             PermissionAction.AUTOMATION_VIEW,
             PermissionAction.AUTOMATION_MANAGE,
             PermissionAction.ANALYTICS_VIEW,
+            PermissionAction.SOCIAL_VIEW,
+            PermissionAction.SOCIAL_MANAGE,
         ],
     },
     OPERATOR: {
@@ -57,6 +61,7 @@ exports.StandardRoles = {
             PermissionAction.INTERCOM_SEND,
             PermissionAction.AUTOMATION_VIEW,
             PermissionAction.ANALYTICS_VIEW,
+            PermissionAction.SOCIAL_VIEW,
         ],
     },
     TALENT: {

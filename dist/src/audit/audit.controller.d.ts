@@ -11,15 +11,15 @@ export declare class AuditController {
     }[] | ({
         user: {
             id: string;
-            name: string | null;
             email: string;
+            name: string | null;
         } | null;
     } & {
         id: string;
-        userId: string | null;
         createdAt: Date;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
         action: string;
+        userId: string | null;
+        details: import("@prisma/client/runtime/client").JsonValue | null;
         ipAddress: string | null;
     })[]>;
     getProductionLogs(productionId: string, limit?: string, page?: string): Promise<{
@@ -31,15 +31,15 @@ export declare class AuditController {
     }[] | ({
         user: {
             id: string;
-            name: string | null;
             email: string;
+            name: string | null;
         } | null;
     } & {
         id: string;
-        userId: string | null;
         createdAt: Date;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
         action: string;
+        userId: string | null;
+        details: import("@prisma/client/runtime/client").JsonValue | null;
         ipAddress: string | null;
     })[]>;
 }

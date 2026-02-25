@@ -13,6 +13,8 @@ export declare enum PermissionAction {
     AUTOMATION_VIEW = "automation:view",
     AUTOMATION_MANAGE = "automation:manage",
     ANALYTICS_VIEW = "analytics:view",
+    SOCIAL_VIEW = "social:view",
+    SOCIAL_MANAGE = "social:manage",
     ADMIN_ACCESS = "admin:access"
 }
 export declare const StandardRoles: {

@@ -12,6 +12,8 @@ export declare class SocialController {
         authorAvatar: string | null;
         content: string;
         externalId: string | null;
+        aiSentiment: string | null;
+        aiCategory: string | null;
     }[]>;
     injectMessage(productionId: string, payload: {
         platform: string;
@@ -29,6 +31,8 @@ export declare class SocialController {
         authorAvatar: string | null;
         content: string;
         externalId: string | null;
+        aiSentiment: string | null;
+        aiCategory: string | null;
     }>;
     updateStatus(productionId: string, id: string, status: string): Promise<{
         id: string;
@@ -40,6 +44,8 @@ export declare class SocialController {
         authorAvatar: string | null;
         content: string;
         externalId: string | null;
+        aiSentiment: string | null;
+        aiCategory: string | null;
     }>;
     createPoll(productionId: string, payload: {
         question: string;

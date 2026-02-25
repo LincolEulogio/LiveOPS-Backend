@@ -12,8 +12,13 @@ export class AnalyticsController {
   @Get('telemetry')
   @Permissions('production:view')
   async getTelemetry(@Param('id') id: string, @Query('minutes') minutes?: string) {
-    const mins = minutes ? parseInt(minutes, 10) : 60;
-    return this.analyticsService.getTelemetryLogs(id, mins);
+    try {
+      const mins = minutes ? parseInt(minutes, 10) : 60;
+      return await this.analyticsService.getTelemetryLogs(id, mins);
+    } catch (error) {
+      console.error(`Telemetry Fetch Error for ${id}:`, error);
+      throw error;
+    }
   }
 
   @Get('report')

@@ -14,14 +14,17 @@ exports.SocialService = void 0;
 const common_1 = require("@nestjs/common");
 const event_emitter_1 = require("@nestjs/event-emitter");
 const prisma_service_1 = require("../prisma/prisma.service");
+const ai_service_1 = require("../ai/ai.service");
 let SocialService = SocialService_1 = class SocialService {
     prisma;
     eventEmitter;
+    aiService;
     logger = new common_1.Logger(SocialService_1.name);
     blacklists = new Map();
-    constructor(prisma, eventEmitter) {
+    constructor(prisma, eventEmitter, aiService) {
         this.prisma = prisma;
         this.eventEmitter = eventEmitter;
+        this.aiService = aiService;
         this.blacklists.set('default', ['spam', 'buy followers', 'scam']);
     }
     setBlacklist(productionId, words) {
@@ -33,6 +36,16 @@ let SocialService = SocialService_1 = class SocialService {
     async ingestMessage(productionId, payload) {
         const blacklist = this.getBlacklist(productionId);
         const isClean = !blacklist.some(word => payload.content.toLowerCase().includes(word));
+        let aiSentiment = null;
+        let aiCategory = null;
+        try {
+            const aiResult = await this.aiService.analyzeSocialMessage(payload.content);
+            aiSentiment = aiResult.sentiment;
+            aiCategory = aiResult.category;
+        }
+        catch (e) {
+            this.logger.warn('AI social analysis failed, continuing without it');
+        }
         const message = await this.prisma.socialMessage.create({
             data: {
                 productionId,
@@ -42,6 +55,8 @@ let SocialService = SocialService_1 = class SocialService {
                 content: payload.content,
                 externalId: payload.externalId,
                 status: isClean ? 'PENDING' : 'REJECTED',
+                aiSentiment,
+                aiCategory,
             },
         });
         this.eventEmitter.emit('social.message.new', message);
@@ -149,6 +164,7 @@ exports.SocialService = SocialService;
 exports.SocialService = SocialService = SocialService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        event_emitter_1.EventEmitter2])
+        event_emitter_1.EventEmitter2,
+        ai_service_1.AiService])
 ], SocialService);
 //# sourceMappingURL=social.service.js.map

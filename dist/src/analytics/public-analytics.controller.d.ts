@@ -10,8 +10,8 @@ export declare class PublicAnalyticsController {
         engineType: import("@prisma/client").$Enums.EngineType;
         activeSegment: string;
         telemetry: {
-            id: string;
             productionId: string;
+            id: string;
             timestamp: Date;
             cpuUsage: number | null;
             memoryUsage: number | null;

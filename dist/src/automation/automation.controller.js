@@ -45,6 +45,9 @@ let AutomationController = class AutomationController {
     triggerInstantClip(productionId) {
         return this.automationService.triggerInstantClip(productionId);
     }
+    triggerRule(productionId, id) {
+        return this.automationService.runRuleManual(productionId, id);
+    }
 };
 exports.AutomationController = AutomationController;
 __decorate([
@@ -108,6 +111,15 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], AutomationController.prototype, "triggerInstantClip", null);
+__decorate([
+    (0, common_1.Post)('rules/:id/trigger'),
+    (0, permissions_decorator_1.Permissions)('automation:manage'),
+    __param(0, (0, common_1.Param)('productionId')),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], AutomationController.prototype, "triggerRule", null);
 exports.AutomationController = AutomationController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     (0, common_1.Controller)('productions/:productionId/automation'),

@@ -183,34 +183,42 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
       instance.isMultiCorder = isMultiCorder;
       instance.inputs = inputs;
 
-      // Emit domain event if inputs or states changed
-      this.eventEmitter.emit('vmix.input.changed', {
-        productionId,
-        activeInput: newActive,
-        previewInput: newPreview,
-        isStreaming,
-        isRecording,
-        isExternal,
-        isMultiCorder,
-        inputs,
-        version: parsed.vmix.version,
-        edition: parsed.vmix.edition,
-        fps: fps || 0,
-        renderTime: renderTime || 0,
-        url: instance.url
-      });
+      // Only emit change if actual data changed to save bandwidth and prevent UI flickering
+      const hasChanged =
+        instance.activeInput !== newActive ||
+        instance.previewInput !== newPreview ||
+        instance.isStreaming !== isStreaming ||
+        instance.isRecording !== isRecording ||
+        instance.inputs.length !== inputs.length;
 
-      // We consider it connected if the poll succeeded
+      if (hasChanged) {
+        this.eventEmitter.emit('vmix.input.changed', {
+          productionId,
+          activeInput: newActive,
+          previewInput: newPreview,
+          isStreaming,
+          isRecording,
+          isExternal,
+          isMultiCorder,
+          inputs,
+          version: parsed.vmix.version,
+          edition: parsed.vmix.edition,
+          fps: fps || 0,
+          renderTime: renderTime || 0,
+          url: instance.url
+        });
+      }
+
+      // Emit connection state ONLY on transition to prevent frontend "flashing"
       if (!instance.isConnected) {
         this.logger.log(`vMix connected/restored for production ${productionId}`);
         instance.isConnected = true;
+        this.eventEmitter.emit('vmix.connection.state', {
+          productionId,
+          connected: true,
+        });
       }
       instance.pollingFailureCount = 0;
-
-      this.eventEmitter.emit('vmix.connection.state', {
-        productionId,
-        connected: true,
-      });
 
       this.eventEmitter.emit('production.health.stats', {
         productionId,

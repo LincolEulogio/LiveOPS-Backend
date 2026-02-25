@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '@/prisma/prisma.service';
+import { AiService } from '@/ai/ai.service';
 import { Prisma } from '@prisma/client';
 
 export interface SocialMessagePayload {
@@ -25,7 +26,8 @@ export class SocialService {
 
     constructor(
         private prisma: PrismaService,
-        private eventEmitter: EventEmitter2
+        private eventEmitter: EventEmitter2,
+        private aiService: AiService
     ) {
         this.blacklists.set('default', ['spam', 'buy followers', 'scam']);
     }
@@ -45,6 +47,18 @@ export class SocialService {
             payload.content.toLowerCase().includes(word)
         );
 
+        // Optional AI analysis (async to not block core flow too much)
+        let aiSentiment = null;
+        let aiCategory = null;
+
+        try {
+            const aiResult = await this.aiService.analyzeSocialMessage(payload.content);
+            aiSentiment = aiResult.sentiment;
+            aiCategory = aiResult.category;
+        } catch (e) {
+            this.logger.warn('AI social analysis failed, continuing without it');
+        }
+
         const message = await this.prisma.socialMessage.create({
             data: {
                 productionId,
@@ -54,6 +68,8 @@ export class SocialService {
                 content: payload.content,
                 externalId: payload.externalId,
                 status: isClean ? 'PENDING' : 'REJECTED',
+                aiSentiment,
+                aiCategory,
             },
         });
 

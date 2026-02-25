@@ -25,6 +25,10 @@ export enum PermissionAction {
   // Analytics permissions
   ANALYTICS_VIEW = 'analytics:view',
 
+  // Social permissions
+  SOCIAL_VIEW = 'social:view',
+  SOCIAL_MANAGE = 'social:manage',
+
   // Admin permissions
   ADMIN_ACCESS = 'admin:access',
 }
@@ -52,6 +56,8 @@ export const StandardRoles = {
       PermissionAction.AUTOMATION_VIEW,
       PermissionAction.AUTOMATION_MANAGE,
       PermissionAction.ANALYTICS_VIEW,
+      PermissionAction.SOCIAL_VIEW,
+      PermissionAction.SOCIAL_MANAGE,
     ],
   },
   OPERATOR: {
@@ -67,6 +73,7 @@ export const StandardRoles = {
       PermissionAction.INTERCOM_SEND,
       PermissionAction.AUTOMATION_VIEW,
       PermissionAction.ANALYTICS_VIEW,
+      PermissionAction.SOCIAL_VIEW,
     ],
   },
   TALENT: {

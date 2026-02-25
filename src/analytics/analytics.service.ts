@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '@/prisma/prisma.service';
+import { AiService } from '@/ai/ai.service';
 import type { ProductionHealthStats } from '@/streaming/streaming.types';
 
 @Injectable()
@@ -11,7 +12,10 @@ export class AnalyticsService {
   private lastWriteTime: Map<string, number> = new Map();
   private readonly WRITE_INTERVAL_MS = 5000; // Save telemetry every 5 seconds per production
 
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private aiService: AiService
+  ) { }
 
   @OnEvent('production.health.stats')
   async handleProductionHealthStats(payload: ProductionHealthStats) {
@@ -116,7 +120,23 @@ export class AnalyticsService {
         }
       });
 
-      return report;
+      // 5. Generate AI Analysis asynchronously (don't block the initial return or do it before saving)
+      // Actually, let's do it before final save or update it after.
+      // For now, let's do it before creating the report so the first response has it.
+      const aiAnalysis = await this.aiService.analyzeShowPerformance({
+        durationMs,
+        avgFps,
+        maxCpu,
+        totalDroppedFrames,
+        samples: telemetry.length
+      });
+
+      const updatedReport = await this.prisma.showReport.update({
+        where: { id: report.id },
+        data: { aiAnalysis }
+      });
+
+      return updatedReport;
 
     } catch (e) {
       this.logger.error(`Error generating show report for ${productionId}`, e);
