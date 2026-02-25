@@ -8,15 +8,15 @@ export declare class ProductionsService {
     create(userId: string, dto: CreateProductionDto): Promise<{
         id: string;
         name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string | null;
-        description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
         publicStatusEnabled: boolean;
+        tenantId: string | null;
     }>;
     findAllForUser(userId: string, query: GetProductionsQueryDto): Promise<{
         data: ({
@@ -24,11 +24,11 @@ export declare class ProductionsService {
                 role: {
                     permissions: ({
                         permission: {
+                            action: string;
                             id: string;
+                            description: string | null;
                             createdAt: Date;
                             updatedAt: Date;
-                            description: string | null;
-                            action: string;
                         };
                     } & {
                         roleId: string;
@@ -37,29 +37,29 @@ export declare class ProductionsService {
                 } & {
                     id: string;
                     name: string;
+                    description: string | null;
                     createdAt: Date;
                     updatedAt: Date;
-                    description: string | null;
                 };
             } & {
                 createdAt: Date;
                 updatedAt: Date;
-                productionId: string;
-                roleId: string;
                 userId: string;
+                roleId: string;
+                productionId: string;
             })[];
         } & {
             id: string;
             name: string;
+            description: string | null;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
-            tenantId: string | null;
-            description: string | null;
             engineType: import("@prisma/client").$Enums.EngineType;
             status: import("@prisma/client").$Enums.ProductionStatus;
             isRehearsal: boolean;
             publicStatusEnabled: boolean;
+            tenantId: string | null;
         })[];
         meta: {
             total: number;
@@ -69,134 +69,134 @@ export declare class ProductionsService {
         };
     }>;
     findOne(productionId: string, userId: string): Promise<{
-        users: ({
-            user: {
-                id: string;
-                email: string;
-                name: string | null;
-            };
-            role: {
-                id: string;
-                name: string;
-                createdAt: Date;
-                updatedAt: Date;
-                description: string | null;
-            };
-        } & {
-            createdAt: Date;
-            updatedAt: Date;
-            productionId: string;
-            roleId: string;
-            userId: string;
-        })[];
         obsConnection: {
             id: string;
-            password: string | null;
             createdAt: Date;
             updatedAt: Date;
-            url: string;
+            password: string | null;
             productionId: string;
+            url: string;
             isEnabled: boolean;
         } | null;
         vmixConnection: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            url: string;
             productionId: string;
+            url: string;
             isEnabled: boolean;
             pollingInterval: number;
         } | null;
+        users: ({
+            role: {
+                id: string;
+                name: string;
+                description: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+            user: {
+                id: string;
+                name: string | null;
+                email: string;
+            };
+        } & {
+            createdAt: Date;
+            updatedAt: Date;
+            userId: string;
+            roleId: string;
+            productionId: string;
+        })[];
     } & {
         id: string;
         name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string | null;
-        description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
         publicStatusEnabled: boolean;
+        tenantId: string | null;
     }>;
     update(productionId: string, dto: UpdateProductionDto): Promise<{
         id: string;
         name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string | null;
-        description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
         publicStatusEnabled: boolean;
+        tenantId: string | null;
     }>;
     updateState(productionId: string, dto: UpdateProductionStateDto): Promise<{
         id: string;
         name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string | null;
-        description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
         publicStatusEnabled: boolean;
+        tenantId: string | null;
     }>;
     assignUser(productionId: string, dto: AssignUserDto): Promise<{
-        user: {
-            id: string;
-            email: string;
-            name: string | null;
-        };
         role: {
             id: string;
             name: string;
+            description: string | null;
             createdAt: Date;
             updatedAt: Date;
-            description: string | null;
+        };
+        user: {
+            id: string;
+            name: string | null;
+            email: string;
         };
     } & {
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
-        roleId: string;
         userId: string;
+        roleId: string;
+        productionId: string;
     }>;
     removeUser(productionId: string, userIdToRemove: string): Promise<{
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
-        roleId: string;
         userId: string;
+        roleId: string;
+        productionId: string;
     }>;
     remove(productionId: string): Promise<{
         id: string;
         name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string | null;
-        description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
         publicStatusEnabled: boolean;
+        tenantId: string | null;
     }>;
     toggleRehearsal(productionId: string, enabled: boolean): Promise<{
         id: string;
         name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
-        tenantId: string | null;
-        description: string | null;
         engineType: import("@prisma/client").$Enums.EngineType;
         status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
         publicStatusEnabled: boolean;
+        tenantId: string | null;
     }>;
 }

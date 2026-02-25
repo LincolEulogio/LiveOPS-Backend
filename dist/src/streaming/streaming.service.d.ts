@@ -24,7 +24,25 @@ export declare class StreamingService {
             outputTotalFrames?: number;
             isConnected: boolean;
         } | null;
-        vmix: null;
+        vmix: {
+            isConnected: boolean;
+            activeInput?: undefined;
+            previewInput?: undefined;
+            isStreaming?: undefined;
+            isRecording?: undefined;
+            isExternal?: undefined;
+            isMultiCorder?: undefined;
+            inputs?: undefined;
+        } | {
+            isConnected: boolean;
+            activeInput: number | undefined;
+            previewInput: number | undefined;
+            isStreaming: boolean;
+            isRecording: boolean;
+            isExternal: boolean;
+            isMultiCorder: boolean;
+            inputs: import("../vmix/vmix-connection.manager").VmixInput[];
+        } | null;
         lastUpdate: string;
     }>;
     handleCommand(productionId: string, dto: StreamingCommandDto): Promise<{

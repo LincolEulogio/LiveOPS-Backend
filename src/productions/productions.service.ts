@@ -255,6 +255,20 @@ export class ProductionsService {
 
       if (vmixConfig) {
         let host = vmixConfig.host || '127.0.0.1';
+        let port = vmixConfig.port || '8088';
+
+        // Detect if user entered a full URL in the host field
+        if (host.includes('://')) {
+          try {
+            const parsed = new URL(host);
+            host = parsed.hostname;
+            if (parsed.port) port = parsed.port;
+          } catch (e) {
+            // If URL is invalid, fallback to cleaning the string
+            host = host.split('://')[1].split(':')[0].split('/')[0];
+          }
+        }
+
         if (
           host.includes(':') &&
           !host.startsWith('[') &&
@@ -262,7 +276,7 @@ export class ProductionsService {
         ) {
           host = `[${host}]`;
         }
-        const url = `http://${host}:${vmixConfig.port || '8088'}`;
+        const url = `http://${host}:${port}`;
 
         await tx.vmixConnection.upsert({
           where: { productionId },

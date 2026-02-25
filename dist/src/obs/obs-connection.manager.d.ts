@@ -7,19 +7,6 @@ export interface ObsScene {
     sceneName: string;
     sceneIndex: number;
 }
-export interface ProductionHealthStats {
-    productionId: string;
-    engineType: EngineType;
-    cpuUsage: number;
-    fps: number;
-    bitrate: number;
-    skippedFrames: number;
-    totalFrames: number;
-    memoryUsage: number;
-    isStreaming: boolean;
-    isRecording: boolean;
-    timestamp: string;
-}
 export declare class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     private prisma;
     private eventEmitter;

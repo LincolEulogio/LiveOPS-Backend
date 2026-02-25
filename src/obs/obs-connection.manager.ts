@@ -10,23 +10,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OnEvent } from '@nestjs/event-emitter';
 import { EngineType, ProductionStatus } from '@prisma/client';
 
+import { ProductionHealthStats } from '../streaming/streaming.types';
+
 export interface ObsScene {
   sceneName: string;
   sceneIndex: number;
-}
-
-export interface ProductionHealthStats {
-  productionId: string;
-  engineType: EngineType;
-  cpuUsage: number;
-  fps: number;
-  bitrate: number;
-  skippedFrames: number;
-  totalFrames: number;
-  memoryUsage: number;
-  isStreaming: boolean;
-  isRecording: boolean;
-  timestamp: string;
 }
 
 interface ObsInstance {
@@ -364,17 +352,20 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
           // but we focus on cpu and drops if available.
         }
 
+        const recordStatus = await instance.obs.call('GetRecordStatus');
+
         const healthStats: ProductionHealthStats = {
           productionId,
           engineType: EngineType.OBS,
           cpuUsage: stats.cpuUsage,
           fps: stats.activeFps,
-          bitrate: 0,
+          bitrate: streamStatus.outputActive ? 5500 : 0, // Placeholder bitate in kbps
           skippedFrames: streamStatus.outputSkippedFrames || 0,
           totalFrames: streamStatus.outputTotalFrames || 0,
           memoryUsage: stats.memoryUsage,
+          availableDiskSpace: stats.availableDiskSpace, // Added disk space
           isStreaming: streamStatus.outputActive,
-          isRecording: (await instance.obs.call('GetRecordStatus')).outputActive,
+          isRecording: recordStatus.outputActive,
           timestamp: new Date().toISOString(),
         };
 

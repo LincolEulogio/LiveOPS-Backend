@@ -1,7 +1,14 @@
 import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
-import { EngineType } from '../productions/dto/production.dto';
+import { EngineType } from '@prisma/client';
+export interface VmixInput {
+    number: number;
+    title: string;
+    type: string;
+    state: string;
+    key: string;
+}
 export declare class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
     private prisma;
     private eventEmitter;
@@ -15,7 +22,27 @@ export declare class VmixConnectionManager implements OnModuleInit, OnModuleDest
     connectVmix(productionId: string, url: string, pollingInterval?: number): void;
     private disconnectVmix;
     stopPolling(productionId: string): Promise<void>;
+    private getApiUrl;
     private pollApi;
+    getVmixState(productionId: string): {
+        isConnected: boolean;
+        activeInput?: undefined;
+        previewInput?: undefined;
+        isStreaming?: undefined;
+        isRecording?: undefined;
+        isExternal?: undefined;
+        isMultiCorder?: undefined;
+        inputs?: undefined;
+    } | {
+        isConnected: boolean;
+        activeInput: number | undefined;
+        previewInput: number | undefined;
+        isStreaming: boolean;
+        isRecording: boolean;
+        isExternal: boolean;
+        isMultiCorder: boolean;
+        inputs: VmixInput[];
+    };
     handleConnectionUpdate(payload: {
         productionId: string;
         type: EngineType;

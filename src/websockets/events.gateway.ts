@@ -593,15 +593,7 @@ export class EventsGateway
   }
 
   @OnEvent('vmix.input.changed')
-  handleVmixInputChanged(payload: {
-    productionId: string;
-    activeInput: number;
-    previewInput: number;
-    isStreaming?: boolean;
-    isRecording?: boolean;
-    isExternal?: boolean;
-    isMultiCorder?: boolean;
-  }) {
+  handleVmixInputChanged(payload: any) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('vmix.input.changed', payload);

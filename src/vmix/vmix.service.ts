@@ -61,15 +61,19 @@ export class VmixService {
     return this.vmixManager.isConnected(productionId);
   }
 
+  async getRealTimeState(productionId: string) {
+    return this.vmixManager.getVmixState(productionId);
+  }
+
   // --- vMix Commands --- //
 
   async changeInput(productionId: string, dto: ChangeInputDto) {
     try {
-      // The vMix API uses 'Cut' passing an Input number to hard switch
-      await this.vmixManager.sendCommand(productionId, 'Cut', {
+      // selecting an input in the matrix usually takes it to PREVIEW first
+      await this.vmixManager.sendCommand(productionId, 'PreviewInput', {
         Input: dto.input,
       });
-      return { success: true, input: dto.input, action: 'cut' };
+      return { success: true, input: dto.input, action: 'preview' };
     } catch (e: unknown) {
       const error = e as Error;
       this.logger.error(`Failed to change input: ${error.message}`);

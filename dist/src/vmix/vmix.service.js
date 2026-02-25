@@ -56,12 +56,15 @@ let VmixService = VmixService_1 = class VmixService {
     isConnected(productionId) {
         return this.vmixManager.isConnected(productionId);
     }
+    async getRealTimeState(productionId) {
+        return this.vmixManager.getVmixState(productionId);
+    }
     async changeInput(productionId, dto) {
         try {
-            await this.vmixManager.sendCommand(productionId, 'Cut', {
+            await this.vmixManager.sendCommand(productionId, 'PreviewInput', {
                 Input: dto.input,
             });
-            return { success: true, input: dto.input, action: 'cut' };
+            return { success: true, input: dto.input, action: 'preview' };
         }
         catch (e) {
             const error = e;

@@ -4,21 +4,21 @@ export declare class VmixController {
     private readonly vmixService;
     constructor(vmixService: VmixService);
     saveConnection(productionId: string, dto: SaveVmixConnectionDto): Promise<{
+        productionId: string;
         id: string;
+        url: string;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
-        productionId: string;
-        isEnabled: boolean;
         pollingInterval: number;
     }>;
     getConnection(productionId: string): Promise<{
+        productionId: string;
         id: string;
+        url: string;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
-        productionId: string;
-        isEnabled: boolean;
         pollingInterval: number;
     }>;
     changeInput(productionId: string, dto: ChangeInputDto): Promise<{

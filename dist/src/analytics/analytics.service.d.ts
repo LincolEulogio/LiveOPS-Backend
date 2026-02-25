@@ -8,8 +8,8 @@ export declare class AnalyticsService {
     constructor(prisma: PrismaService);
     handleProductionHealthStats(payload: ProductionHealthStats): Promise<void>;
     getTelemetryLogs(productionId: string, minutes?: number): Promise<{
-        id: string;
         productionId: string;
+        id: string;
         isStreaming: boolean;
         isRecording: boolean;
         cpuUsage: number | null;
@@ -20,8 +20,8 @@ export declare class AnalyticsService {
         droppedFrames: number | null;
     }[]>;
     generateShowReport(productionId: string): Promise<{
-        id: string;
         productionId: string;
+        id: string;
         durationMs: number | null;
         startTime: Date | null;
         endTime: Date | null;
@@ -31,8 +31,8 @@ export declare class AnalyticsService {
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
     }>;
     getShowReport(productionId: string): Promise<{
-        id: string;
         productionId: string;
+        id: string;
         durationMs: number | null;
         startTime: Date | null;
         endTime: Date | null;

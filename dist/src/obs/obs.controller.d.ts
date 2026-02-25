@@ -4,22 +4,22 @@ export declare class ObsController {
     private readonly obsService;
     constructor(obsService: ObsService);
     saveConnection(productionId: string, dto: SaveObsConnectionDto): Promise<{
+        productionId: string;
         id: string;
+        url: string;
         password: string | null;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
-        productionId: string;
-        isEnabled: boolean;
     }>;
     getConnection(productionId: string): Promise<{
+        productionId: string;
         id: string;
+        url: string;
         password: string | null;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
-        productionId: string;
-        isEnabled: boolean;
     }>;
     changeScene(productionId: string, dto: ChangeSceneDto): Promise<{
         success: boolean;

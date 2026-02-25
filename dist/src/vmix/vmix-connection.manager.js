@@ -18,7 +18,7 @@ const common_1 = require("@nestjs/common");
 const event_emitter_1 = require("@nestjs/event-emitter");
 const prisma_service_1 = require("../prisma/prisma.service");
 const event_emitter_2 = require("@nestjs/event-emitter");
-const production_dto_1 = require("../productions/dto/production.dto");
+const client_1 = require("@prisma/client");
 const axios_1 = __importDefault(require("axios"));
 const xml2js_1 = require("xml2js");
 let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManager {
@@ -54,7 +54,16 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
         if (existing) {
             this.disconnectVmix(productionId, existing);
         }
-        const instance = { url, pollingFailureCount: 0, isConnected: false };
+        const instance = {
+            url,
+            pollingFailureCount: 0,
+            isConnected: false,
+            isStreaming: false,
+            isRecording: false,
+            isExternal: false,
+            isMultiCorder: false,
+            inputs: []
+        };
         this.connections.set(productionId, instance);
         const interval = pollingInterval || this.POLLING_RATE_MS;
         this.logger.log(`Starting vMix polling for production ${productionId} at ${url} (${interval}ms)`);
@@ -77,22 +86,54 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
             this.disconnectVmix(productionId, instance);
         }
     }
+    getApiUrl(baseUrl) {
+        let url = baseUrl.trim();
+        if (!url.startsWith('http')) {
+            url = `http://${url}`;
+        }
+        url = url.replace(/\/+$/, '');
+        if (!url.endsWith('/api')) {
+            url = `${url}/api`;
+        }
+        return url;
+    }
     async pollApi(productionId, instance) {
         try {
-            const apiUrl = instance.url.endsWith('/')
-                ? `${instance.url}api`
-                : `${instance.url}/api`;
-            const response = await axios_1.default.get(apiUrl, { timeout: 800 });
+            const apiUrl = this.getApiUrl(instance.url);
+            const response = await axios_1.default.get(apiUrl, { timeout: 1200 });
             const xml = response.data;
             const parsed = await (0, xml2js_1.parseStringPromise)(xml, { explicitArray: false });
-            if (!parsed || !parsed.vmix)
-                return;
+            if (!parsed || !parsed.vmix) {
+                throw new Error('Invalid XML response from vMix');
+            }
             const newActive = parseInt(parsed.vmix.active, 10);
             const newPreview = parseInt(parsed.vmix.preview, 10);
             const isStreaming = parsed.vmix.streaming === 'True';
             const isRecording = parsed.vmix.recording === 'True';
             const isExternal = parsed.vmix.external === 'True';
             const isMultiCorder = parsed.vmix.multiCorder === 'True';
+            let inputsData = parsed.vmix.inputs?.input;
+            if (inputsData && !Array.isArray(inputsData)) {
+                inputsData = [inputsData];
+            }
+            const inputs = (inputsData || []).map((i) => ({
+                number: parseInt(i.$.number, 10),
+                title: i.$.title || `Input ${i.$.number}`,
+                type: i.$.type,
+                state: i.$.state,
+                key: i.$.key,
+            }));
+            const rawFps = parsed.vmix.fps || '0';
+            const fps = parseFloat(String(rawFps).replace(',', '.'));
+            const renderTime = parseInt(parsed.vmix.renderTime || '0', 10);
+            const vmixCpu = parsed.vmix.vmixCpuUsage ? parseFloat(parsed.vmix.vmixCpuUsage) : 0;
+            instance.activeInput = newActive;
+            instance.previewInput = newPreview;
+            instance.isStreaming = isStreaming;
+            instance.isRecording = isRecording;
+            instance.isExternal = isExternal;
+            instance.isMultiCorder = isMultiCorder;
+            instance.inputs = inputs;
             this.eventEmitter.emit('vmix.input.changed', {
                 productionId,
                 activeInput: newActive,
@@ -101,6 +142,12 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
                 isRecording,
                 isExternal,
                 isMultiCorder,
+                inputs,
+                version: parsed.vmix.version,
+                edition: parsed.vmix.edition,
+                fps: fps || 0,
+                renderTime: renderTime || 0,
+                url: instance.url
             });
             if (!instance.isConnected) {
                 this.logger.log(`vMix connected/restored for production ${productionId}`);
@@ -113,10 +160,19 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
             });
             this.eventEmitter.emit('production.health.stats', {
                 productionId,
-                engineType: production_dto_1.EngineType.VMIX,
+                engineType: client_1.EngineType.VMIX,
+                cpuUsage: vmixCpu,
+                fps: fps || 0,
+                bitrate: isStreaming ? 4500 : 0,
+                skippedFrames: 0,
+                totalFrames: 0,
+                memoryUsage: 0,
                 isStreaming,
                 isRecording,
                 timestamp: new Date().toISOString(),
+                renderTime,
+                version: parsed.vmix.version,
+                edition: parsed.vmix.edition,
             });
         }
         catch (error) {
@@ -134,8 +190,23 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
             }
         }
     }
+    getVmixState(productionId) {
+        const instance = this.connections.get(productionId);
+        if (!instance)
+            return { isConnected: false };
+        return {
+            isConnected: instance.isConnected,
+            activeInput: instance.activeInput,
+            previewInput: instance.previewInput,
+            isStreaming: instance.isStreaming,
+            isRecording: instance.isRecording,
+            isExternal: instance.isExternal,
+            isMultiCorder: instance.isMultiCorder,
+            inputs: instance.inputs
+        };
+    }
     handleConnectionUpdate(payload) {
-        if (payload.type === production_dto_1.EngineType.VMIX) {
+        if (payload.type === client_1.EngineType.VMIX) {
             this.logger.log(`Received connection update for production ${payload.productionId} (vMix)`);
             this.connectVmix(payload.productionId, payload.url, payload.pollingInterval);
         }
@@ -147,9 +218,7 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
         const instance = this.connections.get(productionId);
         if (!instance)
             throw new Error('vMix connection is not active or enabled');
-        const apiUrl = instance.url.endsWith('/')
-            ? `${instance.url}api`
-            : `${instance.url}/api`;
+        const apiUrl = this.getApiUrl(instance.url);
         const stringParams = {};
         Object.entries(params).forEach(([key, val]) => {
             stringParams[key] = String(val);
@@ -158,7 +227,15 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
             Function: command,
             ...stringParams,
         }).toString();
-        await axios_1.default.get(`${apiUrl}?${query}`);
+        const fullUrl = `${apiUrl}?${query}`;
+        this.logger.debug(`Sending vMix command: ${fullUrl}`);
+        try {
+            await axios_1.default.get(fullUrl, { timeout: 2000 });
+        }
+        catch (e) {
+            this.logger.error(`vMix command failed: ${e.message} (URL: ${fullUrl})`);
+            throw e;
+        }
     }
 };
 exports.VmixConnectionManager = VmixConnectionManager;

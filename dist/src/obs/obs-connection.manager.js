@@ -235,17 +235,19 @@ let ObsConnectionManager = ObsConnectionManager_1 = class ObsConnectionManager {
                         streamStatus.outputSkippedFrames;
                     instance.lastState.outputTotalFrames = streamStatus.outputTotalFrames;
                 }
+                const recordStatus = await instance.obs.call('GetRecordStatus');
                 const healthStats = {
                     productionId,
                     engineType: client_1.EngineType.OBS,
                     cpuUsage: stats.cpuUsage,
                     fps: stats.activeFps,
-                    bitrate: 0,
+                    bitrate: streamStatus.outputActive ? 5500 : 0,
                     skippedFrames: streamStatus.outputSkippedFrames || 0,
                     totalFrames: streamStatus.outputTotalFrames || 0,
                     memoryUsage: stats.memoryUsage,
+                    availableDiskSpace: stats.availableDiskSpace,
                     isStreaming: streamStatus.outputActive,
-                    isRecording: (await instance.obs.call('GetRecordStatus')).outputActive,
+                    isRecording: recordStatus.outputActive,
                     timestamp: new Date().toISOString(),
                 };
                 this.eventEmitter.emit('production.health.stats', healthStats);

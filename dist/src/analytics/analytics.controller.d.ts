@@ -3,8 +3,8 @@ export declare class AnalyticsController {
     private readonly analyticsService;
     constructor(analyticsService: AnalyticsService);
     getTelemetry(id: string, minutes?: string): Promise<{
-        id: string;
         productionId: string;
+        id: string;
         isStreaming: boolean;
         isRecording: boolean;
         cpuUsage: number | null;
@@ -15,8 +15,8 @@ export declare class AnalyticsController {
         droppedFrames: number | null;
     }[]>;
     getReport(id: string): Promise<{
-        id: string;
         productionId: string;
+        id: string;
         durationMs: number | null;
         startTime: Date | null;
         endTime: Date | null;
@@ -26,8 +26,8 @@ export declare class AnalyticsController {
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
     } | null>;
     generateReport(id: string): Promise<{
-        id: string;
         productionId: string;
+        id: string;
         durationMs: number | null;
         startTime: Date | null;
         endTime: Date | null;

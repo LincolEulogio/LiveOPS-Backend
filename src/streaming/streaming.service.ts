@@ -25,16 +25,14 @@ export class StreamingService {
 
     let isConnected = false;
     let obsState = null;
-    const vmixState = null;
+    let vmixState = null;
 
     if (production.engineType === 'OBS') {
       obsState = await this.obsService.getRealTimeState(productionId);
       isConnected = obsState.isConnected;
     } else if (production.engineType === 'VMIX') {
-      isConnected = this.vmixService.isConnected(productionId);
-      // vMix polling automatically updates the store via events,
-      // but for initial load we might want to return last known if we had a cache.
-      // For now just returning connectivity.
+      vmixState = await this.vmixService.getRealTimeState(productionId);
+      isConnected = vmixState.isConnected;
     }
 
     return {

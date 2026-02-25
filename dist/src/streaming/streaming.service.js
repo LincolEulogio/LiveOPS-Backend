@@ -31,13 +31,14 @@ let StreamingService = class StreamingService {
             throw new common_1.NotFoundException('Production not found');
         let isConnected = false;
         let obsState = null;
-        const vmixState = null;
+        let vmixState = null;
         if (production.engineType === 'OBS') {
             obsState = await this.obsService.getRealTimeState(productionId);
             isConnected = obsState.isConnected;
         }
         else if (production.engineType === 'VMIX') {
-            isConnected = this.vmixService.isConnected(productionId);
+            vmixState = await this.vmixService.getRealTimeState(productionId);
+            isConnected = vmixState.isConnected;
         }
         return {
             productionId,
