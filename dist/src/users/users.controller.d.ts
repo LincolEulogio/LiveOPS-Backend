@@ -5,9 +5,9 @@ export declare class UsersController {
     constructor(usersService: UsersService);
     findAllUsers(): Promise<{
         id: string;
-        createdAt: Date;
-        name: string | null;
         email: string;
+        name: string | null;
+        createdAt: Date;
         updatedAt: Date;
         globalRoleId: string | null;
         globalRole: {
@@ -16,9 +16,9 @@ export declare class UsersController {
     }[]>;
     createUser(dto: CreateUserDto): Promise<{
         id: string;
-        createdAt: Date;
-        name: string | null;
         email: string;
+        name: string | null;
+        createdAt: Date;
         globalRoleId: string | null;
         globalRole: {
             name: string;
@@ -26,8 +26,8 @@ export declare class UsersController {
     }>;
     updateUser(id: string, dto: UpdateUserDto): Promise<{
         id: string;
-        name: string | null;
         email: string;
+        name: string | null;
         updatedAt: Date;
         globalRoleId: string | null;
         globalRole: {
@@ -43,9 +43,9 @@ export declare class UsersController {
             permission: {
                 id: string;
                 createdAt: Date;
-                action: string;
                 updatedAt: Date;
                 description: string | null;
+                action: string;
             };
         } & {
             roleId: string;
@@ -53,22 +53,22 @@ export declare class UsersController {
         })[];
     } & {
         id: string;
-        createdAt: Date;
         name: string;
+        createdAt: Date;
         updatedAt: Date;
         description: string | null;
     })[]>;
     createRole(dto: CreateRoleDto): Promise<{
         id: string;
-        createdAt: Date;
         name: string;
+        createdAt: Date;
         updatedAt: Date;
         description: string | null;
     }>;
     updateRole(id: string, dto: UpdateRoleDto): Promise<{
         id: string;
-        createdAt: Date;
         name: string;
+        createdAt: Date;
         updatedAt: Date;
         description: string | null;
     }>;
@@ -79,9 +79,9 @@ export declare class UsersController {
             permission: {
                 id: string;
                 createdAt: Date;
-                action: string;
                 updatedAt: Date;
                 description: string | null;
+                action: string;
             };
         } & {
             roleId: string;
@@ -89,23 +89,23 @@ export declare class UsersController {
         })[];
     } & {
         id: string;
-        createdAt: Date;
         name: string;
+        createdAt: Date;
         updatedAt: Date;
         description: string | null;
     }) | null>;
     deleteRole(id: string): Promise<{
         id: string;
-        createdAt: Date;
         name: string;
+        createdAt: Date;
         updatedAt: Date;
         description: string | null;
     }>;
     findAllPermissions(): Promise<{
         id: string;
         createdAt: Date;
-        action: string;
         updatedAt: Date;
         description: string | null;
+        action: string;
     }[]>;
 }
