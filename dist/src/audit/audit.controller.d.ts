@@ -6,8 +6,8 @@ export declare class AuditController {
         id: string;
         createdAt: Date;
         productionId: string;
-        eventType: string;
         details: import("@prisma/client/runtime/client").JsonValue | null;
+        eventType: string;
     }[] | ({
         user: {
             id: string;
@@ -26,8 +26,8 @@ export declare class AuditController {
         id: string;
         createdAt: Date;
         productionId: string;
-        eventType: string;
         details: import("@prisma/client/runtime/client").JsonValue | null;
+        eventType: string;
     }[] | ({
         user: {
             id: string;

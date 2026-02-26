@@ -12,8 +12,8 @@ export declare class WebhooksController {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         url: string;
+        productionId: string;
         isEnabled: boolean;
         platform: string;
     }[]>;
@@ -26,8 +26,8 @@ export declare class WebhooksController {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         url: string;
+        productionId: string;
         isEnabled: boolean;
         platform: string;
     }>;
@@ -40,8 +40,8 @@ export declare class WebhooksController {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         url: string;
+        productionId: string;
         isEnabled: boolean;
         platform: string;
     }>;
@@ -50,8 +50,8 @@ export declare class WebhooksController {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         url: string;
+        productionId: string;
         isEnabled: boolean;
         platform: string;
     }>;
@@ -61,8 +61,8 @@ export declare class WebhooksController {
     subscribe(req: any, subscription: CreateSubscriptionDto): Promise<{
         id: string;
         createdAt: Date;
-        userId: string;
         endpoint: string;
+        userId: string;
         p256dh: string;
         auth: string;
     } | null>;

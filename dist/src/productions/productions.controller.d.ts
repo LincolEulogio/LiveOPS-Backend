@@ -19,8 +19,8 @@ export declare class ProductionsController {
         deletedAt: Date | null;
         tenantId: string | null;
         description: string | null;
-        status: import("@prisma/client").$Enums.ProductionStatus;
         engineType: import("@prisma/client").$Enums.EngineType;
+        status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
         publicStatusEnabled: boolean;
     }>;
@@ -50,9 +50,9 @@ export declare class ProductionsController {
             } & {
                 createdAt: Date;
                 updatedAt: Date;
+                productionId: string;
                 roleId: string;
                 userId: string;
-                productionId: string;
             })[];
         } & {
             id: string;
@@ -62,8 +62,8 @@ export declare class ProductionsController {
             deletedAt: Date | null;
             tenantId: string | null;
             description: string | null;
-            status: import("@prisma/client").$Enums.ProductionStatus;
             engineType: import("@prisma/client").$Enums.EngineType;
+            status: import("@prisma/client").$Enums.ProductionStatus;
             isRehearsal: boolean;
             publicStatusEnabled: boolean;
         })[];
@@ -91,25 +91,25 @@ export declare class ProductionsController {
         } & {
             createdAt: Date;
             updatedAt: Date;
+            productionId: string;
             roleId: string;
             userId: string;
-            productionId: string;
         })[];
         obsConnection: {
             id: string;
             password: string | null;
             createdAt: Date;
             updatedAt: Date;
-            productionId: string;
             url: string;
+            productionId: string;
             isEnabled: boolean;
         } | null;
         vmixConnection: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            productionId: string;
             url: string;
+            productionId: string;
             isEnabled: boolean;
             pollingInterval: number;
         } | null;
@@ -121,8 +121,8 @@ export declare class ProductionsController {
         deletedAt: Date | null;
         tenantId: string | null;
         description: string | null;
-        status: import("@prisma/client").$Enums.ProductionStatus;
         engineType: import("@prisma/client").$Enums.EngineType;
+        status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
         publicStatusEnabled: boolean;
     }>;
@@ -134,8 +134,8 @@ export declare class ProductionsController {
         deletedAt: Date | null;
         tenantId: string | null;
         description: string | null;
-        status: import("@prisma/client").$Enums.ProductionStatus;
         engineType: import("@prisma/client").$Enums.EngineType;
+        status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
         publicStatusEnabled: boolean;
     }>;
@@ -147,8 +147,8 @@ export declare class ProductionsController {
         deletedAt: Date | null;
         tenantId: string | null;
         description: string | null;
-        status: import("@prisma/client").$Enums.ProductionStatus;
         engineType: import("@prisma/client").$Enums.EngineType;
+        status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
         publicStatusEnabled: boolean;
     }>;
@@ -168,16 +168,16 @@ export declare class ProductionsController {
     } & {
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
         roleId: string;
         userId: string;
-        productionId: string;
     }>;
     removeUser(id: string, userId: string): Promise<{
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
         roleId: string;
         userId: string;
-        productionId: string;
     }>;
     remove(id: string): Promise<{
         id: string;
@@ -187,8 +187,8 @@ export declare class ProductionsController {
         deletedAt: Date | null;
         tenantId: string | null;
         description: string | null;
-        status: import("@prisma/client").$Enums.ProductionStatus;
         engineType: import("@prisma/client").$Enums.EngineType;
+        status: import("@prisma/client").$Enums.ProductionStatus;
         isRehearsal: boolean;
         publicStatusEnabled: boolean;
     }>;

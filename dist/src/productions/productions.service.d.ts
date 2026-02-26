@@ -94,16 +94,16 @@ export declare class ProductionsService {
             password: string | null;
             createdAt: Date;
             updatedAt: Date;
-            productionId: string;
             url: string;
+            productionId: string;
             isEnabled: boolean;
         } | null;
         vmixConnection: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            productionId: string;
             url: string;
+            productionId: string;
             isEnabled: boolean;
             pollingInterval: number;
         } | null;

@@ -3,11 +3,11 @@ export declare class SocialController {
     private readonly socialService;
     constructor(socialService: SocialService);
     getMessages(productionId: string, status?: string): Promise<{
-        id: string;
         productionId: string;
+        id: string;
+        timestamp: Date;
         status: string;
         platform: string;
-        timestamp: Date;
         author: string;
         authorAvatar: string | null;
         content: string;
@@ -22,11 +22,11 @@ export declare class SocialController {
         avatarUrl?: string;
         externalId?: string;
     }): Promise<{
-        id: string;
         productionId: string;
+        id: string;
+        timestamp: Date;
         status: string;
         platform: string;
-        timestamp: Date;
         author: string;
         authorAvatar: string | null;
         content: string;
@@ -35,11 +35,11 @@ export declare class SocialController {
         aiCategory: string | null;
     }>;
     updateStatus(productionId: string, id: string, status: string): Promise<{
-        id: string;
         productionId: string;
+        id: string;
+        timestamp: Date;
         status: string;
         platform: string;
-        timestamp: Date;
         author: string;
         authorAvatar: string | null;
         content: string;
@@ -51,37 +51,37 @@ export declare class SocialController {
         question: string;
         options: string[];
     }): Promise<{
+        productionId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isActive: boolean;
         question: string;
         options: import("@prisma/client/runtime/client").JsonValue;
     }>;
     getActivePoll(productionId: string): Promise<{
+        productionId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isActive: boolean;
         question: string;
         options: import("@prisma/client/runtime/client").JsonValue;
     } | null>;
     votePoll(id: string, optionId: string): Promise<{
+        productionId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isActive: boolean;
         question: string;
         options: import("@prisma/client/runtime/client").JsonValue;
     }>;
     closePoll(productionId: string, id: string): Promise<{
+        productionId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isActive: boolean;
         question: string;
         options: import("@prisma/client/runtime/client").JsonValue;

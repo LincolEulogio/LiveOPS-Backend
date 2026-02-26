@@ -12,10 +12,10 @@ export declare class UsersService implements OnModuleInit {
         permissions: ({
             permission: {
                 id: string;
-                action: string;
-                description: string | null;
                 createdAt: Date;
                 updatedAt: Date;
+                description: string | null;
+                action: string;
             };
         } & {
             roleId: string;
@@ -23,17 +23,17 @@ export declare class UsersService implements OnModuleInit {
         })[];
     } & {
         id: string;
-        description: string | null;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        description: string | null;
     }) | null>;
     findAllUsers(): Promise<{
         id: string;
+        email: string;
+        name: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string | null;
-        email: string;
         globalRoleId: string | null;
         globalRole: {
             name: string;
@@ -41,9 +41,9 @@ export declare class UsersService implements OnModuleInit {
     }[]>;
     createUser(dto: CreateUserDto): Promise<{
         id: string;
-        createdAt: Date;
-        name: string | null;
         email: string;
+        name: string | null;
+        createdAt: Date;
         globalRoleId: string | null;
         globalRole: {
             name: string;
@@ -51,9 +51,9 @@ export declare class UsersService implements OnModuleInit {
     }>;
     updateUser(id: string, dto: UpdateUserDto): Promise<{
         id: string;
-        updatedAt: Date;
-        name: string | null;
         email: string;
+        name: string | null;
+        updatedAt: Date;
         globalRoleId: string | null;
         globalRole: {
             name: string;
@@ -67,10 +67,10 @@ export declare class UsersService implements OnModuleInit {
         permissions: ({
             permission: {
                 id: string;
-                action: string;
-                description: string | null;
                 createdAt: Date;
                 updatedAt: Date;
+                description: string | null;
+                action: string;
             };
         } & {
             roleId: string;
@@ -78,37 +78,37 @@ export declare class UsersService implements OnModuleInit {
         })[];
     } & {
         id: string;
-        description: string | null;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        description: string | null;
     })[]>;
     createRole(dto: CreateRoleDto): Promise<{
         id: string;
-        description: string | null;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        description: string | null;
     }>;
     updateRole(id: string, dto: UpdateRoleDto): Promise<{
         id: string;
-        description: string | null;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        description: string | null;
     }>;
     deleteRole(id: string): Promise<{
         id: string;
-        description: string | null;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
+        description: string | null;
     }>;
     findAllPermissions(): Promise<{
         id: string;
-        action: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
+        action: string;
     }[]>;
 }

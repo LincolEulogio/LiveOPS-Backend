@@ -10,14 +10,27 @@ export class AiService implements OnModuleInit {
 
     constructor(private configService: ConfigService) { }
 
-    onModuleInit() {
-        const apiKey = this.configService.get<string>('GEMINI_API_KEY');
+    async onModuleInit() {
+        const rawApiKey = this.configService.get<string>('GEMINI_API_KEY');
+        const apiKey = rawApiKey?.replace(/["']/g, '').trim();
+
         if (!apiKey) {
             this.logger.warn('GEMINI_API_KEY not found in environment variables. AI features will be disabled.');
             return;
         }
-        this.genAI = new GoogleGenerativeAI(apiKey);
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+        try {
+            this.genAI = new GoogleGenerativeAI(apiKey);
+            // Según las métricas que envías, 'gemini-2.5-flash' es el que tiene actividad (4/5 RPM).
+            // En este contexto de 2026, usaremos ese modelo que es el que tu cuenta reconoce.
+            this.model = this.genAI.getGenerativeModel(
+                { model: 'gemini-2.5-flash' },
+                { apiVersion: 'v1' }
+            );
+            this.logger.log(`LIVIA AI Node synchronized: gemini-2.5-flash (2026 Series)`);
+        } catch (error: any) {
+            this.logger.error(`AI initialization failed: ${error.message}`);
+        }
     }
 
     async generateText(prompt: string): Promise<string> {
@@ -27,11 +40,17 @@ export class AiService implements OnModuleInit {
         }
 
         try {
+            this.logger.debug(`Generating text for prompt: ${prompt.substring(0, 100)}...`);
             const result = await this.model.generateContent(prompt);
             const response = await result.response;
-            return response.text();
+            const text = response.text();
+            this.logger.debug(`Successfully generated ${text.length} characters.`);
+            return text;
         } catch (error: any) {
-            this.logger.error('Error generating text with Gemini:', error.message || error);
+            this.logger.error(`AI Core Failure: ${error.message}`);
+            if (error.response) {
+                this.logger.error(`Response details: ${JSON.stringify(error.response.data)}`);
+            }
             throw new InternalServerErrorException(`LIVIA Intelligence error: ${error.message || 'Unknown provider error'}`);
         }
     }
