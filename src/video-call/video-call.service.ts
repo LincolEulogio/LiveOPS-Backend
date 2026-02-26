@@ -64,6 +64,13 @@ export class VideoCallService {
         }
     }
 
+    async findByRoomId(roomId: string) {
+        return this.prisma.videoCall.findUnique({
+            where: { roomId },
+            include: { host: { select: { id: true, name: true, email: true } } },
+        });
+    }
+
     async findAll() {
         return this.prisma.videoCall.findMany({
             where: { status: { not: 'ended' } },

@@ -48,7 +48,20 @@ export class VideoCallController {
     @Post('rooms/by-room/:roomId/join')
     async joinByRoomId(@Param('roomId') roomId: string, @Body('name') name: string, @CurrentUser() user: any) {
         const identity = user?.userId || user?.id || user?.sub;
-        const token = await this.videoCallService.generateJoinToken(roomId, identity, name || user?.name || 'Participant', false);
-        return { token, url: this.videoCallService.getLiveKitUrl(), roomId };
+        const call = await this.videoCallService.findByRoomId(roomId);
+        const isHost = call ? call.hostId === identity : false;
+        const token = await this.videoCallService.generateJoinToken(roomId, identity, name || user?.name || 'Participant', isHost);
+        return { token, url: this.videoCallService.getLiveKitUrl(), roomId, isHost };
+    }
+
+    /** End a room explicitly */
+    @Post('rooms/by-room/:roomId/end')
+    async endRoom(@Param('roomId') roomId: string, @CurrentUser() user: any) {
+        const identity = user?.userId || user?.id || user?.sub;
+        const call = await this.videoCallService.findByRoomId(roomId);
+        if (call && call.hostId === identity) {
+            await this.videoCallService.update(call.id, { status: 'ended' });
+        }
+        return { success: true };
     }
 }
