@@ -6,21 +6,21 @@ export declare class TimelineController {
     getBlocks(productionId: string): Promise<({
         intercomTemplate: {
             id: string;
-            productionId: string;
-            createdAt: Date;
             name: string;
+            createdAt: Date;
             updatedAt: Date;
             description: string | null;
+            productionId: string;
             icon: string | null;
             color: string | null;
         } | null;
     } & {
         id: string;
-        productionId: string;
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
+        productionId: string;
         title: string;
         durationMs: number;
         order: number;
@@ -33,11 +33,11 @@ export declare class TimelineController {
     })[]>;
     createBlock(productionId: string, dto: CreateTimelineBlockDto): Promise<{
         id: string;
-        productionId: string;
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
+        productionId: string;
         title: string;
         durationMs: number;
         order: number;
@@ -53,11 +53,11 @@ export declare class TimelineController {
     }>;
     updateBlock(productionId: string, id: string, dto: UpdateTimelineBlockDto): Promise<{
         id: string;
-        productionId: string;
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
+        productionId: string;
         title: string;
         durationMs: number;
         order: number;
@@ -73,11 +73,11 @@ export declare class TimelineController {
     }>;
     startBlock(productionId: string, id: string): Promise<{
         id: string;
-        productionId: string;
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
+        productionId: string;
         title: string;
         durationMs: number;
         order: number;
@@ -90,11 +90,11 @@ export declare class TimelineController {
     }>;
     completeBlock(productionId: string, id: string): Promise<{
         id: string;
-        productionId: string;
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
+        productionId: string;
         title: string;
         durationMs: number;
         order: number;
@@ -107,11 +107,11 @@ export declare class TimelineController {
     }>;
     resetBlock(productionId: string, id: string): Promise<{
         id: string;
-        productionId: string;
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
+        productionId: string;
         title: string;
         durationMs: number;
         order: number;

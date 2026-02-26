@@ -10,18 +10,18 @@ export declare class VmixService {
     constructor(prisma: PrismaService, vmixManager: VmixConnectionManager, auditService: AuditService);
     saveConnection(productionId: string, dto: SaveVmixConnectionDto): Promise<{
         id: string;
-        productionId: string;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
         url: string;
         isEnabled: boolean;
         pollingInterval: number;
     }>;
     getConnection(productionId: string): Promise<{
         id: string;
-        productionId: string;
         createdAt: Date;
         updatedAt: Date;
+        productionId: string;
         url: string;
         isEnabled: boolean;
         pollingInterval: number;

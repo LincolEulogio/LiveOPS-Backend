@@ -33,11 +33,11 @@ export declare class AuditService {
         } | null;
     } & {
         id: string;
-        productionId: string;
-        userId: string | null;
-        eventType: string;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
         createdAt: Date;
+        userId: string | null;
+        productionId: string;
+        details: import("@prisma/client/runtime/client").JsonValue | null;
+        eventType: string;
     })[] | ({
         user: {
             id: string;
@@ -46,10 +46,10 @@ export declare class AuditService {
         } | null;
     } & {
         id: string;
-        userId: string | null;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
         createdAt: Date;
         action: string;
+        userId: string | null;
+        details: import("@prisma/client/runtime/client").JsonValue | null;
         ipAddress: string | null;
     })[]>;
 }

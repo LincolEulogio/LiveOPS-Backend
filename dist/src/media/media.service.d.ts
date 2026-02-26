@@ -1,18 +1,47 @@
-import { OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '@/prisma/prisma.service';
+import { AssetType } from '@prisma/client';
 export interface MediaAsset {
     id: string;
     name: string;
-    type: 'video' | 'audio' | 'image';
-    path: string;
+    url: string;
+    type: AssetType;
     size: number;
-    extension: string;
+    mimeType: string;
+    productionId: string;
+    createdAt: Date;
 }
-export declare class MediaService implements OnModuleInit {
-    private configService;
+export declare class MediaService {
+    private prisma;
     private readonly logger;
-    private assetsDir;
-    constructor(configService: ConfigService);
-    onModuleInit(): void;
-    getAssets(): Promise<MediaAsset[]>;
+    constructor(prisma: PrismaService);
+    getAssets(productionId: string): Promise<MediaAsset[]>;
+    saveAsset(data: {
+        name: string;
+        url: string;
+        type: AssetType;
+        size: number;
+        mimeType: string;
+        productionId: string;
+    }): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productionId: string;
+        url: string;
+        type: import("@prisma/client").$Enums.AssetType;
+        size: number;
+        mimeType: string;
+    }>;
+    deleteAsset(id: string, productionId: string): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productionId: string;
+        url: string;
+        type: import("@prisma/client").$Enums.AssetType;
+        size: number;
+        mimeType: string;
+    }>;
 }

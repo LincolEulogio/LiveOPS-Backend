@@ -1,66 +1,62 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '@/prisma/prisma.service';
+import { AssetType } from '@prisma/client';
 
 export interface MediaAsset {
     id: string;
     name: string;
-    type: 'video' | 'audio' | 'image';
-    path: string;
+    url: string;
+    type: AssetType;
     size: number;
-    extension: string;
+    mimeType: string;
+    productionId: string;
+    createdAt: Date;
 }
 
 @Injectable()
-export class MediaService implements OnModuleInit {
+export class MediaService {
     private readonly logger = new Logger(MediaService.name);
-    private assetsDir: string;
 
-    constructor(private configService: ConfigService) {
-        this.assetsDir = this.configService.get<string>('ASSETS_DIR') || path.join(process.cwd(), 'assets');
-    }
+    constructor(private prisma: PrismaService) {}
 
-    onModuleInit() {
-        if (!fs.existsSync(this.assetsDir)) {
-            this.logger.log(`Creating assets directory at ${this.assetsDir}`);
-            fs.mkdirSync(this.assetsDir, { recursive: true });
+    async getAssets(productionId: string): Promise<MediaAsset[]> {
+        try {
+            return await this.prisma.mediaAsset.findMany({
+                where: { productionId },
+                orderBy: { createdAt: 'desc' },
+            });
+        } catch (err) {
+            this.logger.error(`Failed to fetch assets for production ${productionId}: ${err.message}`);
+            return [];
         }
     }
 
-    async getAssets(): Promise<MediaAsset[]> {
+    async saveAsset(data: {
+        name: string;
+        url: string;
+        type: AssetType;
+        size: number;
+        mimeType: string;
+        productionId: string;
+    }) {
         try {
-            const files = await fs.promises.readdir(this.assetsDir);
-            const assets: MediaAsset[] = [];
-
-            for (const file of files) {
-                const filePath = path.join(this.assetsDir, file);
-                const stats = await fs.promises.stat(filePath);
-
-                if (stats.isFile()) {
-                    const ext = path.extname(file).toLowerCase();
-                    let type: 'video' | 'audio' | 'image' = 'video';
-
-                    if (['.mp4', '.mkv', '.mov'].includes(ext)) type = 'video';
-                    else if (['.mp3', '.wav', '.aac'].includes(ext)) type = 'audio';
-                    else if (['.jpg', '.png', '.gif', '.webp'].includes(ext)) type = 'image';
-                    else continue; // Skip unsupported types
-
-                    assets.push({
-                        id: Buffer.from(file).toString('base64'),
-                        name: file,
-                        type,
-                        path: filePath,
-                        size: stats.size,
-                        extension: ext,
-                    });
-                }
-            }
-
-            return assets;
+            return await this.prisma.mediaAsset.create({
+                data,
+            });
         } catch (err) {
-            this.logger.error(`Failed to read assets directory: ${err.message}`);
-            return [];
+            this.logger.error(`Failed to save asset: ${err.message}`);
+            throw err;
+        }
+    }
+
+    async deleteAsset(id: string, productionId: string) {
+        try {
+            return await this.prisma.mediaAsset.delete({
+                where: { id, productionId },
+            });
+        } catch (err) {
+            this.logger.error(`Failed to delete asset ${id}: ${err.message}`);
+            throw err;
         }
     }
 }
