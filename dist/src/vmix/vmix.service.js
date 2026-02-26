@@ -14,13 +14,16 @@ exports.VmixService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const vmix_connection_manager_1 = require("./vmix-connection.manager");
+const audit_service_1 = require("../common/services/audit.service");
 let VmixService = VmixService_1 = class VmixService {
     prisma;
     vmixManager;
+    auditService;
     logger = new common_1.Logger(VmixService_1.name);
-    constructor(prisma, vmixManager) {
+    constructor(prisma, vmixManager, auditService) {
         this.prisma = prisma;
         this.vmixManager = vmixManager;
+        this.auditService = auditService;
     }
     async saveConnection(productionId, dto) {
         const connection = await this.prisma.vmixConnection.upsert({
@@ -64,6 +67,11 @@ let VmixService = VmixService_1 = class VmixService {
             await this.vmixManager.sendCommand(productionId, 'PreviewInput', {
                 Input: dto.input,
             });
+            this.auditService.log({
+                productionId,
+                action: audit_service_1.AuditAction.SCENE_CHANGE,
+                details: { engine: 'vmix', input: dto.input, target: 'preview' }
+            });
             return { success: true, input: dto.input, action: 'preview' };
         }
         catch (e) {
@@ -75,6 +83,11 @@ let VmixService = VmixService_1 = class VmixService {
     async cut(productionId) {
         try {
             await this.vmixManager.sendCommand(productionId, 'Cut');
+            this.auditService.log({
+                productionId,
+                action: audit_service_1.AuditAction.SCENE_CHANGE,
+                details: { engine: 'vmix', action: 'cut', target: 'program' }
+            });
             return { success: true, action: 'cut' };
         }
         catch (e) {
@@ -87,6 +100,11 @@ let VmixService = VmixService_1 = class VmixService {
         try {
             const params = dto?.duration ? { Duration: dto.duration } : undefined;
             await this.vmixManager.sendCommand(productionId, 'Fade', params);
+            this.auditService.log({
+                productionId,
+                action: audit_service_1.AuditAction.SCENE_CHANGE,
+                details: { engine: 'vmix', action: 'fade', duration: dto?.duration, target: 'program' }
+            });
             return { success: true, action: 'fade', duration: dto?.duration };
         }
         catch (e) {
@@ -113,6 +131,7 @@ exports.VmixService = VmixService;
 exports.VmixService = VmixService = VmixService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        vmix_connection_manager_1.VmixConnectionManager])
+        vmix_connection_manager_1.VmixConnectionManager,
+        audit_service_1.AuditService])
 ], VmixService);
 //# sourceMappingURL=vmix.service.js.map

@@ -33,6 +33,8 @@ export declare class VmixConnectionManager implements OnModuleInit, OnModuleDest
         isExternal?: undefined;
         isMultiCorder?: undefined;
         inputs?: undefined;
+        lastHeartbeat?: undefined;
+        lastLatency?: undefined;
     } | {
         isConnected: boolean;
         activeInput: number | undefined;
@@ -42,6 +44,8 @@ export declare class VmixConnectionManager implements OnModuleInit, OnModuleDest
         isExternal: boolean;
         isMultiCorder: boolean;
         inputs: VmixInput[];
+        lastHeartbeat: string | undefined;
+        lastLatency: number | undefined;
     };
     handleConnectionUpdate(payload: {
         productionId: string;

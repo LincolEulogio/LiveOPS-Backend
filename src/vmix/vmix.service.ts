@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '@/prisma/prisma.service';
 import { VmixConnectionManager } from '@/vmix/vmix-connection.manager';
 import { SaveVmixConnectionDto, ChangeInputDto } from '@/vmix/dto/vmix.dto';
+import { AuditService, AuditAction } from '@/common/services/audit.service';
 
 @Injectable()
 export class VmixService {
@@ -15,6 +16,7 @@ export class VmixService {
   constructor(
     private prisma: PrismaService,
     private vmixManager: VmixConnectionManager,
+    private auditService: AuditService,
   ) { }
 
   async saveConnection(productionId: string, dto: SaveVmixConnectionDto) {
@@ -73,6 +75,14 @@ export class VmixService {
       await this.vmixManager.sendCommand(productionId, 'PreviewInput', {
         Input: dto.input,
       });
+
+      // Audit Trail
+      this.auditService.log({
+        productionId,
+        action: AuditAction.SCENE_CHANGE,
+        details: { engine: 'vmix', input: dto.input, target: 'preview' }
+      });
+
       return { success: true, input: dto.input, action: 'preview' };
     } catch (e: unknown) {
       const error = e as Error;
@@ -85,6 +95,14 @@ export class VmixService {
     try {
       // Triggers whatever is in Preview to cut to Active
       await this.vmixManager.sendCommand(productionId, 'Cut');
+
+      // Audit Trail
+      this.auditService.log({
+        productionId,
+        action: AuditAction.SCENE_CHANGE,
+        details: { engine: 'vmix', action: 'cut', target: 'program' }
+      });
+
       return { success: true, action: 'cut' };
     } catch (e: unknown) {
       const error = e as Error;
@@ -98,6 +116,14 @@ export class VmixService {
       // Triggers a fade transition from Preview to Active
       const params = dto?.duration ? { Duration: dto.duration } : undefined;
       await this.vmixManager.sendCommand(productionId, 'Fade', params);
+
+      // Audit Trail
+      this.auditService.log({
+        productionId,
+        action: AuditAction.SCENE_CHANGE,
+        details: { engine: 'vmix', action: 'fade', duration: dto?.duration, target: 'program' }
+      });
+
       return { success: true, action: 'fade', duration: dto?.duration };
     } catch (e: unknown) {
       const error = e as Error;

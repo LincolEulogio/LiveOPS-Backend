@@ -15,6 +15,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { IntercomService } from '@/intercom/intercom.service';
 import { ChatService } from '@/chat/chat.service';
 import { ScriptService } from '@/script/script.service';
+import { SocketEvents } from '@/common/socket-events';
 import type { WebRTCSignalPayload, PresenceMember } from '@/common/types/webrtc.types';
 
 
@@ -129,7 +130,12 @@ export class EventsGateway
     return { status: 'ok', messageId: message.id };
   }
 
-  @SubscribeMessage('production.join')
+  @SubscribeMessage(SocketEvents.TIME_SYNC)
+  handleTimeSync() {
+    return { serverTime: new Date().toISOString() };
+  }
+
+  @SubscribeMessage(SocketEvents.PRODUCTION_JOIN)
   async handleProductionJoin(
     @MessageBody() data: { productionId: string },
     @ConnectedSocket() client: Socket,
@@ -264,6 +270,20 @@ export class EventsGateway
       isTalking: data.isTalking,
       targetUserId: data.targetUserId || null,
       senderRoleName: senderRoleName || 'Viewer'
+    });
+  }
+
+  @SubscribeMessage(SocketEvents.WEBRTC_AUDIO_LEVEL)
+  handleWebRTCAudioLevel(
+    @MessageBody()
+    data: { productionId: string; level: number },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const senderUserId = client.handshake.query.userId as string;
+    // Broadcast to room so others can see VU meters
+    client.to(`production_${data.productionId}`).emit(SocketEvents.WEBRTC_AUDIO_LEVEL_RECEIVED, {
+      senderUserId,
+      level: data.level
     });
   }
 

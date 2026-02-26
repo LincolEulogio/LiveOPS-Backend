@@ -25,6 +25,9 @@ var AuditAction;
     AuditAction["INSTANT_CLIP"] = "INSTANT_CLIP";
     AuditAction["USER_LOGIN"] = "USER_LOGIN";
     AuditAction["SYSTEM_ALERT"] = "SYSTEM_ALERT";
+    AuditAction["TIMELINE_START"] = "TIMELINE_START";
+    AuditAction["TIMELINE_COMPLETE"] = "TIMELINE_COMPLETE";
+    AuditAction["TIMELINE_RESET"] = "TIMELINE_RESET";
 })(AuditAction || (exports.AuditAction = AuditAction = {}));
 let AuditService = AuditService_1 = class AuditService {
     prisma;

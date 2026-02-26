@@ -14,13 +14,16 @@ exports.TimelineService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const event_emitter_1 = require("@nestjs/event-emitter");
+const audit_service_1 = require("../common/services/audit.service");
 let TimelineService = TimelineService_1 = class TimelineService {
     prisma;
     eventEmitter;
+    auditService;
     logger = new common_1.Logger(TimelineService_1.name);
-    constructor(prisma, eventEmitter) {
+    constructor(prisma, eventEmitter, auditService) {
         this.prisma = prisma;
         this.eventEmitter = eventEmitter;
+        this.auditService = auditService;
     }
     async getBlocks(productionId) {
         return this.prisma.timelineBlock.findMany({
@@ -96,6 +99,11 @@ let TimelineService = TimelineService_1 = class TimelineService {
             blockId: block.id,
             linkedScene: block.linkedScene,
         });
+        await this.auditService.log({
+            productionId,
+            action: audit_service_1.AuditAction.TIMELINE_START,
+            details: { blockId: block.id, title: block.title, scene: block.linkedScene }
+        });
         this.eventEmitter.emit('overlay.broadcast_data', {
             productionId,
             data: {
@@ -122,6 +130,11 @@ let TimelineService = TimelineService_1 = class TimelineService {
             },
         });
         this.emitTimelineUpdated(productionId);
+        await this.auditService.log({
+            productionId,
+            action: audit_service_1.AuditAction.TIMELINE_COMPLETE,
+            details: { blockId: block.id, title: block.title }
+        });
         return updated;
     }
     async resetBlock(id, productionId) {
@@ -139,6 +152,11 @@ let TimelineService = TimelineService_1 = class TimelineService {
             },
         });
         this.emitTimelineUpdated(productionId);
+        await this.auditService.log({
+            productionId,
+            action: audit_service_1.AuditAction.TIMELINE_RESET,
+            details: { blockId: block.id, title: block.title }
+        });
         return updated;
     }
     emitTimelineUpdated(productionId) {
@@ -149,6 +167,7 @@ exports.TimelineService = TimelineService;
 exports.TimelineService = TimelineService = TimelineService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        event_emitter_1.EventEmitter2])
+        event_emitter_1.EventEmitter2,
+        audit_service_1.AuditService])
 ], TimelineService);
 //# sourceMappingURL=timeline.service.js.map

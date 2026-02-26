@@ -33,6 +33,8 @@ export declare class StreamingService {
             isExternal?: undefined;
             isMultiCorder?: undefined;
             inputs?: undefined;
+            lastHeartbeat?: undefined;
+            lastLatency?: undefined;
         } | {
             isConnected: boolean;
             activeInput: number | undefined;
@@ -42,6 +44,8 @@ export declare class StreamingService {
             isExternal: boolean;
             isMultiCorder: boolean;
             inputs: import("../vmix/vmix-connection.manager").VmixInput[];
+            lastHeartbeat: string | undefined;
+            lastLatency: number | undefined;
         } | null;
         lastUpdate: string;
     }>;

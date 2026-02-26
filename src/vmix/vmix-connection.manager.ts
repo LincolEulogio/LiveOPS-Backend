@@ -32,6 +32,8 @@ interface VmixInstance {
   inputs: VmixInput[];
   pollingFailureCount: number;
   isConnected: boolean;
+  lastHeartbeat?: string;
+  lastLatency?: number;
 }
 
 @Injectable()
@@ -137,7 +139,9 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
   private async pollApi(productionId: string, instance: VmixInstance) {
     try {
       const apiUrl = this.getApiUrl(instance.url);
+      const startTime = Date.now();
       const response = await axios.get(apiUrl, { timeout: 1200 }); // Slightly longer timeout
+      const latency = Date.now() - startTime;
 
       const xml = response.data;
       const parsed = await parseStringPromise(xml, { explicitArray: false });
@@ -182,6 +186,8 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
       instance.isExternal = isExternal;
       instance.isMultiCorder = isMultiCorder;
       instance.inputs = inputs;
+      instance.lastHeartbeat = new Date().toISOString();
+      instance.lastLatency = latency;
 
       // Only emit change if actual data changed to save bandwidth and prevent UI flickering
       const hasChanged =
@@ -231,10 +237,11 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
         memoryUsage: 0,
         isStreaming,
         isRecording,
-        timestamp: new Date().toISOString(),
+        timestamp: instance.lastHeartbeat,
         renderTime,
         version: parsed.vmix.version,
         edition: parsed.vmix.edition,
+        latency: instance.lastLatency,
       });
     } catch (error: any) {
       instance.pollingFailureCount++;
@@ -271,7 +278,9 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
       isRecording: instance.isRecording,
       isExternal: instance.isExternal,
       isMultiCorder: instance.isMultiCorder,
-      inputs: instance.inputs
+      inputs: instance.inputs,
+      lastHeartbeat: instance.lastHeartbeat,
+      lastLatency: instance.lastLatency
     };
   }
 

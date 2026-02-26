@@ -4,42 +4,42 @@ export declare class AuditController {
     constructor(auditService: AuditService);
     getGlobalLogs(limit?: string, page?: string): Promise<{
         id: string;
-        createdAt: Date;
         productionId: string;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
         eventType: string;
+        details: import("@prisma/client/runtime/client").JsonValue | null;
+        createdAt: Date;
     }[] | ({
         user: {
             id: string;
-            email: string;
             name: string | null;
+            email: string;
         } | null;
     } & {
         id: string;
-        createdAt: Date;
-        action: string;
-        userId: string | null;
         details: import("@prisma/client/runtime/client").JsonValue | null;
+        createdAt: Date;
+        userId: string | null;
+        action: string;
         ipAddress: string | null;
     })[]>;
     getProductionLogs(productionId: string, limit?: string, page?: string): Promise<{
         id: string;
-        createdAt: Date;
         productionId: string;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
         eventType: string;
+        details: import("@prisma/client/runtime/client").JsonValue | null;
+        createdAt: Date;
     }[] | ({
         user: {
             id: string;
-            email: string;
             name: string | null;
+            email: string;
         } | null;
     } & {
         id: string;
-        createdAt: Date;
-        action: string;
-        userId: string | null;
         details: import("@prisma/client/runtime/client").JsonValue | null;
+        createdAt: Date;
+        userId: string | null;
+        action: string;
         ipAddress: string | null;
     })[]>;
 }

@@ -10,6 +10,7 @@ import {
   CreateTimelineBlockDto,
   UpdateTimelineBlockDto,
 } from '@/timeline/dto/timeline.dto';
+import { AuditService, AuditAction } from '@/common/services/audit.service';
 
 @Injectable()
 export class TimelineService {
@@ -18,6 +19,7 @@ export class TimelineService {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
+    private auditService: AuditService,
   ) { }
 
   // --- CRUD Operations --- //
@@ -118,6 +120,13 @@ export class TimelineService {
       linkedScene: block.linkedScene,
     });
 
+    // Audit Trail
+    await this.auditService.log({
+      productionId,
+      action: AuditAction.TIMELINE_START,
+      details: { blockId: block.id, title: block.title, scene: block.linkedScene }
+    });
+
     // Broadcast data for Overlays
     this.eventEmitter.emit('overlay.broadcast_data', {
       productionId,
@@ -148,6 +157,14 @@ export class TimelineService {
     });
 
     this.emitTimelineUpdated(productionId);
+
+    // Audit Trail
+    await this.auditService.log({
+      productionId,
+      action: AuditAction.TIMELINE_COMPLETE,
+      details: { blockId: block.id, title: block.title }
+    });
+
     return updated;
   }
 
@@ -167,6 +184,14 @@ export class TimelineService {
     });
 
     this.emitTimelineUpdated(productionId);
+
+    // Audit Trail
+    await this.auditService.log({
+      productionId,
+      action: AuditAction.TIMELINE_RESET,
+      details: { blockId: block.id, title: block.title }
+    });
+
     return updated;
   }
 

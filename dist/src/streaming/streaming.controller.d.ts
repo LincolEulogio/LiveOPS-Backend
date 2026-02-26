@@ -38,6 +38,8 @@ export declare class StreamingController {
             isExternal?: undefined;
             isMultiCorder?: undefined;
             inputs?: undefined;
+            lastHeartbeat?: undefined;
+            lastLatency?: undefined;
         } | {
             isConnected: boolean;
             activeInput: number | undefined;
@@ -47,6 +49,8 @@ export declare class StreamingController {
             isExternal: boolean;
             isMultiCorder: boolean;
             inputs: import("../vmix/vmix-connection.manager").VmixInput[];
+            lastHeartbeat: string | undefined;
+            lastLatency: number | undefined;
         } | null;
         lastUpdate: string;
     }>;
@@ -55,11 +59,11 @@ export declare class StreamingController {
     }>;
     getDestinations(productionId: string): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         productionId: string;
         isEnabled: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         platform: string;
         rtmpUrl: string;
         streamKey: string;
@@ -67,11 +71,11 @@ export declare class StreamingController {
     }[]>;
     createDestination(productionId: string, dto: CreateStreamingDestinationDto): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         productionId: string;
         isEnabled: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         platform: string;
         rtmpUrl: string;
         streamKey: string;
@@ -79,11 +83,11 @@ export declare class StreamingController {
     }>;
     updateDestination(id: string, dto: UpdateStreamingDestinationDto): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         productionId: string;
         isEnabled: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         platform: string;
         rtmpUrl: string;
         streamKey: string;
@@ -91,11 +95,11 @@ export declare class StreamingController {
     }>;
     removeDestination(id: string): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         productionId: string;
         isEnabled: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
         platform: string;
         rtmpUrl: string;
         streamKey: string;

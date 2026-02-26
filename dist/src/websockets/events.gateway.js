@@ -21,6 +21,7 @@ const prisma_service_1 = require("../prisma/prisma.service");
 const intercom_service_1 = require("../intercom/intercom.service");
 const chat_service_1 = require("../chat/chat.service");
 const script_service_1 = require("../script/script.service");
+const socket_events_1 = require("../common/socket-events");
 let EventsGateway = class EventsGateway {
     prisma;
     eventEmitter;
@@ -67,6 +68,9 @@ let EventsGateway = class EventsGateway {
             .to(`production_${data.productionId}`)
             .emit('chat.received', message);
         return { status: 'ok', messageId: message.id };
+    }
+    handleTimeSync() {
+        return { serverTime: new Date().toISOString() };
     }
     async handleProductionJoin(data, client) {
         this.logger.log(`Client ${client.id} joining room production_${data.productionId}`);
@@ -129,6 +133,13 @@ let EventsGateway = class EventsGateway {
             isTalking: data.isTalking,
             targetUserId: data.targetUserId || null,
             senderRoleName: senderRoleName || 'Viewer'
+        });
+    }
+    handleWebRTCAudioLevel(data, client) {
+        const senderUserId = client.handshake.query.userId;
+        client.to(`production_${data.productionId}`).emit(socket_events_1.SocketEvents.WEBRTC_AUDIO_LEVEL_RECEIVED, {
+            senderUserId,
+            level: data.level
         });
     }
     handleSocialOverlay(data, client) {
@@ -458,7 +469,13 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], EventsGateway.prototype, "handleChatSend", null);
 __decorate([
-    (0, websockets_1.SubscribeMessage)('production.join'),
+    (0, websockets_1.SubscribeMessage)(socket_events_1.SocketEvents.TIME_SYNC),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleTimeSync", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)(socket_events_1.SocketEvents.PRODUCTION_JOIN),
     __param(0, (0, websockets_1.MessageBody)()),
     __param(1, (0, websockets_1.ConnectedSocket)()),
     __metadata("design:type", Function),
@@ -521,6 +538,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
     __metadata("design:returntype", void 0)
 ], EventsGateway.prototype, "handleWebRTCTalking", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)(socket_events_1.SocketEvents.WEBRTC_AUDIO_LEVEL),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleWebRTCAudioLevel", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('social.overlay'),
     __param(0, (0, websockets_1.MessageBody)()),

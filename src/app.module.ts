@@ -2,7 +2,8 @@ import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { AuditLoggingInterceptor } from '@/common/interceptors/audit-logging.interceptor';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
@@ -79,6 +80,10 @@ import { VideoCallModule } from '@/video-call/video-call.module';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditLoggingInterceptor,
     },
   ],
 })

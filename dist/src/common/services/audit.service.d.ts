@@ -9,7 +9,10 @@ export declare enum AuditAction {
     AUTOMATION_TRIGGER = "AUTOMATION_TRIGGER",
     INSTANT_CLIP = "INSTANT_CLIP",
     USER_LOGIN = "USER_LOGIN",
-    SYSTEM_ALERT = "SYSTEM_ALERT"
+    SYSTEM_ALERT = "SYSTEM_ALERT",
+    TIMELINE_START = "TIMELINE_START",
+    TIMELINE_COMPLETE = "TIMELINE_COMPLETE",
+    TIMELINE_RESET = "TIMELINE_RESET"
 }
 export declare class AuditService {
     private prisma;
@@ -24,22 +27,22 @@ export declare class AuditService {
     }): Promise<void>;
     getLogs(productionId?: string, limit?: number, page?: number): Promise<{
         id: string;
-        createdAt: Date;
         productionId: string;
-        details: import("@prisma/client/runtime/client").JsonValue | null;
         eventType: string;
+        details: import("@prisma/client/runtime/client").JsonValue | null;
+        createdAt: Date;
     }[] | ({
         user: {
             id: string;
-            email: string;
             name: string | null;
+            email: string;
         } | null;
     } & {
         id: string;
-        createdAt: Date;
-        action: string;
-        userId: string | null;
         details: import("@prisma/client/runtime/client").JsonValue | null;
+        createdAt: Date;
+        userId: string | null;
+        action: string;
         ipAddress: string | null;
     })[]>;
 }

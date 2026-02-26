@@ -1,27 +1,29 @@
 import { PrismaService } from '@/prisma/prisma.service';
 import { VmixConnectionManager } from '@/vmix/vmix-connection.manager';
 import { SaveVmixConnectionDto, ChangeInputDto } from '@/vmix/dto/vmix.dto';
+import { AuditService } from '@/common/services/audit.service';
 export declare class VmixService {
     private prisma;
     private vmixManager;
+    private auditService;
     private readonly logger;
-    constructor(prisma: PrismaService, vmixManager: VmixConnectionManager);
+    constructor(prisma: PrismaService, vmixManager: VmixConnectionManager, auditService: AuditService);
     saveConnection(productionId: string, dto: SaveVmixConnectionDto): Promise<{
         id: string;
+        productionId: string;
+        url: string;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
-        productionId: string;
-        isEnabled: boolean;
         pollingInterval: number;
     }>;
     getConnection(productionId: string): Promise<{
         id: string;
+        productionId: string;
+        url: string;
+        isEnabled: boolean;
         createdAt: Date;
         updatedAt: Date;
-        url: string;
-        productionId: string;
-        isEnabled: boolean;
         pollingInterval: number;
     }>;
     isConnected(productionId: string): boolean;
@@ -34,6 +36,8 @@ export declare class VmixService {
         isExternal?: undefined;
         isMultiCorder?: undefined;
         inputs?: undefined;
+        lastHeartbeat?: undefined;
+        lastLatency?: undefined;
     } | {
         isConnected: boolean;
         activeInput: number | undefined;
@@ -43,6 +47,8 @@ export declare class VmixService {
         isExternal: boolean;
         isMultiCorder: boolean;
         inputs: import("@/vmix/vmix-connection.manager").VmixInput[];
+        lastHeartbeat: string | undefined;
+        lastLatency: number | undefined;
     }>;
     changeInput(productionId: string, dto: ChangeInputDto): Promise<{
         success: boolean;

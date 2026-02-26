@@ -12,6 +12,7 @@ const config_1 = require("@nestjs/config");
 const nestjs_pino_1 = require("nestjs-pino");
 const throttler_1 = require("@nestjs/throttler");
 const core_1 = require("@nestjs/core");
+const audit_logging_interceptor_1 = require("./common/interceptors/audit-logging.interceptor");
 const event_emitter_1 = require("@nestjs/event-emitter");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
@@ -93,6 +94,10 @@ exports.AppModule = AppModule = __decorate([
             {
                 provide: core_1.APP_GUARD,
                 useClass: throttler_1.ThrottlerGuard,
+            },
+            {
+                provide: core_1.APP_INTERCEPTOR,
+                useClass: audit_logging_interceptor_1.AuditLoggingInterceptor,
             },
         ],
     })

@@ -63,6 +63,9 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         messageId: string;
         commandId?: undefined;
     }>;
+    handleTimeSync(): {
+        serverTime: string;
+    };
     handleProductionJoin(data: {
         productionId: string;
     }, client: Socket): Promise<{
@@ -97,6 +100,10 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         productionId: string;
         isTalking: boolean;
         targetUserId?: string | null;
+    }, client: Socket): void;
+    handleWebRTCAudioLevel(data: {
+        productionId: string;
+        level: number;
     }, client: Socket): void;
     handleSocialOverlay(data: {
         productionId: string;

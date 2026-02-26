@@ -100,7 +100,9 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
     async pollApi(productionId, instance) {
         try {
             const apiUrl = this.getApiUrl(instance.url);
+            const startTime = Date.now();
             const response = await axios_1.default.get(apiUrl, { timeout: 1200 });
+            const latency = Date.now() - startTime;
             const xml = response.data;
             const parsed = await (0, xml2js_1.parseStringPromise)(xml, { explicitArray: false });
             if (!parsed || !parsed.vmix) {
@@ -134,6 +136,8 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
             instance.isExternal = isExternal;
             instance.isMultiCorder = isMultiCorder;
             instance.inputs = inputs;
+            instance.lastHeartbeat = new Date().toISOString();
+            instance.lastLatency = latency;
             const hasChanged = instance.activeInput !== newActive ||
                 instance.previewInput !== newPreview ||
                 instance.isStreaming !== isStreaming ||
@@ -176,10 +180,11 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
                 memoryUsage: 0,
                 isStreaming,
                 isRecording,
-                timestamp: new Date().toISOString(),
+                timestamp: instance.lastHeartbeat,
                 renderTime,
                 version: parsed.vmix.version,
                 edition: parsed.vmix.edition,
+                latency: instance.lastLatency,
             });
         }
         catch (error) {
@@ -209,7 +214,9 @@ let VmixConnectionManager = VmixConnectionManager_1 = class VmixConnectionManage
             isRecording: instance.isRecording,
             isExternal: instance.isExternal,
             isMultiCorder: instance.isMultiCorder,
-            inputs: instance.inputs
+            inputs: instance.inputs,
+            lastHeartbeat: instance.lastHeartbeat,
+            lastLatency: instance.lastLatency
         };
     }
     handleConnectionUpdate(payload) {
