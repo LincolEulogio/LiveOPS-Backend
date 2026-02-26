@@ -49,6 +49,7 @@ let AuditService = AuditService_1 = class AuditService {
                 await this.prisma.productionLog.create({
                     data: {
                         productionId: payload.productionId,
+                        userId: payload.userId,
                         eventType: payload.action,
                         details: payload.details,
                     },
@@ -65,6 +66,7 @@ let AuditService = AuditService_1 = class AuditService {
         if (productionId) {
             return this.prisma.productionLog.findMany({
                 where: { productionId },
+                include: { user: { select: { id: true, name: true, email: true } } },
                 orderBy: { createdAt: 'desc' },
                 take: limit,
                 skip,

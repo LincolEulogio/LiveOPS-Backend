@@ -7,11 +7,13 @@ export interface WebRTCSignal {
 export interface WebRTCSignalPayload {
     productionId: string;
     targetUserId: string;
-    signal: WebRTCSignal;
+    signal: any;
+    context?: 'intercom' | 'videocall';
 }
 export interface WebRTCReceivedSignal {
     senderUserId: string;
-    signal: WebRTCSignal;
+    signal: any;
+    context?: 'intercom' | 'videocall';
 }
 export interface PresenceMember {
     userId: string;

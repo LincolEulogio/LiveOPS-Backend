@@ -242,7 +242,8 @@ export class EventsGateway
         if (socket && socket.handshake.query.userId === data.targetUserId) {
           socket.emit('webrtc.signal_received', {
             senderUserId,
-            signal: data.signal
+            signal: data.signal,
+            context: data.context
           });
           break;
         }

@@ -12,20 +12,22 @@ export declare class TimelineService {
         intercomTemplate: {
             id: string;
             productionId: string;
-            description: string | null;
             createdAt: Date;
-            updatedAt: Date;
             name: string;
+            updatedAt: Date;
+            description: string | null;
             icon: string | null;
             color: string | null;
         } | null;
     } & {
         id: string;
         productionId: string;
-        title: string;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
-        durationMs: number;
         status: import("@prisma/client").$Enums.BlockStatus;
+        title: string;
+        durationMs: number;
         order: number;
         linkedScene: string | null;
         source: string | null;
@@ -33,16 +35,16 @@ export declare class TimelineService {
         intercomTemplateId: string | null;
         startTime: Date | null;
         endTime: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
     })[]>;
     createBlock(productionId: string, dto: CreateTimelineBlockDto): Promise<{
         id: string;
         productionId: string;
-        title: string;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
-        durationMs: number;
         status: import("@prisma/client").$Enums.BlockStatus;
+        title: string;
+        durationMs: number;
         order: number;
         linkedScene: string | null;
         source: string | null;
@@ -50,16 +52,16 @@ export declare class TimelineService {
         intercomTemplateId: string | null;
         startTime: Date | null;
         endTime: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     updateBlock(id: string, productionId: string, dto: UpdateTimelineBlockDto): Promise<{
         id: string;
         productionId: string;
-        title: string;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
-        durationMs: number;
         status: import("@prisma/client").$Enums.BlockStatus;
+        title: string;
+        durationMs: number;
         order: number;
         linkedScene: string | null;
         source: string | null;
@@ -67,8 +69,6 @@ export declare class TimelineService {
         intercomTemplateId: string | null;
         startTime: Date | null;
         endTime: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     deleteBlock(id: string, productionId: string): Promise<{
         success: boolean;
@@ -79,10 +79,12 @@ export declare class TimelineService {
     startBlock(id: string, productionId: string): Promise<{
         id: string;
         productionId: string;
-        title: string;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
-        durationMs: number;
         status: import("@prisma/client").$Enums.BlockStatus;
+        title: string;
+        durationMs: number;
         order: number;
         linkedScene: string | null;
         source: string | null;
@@ -90,16 +92,16 @@ export declare class TimelineService {
         intercomTemplateId: string | null;
         startTime: Date | null;
         endTime: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     completeBlock(id: string, productionId: string): Promise<{
         id: string;
         productionId: string;
-        title: string;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
-        durationMs: number;
         status: import("@prisma/client").$Enums.BlockStatus;
+        title: string;
+        durationMs: number;
         order: number;
         linkedScene: string | null;
         source: string | null;
@@ -107,16 +109,16 @@ export declare class TimelineService {
         intercomTemplateId: string | null;
         startTime: Date | null;
         endTime: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     resetBlock(id: string, productionId: string): Promise<{
         id: string;
         productionId: string;
-        title: string;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
-        durationMs: number;
         status: import("@prisma/client").$Enums.BlockStatus;
+        title: string;
+        durationMs: number;
         order: number;
         linkedScene: string | null;
         source: string | null;
@@ -124,8 +126,6 @@ export declare class TimelineService {
         intercomTemplateId: string | null;
         startTime: Date | null;
         endTime: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     private emitTimelineUpdated;
 }

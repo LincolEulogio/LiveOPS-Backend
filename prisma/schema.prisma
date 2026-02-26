@@ -193,14 +193,17 @@ model Production {
 model ProductionLog {
   id           String     @id @default(uuid()) @db.Uuid
   productionId String     @db.Uuid
+  userId       String?    @db.Uuid
   eventType    String
   details      Json?
   createdAt    DateTime   @default(now())
   production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
   @@index([eventType])
   @@index([productionId])
+  @@index([userId])
 }
 
 model ProductionScript {
@@ -356,6 +359,7 @@ model User {
 
   pushSubscriptions PushSubscription[]
   videoCalls        VideoCall[]
+  productionLogs    ProductionLog[]
 
   @@index([deletedAt])
   @@index([email])

@@ -100,16 +100,16 @@ export declare class ProductionsController {
             password: string | null;
             createdAt: Date;
             updatedAt: Date;
-            url: string;
             productionId: string;
+            url: string;
             isEnabled: boolean;
         } | null;
         vmixConnection: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            url: string;
             productionId: string;
+            url: string;
             isEnabled: boolean;
             pollingInterval: number;
         } | null;

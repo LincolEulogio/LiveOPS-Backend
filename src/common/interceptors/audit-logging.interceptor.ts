@@ -29,6 +29,7 @@ export class AuditLoggingInterceptor implements NestInterceptor {
         if (url.includes('/telemetry') || url.includes('/health')) return next.handle();
 
         const startTime = Date.now();
+        const productionId = request.params.id || request.body.productionId || request.query.productionId;
 
         return next.handle().pipe(
             tap({
@@ -38,6 +39,7 @@ export class AuditLoggingInterceptor implements NestInterceptor {
 
                     // Log to DB via AuditService
                     this.auditService.log({
+                        productionId,
                         userId: user?.id,
                         action: `API_${method}`,
                         details: {
@@ -53,6 +55,7 @@ export class AuditLoggingInterceptor implements NestInterceptor {
                 error: (err) => {
                     const duration = Date.now() - startTime;
                     this.auditService.log({
+                        productionId,
                         userId: user?.id,
                         action: `API_${method}_ERROR`,
                         details: {

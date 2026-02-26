@@ -6,14 +6,6 @@ export declare class AutomationService {
     private eventEmitter;
     constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
     getRules(productionId: string): Promise<({
-        triggers: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            eventType: string;
-            condition: import("@prisma/client/runtime/client").JsonValue | null;
-            ruleId: string;
-        }[];
         actions: {
             id: string;
             createdAt: Date;
@@ -21,6 +13,14 @@ export declare class AutomationService {
             order: number;
             actionType: string;
             payload: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
+        }[];
+        triggers: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            eventType: string;
+            condition: import("@prisma/client/runtime/client").JsonValue | null;
             ruleId: string;
         }[];
     } & {
@@ -33,14 +33,6 @@ export declare class AutomationService {
         isEnabled: boolean;
     })[]>;
     getRule(id: string, productionId: string): Promise<{
-        triggers: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            eventType: string;
-            condition: import("@prisma/client/runtime/client").JsonValue | null;
-            ruleId: string;
-        }[];
         actions: {
             id: string;
             createdAt: Date;
@@ -58,6 +50,14 @@ export declare class AutomationService {
             details: string | null;
             ruleId: string;
         }[];
+        triggers: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            eventType: string;
+            condition: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
+        }[];
     } & {
         id: string;
         name: string;
@@ -68,14 +68,6 @@ export declare class AutomationService {
         isEnabled: boolean;
     }>;
     createRule(productionId: string, dto: CreateRuleDto): Promise<{
-        triggers: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            eventType: string;
-            condition: import("@prisma/client/runtime/client").JsonValue | null;
-            ruleId: string;
-        }[];
         actions: {
             id: string;
             createdAt: Date;
@@ -83,6 +75,14 @@ export declare class AutomationService {
             order: number;
             actionType: string;
             payload: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
+        }[];
+        triggers: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            eventType: string;
+            condition: import("@prisma/client/runtime/client").JsonValue | null;
             ruleId: string;
         }[];
     } & {
