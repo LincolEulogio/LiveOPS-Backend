@@ -96,6 +96,7 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
     handleWebRTCTalking(data: {
         productionId: string;
         isTalking: boolean;
+        targetUserId?: string | null;
     }, client: Socket): void;
     handleSocialOverlay(data: {
         productionId: string;

@@ -250,6 +250,7 @@ export class EventsGateway
     data: {
       productionId: string;
       isTalking: boolean;
+      targetUserId?: string | null;
     },
     @ConnectedSocket() client: Socket,
   ) {
@@ -257,9 +258,10 @@ export class EventsGateway
     const room = `production_${data.productionId}`;
 
     // Broadcast to the whole room so dashboard can update state
-    client.to(room).emit('webrtc.talking', {
+    this.server.to(room).emit('webrtc.talking', {
       senderUserId,
-      isTalking: data.isTalking
+      isTalking: data.isTalking,
+      targetUserId: data.targetUserId || null
     });
   }
 
