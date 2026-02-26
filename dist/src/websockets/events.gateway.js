@@ -120,6 +120,14 @@ let EventsGateway = class EventsGateway {
             }
         }
     }
+    handleWebRTCTalking(data, client) {
+        const senderUserId = client.handshake.query.userId;
+        const room = `production_${data.productionId}`;
+        client.to(room).emit('webrtc.talking', {
+            senderUserId,
+            isTalking: data.isTalking
+        });
+    }
     handleSocialOverlay(data, client) {
         this.server
             .to(`production_${data.productionId}`)
@@ -287,6 +295,7 @@ let EventsGateway = class EventsGateway {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('chat.received', msg);
+        this.broadcastTallyState(payload.productionId, payload.sceneName, 'PROGRAM');
     }
     async handleObsStreamState(payload) {
         this.server
@@ -323,6 +332,32 @@ let EventsGateway = class EventsGateway {
         this.server
             .to(`production_${payload.productionId}`)
             .emit('vmix.input.changed', payload);
+        const activeName = payload.inputName || payload.inputTitle || '';
+        this.broadcastTallyState(payload.productionId, activeName, 'PROGRAM');
+    }
+    broadcastTallyState(productionId, activeName, state) {
+        if (!activeName)
+            return;
+        const room = `production_${productionId}`;
+        const socketsInRoom = this.server.sockets.adapter.rooms.get(room);
+        if (socketsInRoom) {
+            for (const socketId of socketsInRoom) {
+                const socket = this.server.sockets.sockets.get(socketId);
+                if (socket) {
+                    const roleName = (socket.handshake.query.roleName || '').toLowerCase();
+                    const userName = (socket.handshake.query.userName || '').toLowerCase();
+                    if (roleName && activeName.toLowerCase().includes(roleName)) {
+                        socket.emit('tally_state_changed', { targetUserId: socket.handshake.query.userId, state });
+                    }
+                    else if (userName && activeName.toLowerCase().includes(userName)) {
+                        socket.emit('tally_state_changed', { targetUserId: socket.handshake.query.userId, state });
+                    }
+                    else {
+                        socket.emit('tally_state_changed', { targetUserId: socket.handshake.query.userId, state: 'IDLE' });
+                    }
+                }
+            }
+        }
     }
     handleVmixConnectionState(payload) {
         this.server
@@ -475,6 +510,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
     __metadata("design:returntype", void 0)
 ], EventsGateway.prototype, "handleWebRTCSignal", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('webrtc.talking'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleWebRTCTalking", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('social.overlay'),
     __param(0, (0, websockets_1.MessageBody)()),

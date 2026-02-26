@@ -244,6 +244,25 @@ export class EventsGateway
     }
   }
 
+  @SubscribeMessage('webrtc.talking')
+  handleWebRTCTalking(
+    @MessageBody()
+    data: {
+      productionId: string;
+      isTalking: boolean;
+    },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const senderUserId = client.handshake.query.userId as string;
+    const room = `production_${data.productionId}`;
+
+    // Broadcast to the whole room so dashboard can update state
+    client.to(room).emit('webrtc.talking', {
+      senderUserId,
+      isTalking: data.isTalking
+    });
+  }
+
   @SubscribeMessage('social.overlay')
   handleSocialOverlay(
     @MessageBody()
@@ -524,6 +543,9 @@ export class EventsGateway
     this.server
       .to(`production_${payload.productionId}`)
       .emit('chat.received', msg);
+
+    // Broadcast tally based on OBS Active Scene
+    this.broadcastTallyState(payload.productionId, payload.sceneName, 'PROGRAM');
   }
 
   @OnEvent('obs.stream.state')
@@ -597,6 +619,38 @@ export class EventsGateway
     this.server
       .to(`production_${payload.productionId}`)
       .emit('vmix.input.changed', payload);
+
+    // Broadcast tally based on Vmix Active Input (Naive name match for now)
+    const activeName = payload.inputName || payload.inputTitle || '';
+    this.broadcastTallyState(payload.productionId, activeName, 'PROGRAM');
+  }
+
+
+  private broadcastTallyState(productionId: string, activeName: string, state: 'PROGRAM' | 'PREVIEW' | 'IDLE') {
+    if (!activeName) return;
+    const room = `production_${productionId}`;
+    const socketsInRoom = this.server.sockets.adapter.rooms.get(room);
+
+    if (socketsInRoom) {
+      for (const socketId of socketsInRoom) {
+        const socket = this.server.sockets.sockets.get(socketId);
+        if (socket) {
+          const roleName = ((socket.handshake.query.roleName as string) || '').toLowerCase();
+          const userName = ((socket.handshake.query.userName as string) || '').toLowerCase();
+
+          // Very naive logic: if the scene/input name contains the role name (e.g., "CAMAROGRAFO") or user name, they are ON AIR
+          if (roleName && activeName.toLowerCase().includes(roleName)) {
+            socket.emit('tally_state_changed', { targetUserId: socket.handshake.query.userId, state });
+          } else if (userName && activeName.toLowerCase().includes(userName)) {
+            socket.emit('tally_state_changed', { targetUserId: socket.handshake.query.userId, state });
+          } else {
+            // Reset to IDLE if not matched 
+            // (In a real pro-grade system we check if they are in PREVIEW here)
+            socket.emit('tally_state_changed', { targetUserId: socket.handshake.query.userId, state: 'IDLE' });
+          }
+        }
+      }
+    }
   }
 
   @OnEvent('vmix.connection.state')

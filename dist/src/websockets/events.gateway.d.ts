@@ -93,6 +93,10 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         update: number[];
     }, client: Socket): void;
     handleWebRTCSignal(data: WebRTCSignalPayload, client: Socket): void;
+    handleWebRTCTalking(data: {
+        productionId: string;
+        isTalking: boolean;
+    }, client: Socket): void;
     handleSocialOverlay(data: {
         productionId: string;
         comment: SocialComment | null;
@@ -178,6 +182,7 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         connected: boolean;
     }): Promise<void>;
     handleVmixInputChanged(payload: any): void;
+    private broadcastTallyState;
     handleVmixConnectionState(payload: {
         productionId: string;
         connected: boolean;
