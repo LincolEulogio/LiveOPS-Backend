@@ -355,6 +355,7 @@ model User {
   receivedCommands Command[] @relation("CommandTarget")
 
   pushSubscriptions PushSubscription[]
+  videoCalls        VideoCall[]
 
   @@index([deletedAt])
   @@index([email])
@@ -537,4 +538,22 @@ model PushSubscription {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model VideoCall {
+  id          String    @id @default(uuid()) @db.Uuid
+  roomId      String    @unique
+  title       String
+  description String?
+  hostId      String    @db.Uuid
+  status      String    @default("scheduled") // scheduled | active | ended
+  scheduledAt DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  host        User      @relation(fields: [hostId], references: [id])
+
+  @@index([hostId])
+  @@index([status])
+  @@index([scheduledAt])
 }
