@@ -255,13 +255,15 @@ export class EventsGateway
     @ConnectedSocket() client: Socket,
   ) {
     const senderUserId = client.handshake.query.userId as string;
+    const senderRoleName = client.handshake.query.roleName as string;
     const room = `production_${data.productionId}`;
 
-    // Broadcast to the whole room so dashboard can update state
+    // Broadcast to the whole room so dashboard and other clients can update state instantly
     this.server.to(room).emit('webrtc.talking', {
       senderUserId,
       isTalking: data.isTalking,
-      targetUserId: data.targetUserId || null
+      targetUserId: data.targetUserId || null,
+      senderRoleName: senderRoleName || 'Viewer'
     });
   }
 

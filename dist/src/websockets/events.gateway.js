@@ -122,11 +122,13 @@ let EventsGateway = class EventsGateway {
     }
     handleWebRTCTalking(data, client) {
         const senderUserId = client.handshake.query.userId;
+        const senderRoleName = client.handshake.query.roleName;
         const room = `production_${data.productionId}`;
         this.server.to(room).emit('webrtc.talking', {
             senderUserId,
             isTalking: data.isTalking,
-            targetUserId: data.targetUserId || null
+            targetUserId: data.targetUserId || null,
+            senderRoleName: senderRoleName || 'Viewer'
         });
     }
     handleSocialOverlay(data, client) {
