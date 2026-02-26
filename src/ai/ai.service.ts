@@ -144,4 +144,33 @@ export class AiService implements OnModuleInit {
     `;
         return this.generateText(prompt);
     }
+
+    async chat(history: { role: 'user' | 'assistant'; content: string }[], systemContext: string): Promise<string> {
+        if (!this.model) {
+            throw new ServiceUnavailableException('LIVIA AI Node is not configured or API Key is missing.');
+        }
+
+        try {
+            const chatSession = this.model.startChat();
+
+            // Reconstruct the history manually into a single prompt for safety
+            let reconstructedPrompt = `[SYSTEM INSTRUCTION]\n${systemContext}\n\n[CONVERSATION HISTORY]\n`;
+            for (let i = 0; i < history.length - 1; i++) {
+                const msg = history[i];
+                reconstructedPrompt += `${msg.role.toUpperCase()}: ${msg.content}\n`;
+            }
+
+            const lastMessage = history[history.length - 1].content;
+            reconstructedPrompt += `\n[CURRENT USER MESSAGE]\nUSER: ${lastMessage}\n\nPlease respond as the ASSISTANT.`;
+
+            const result = await chatSession.sendMessage(reconstructedPrompt);
+            return result.response.text();
+        } catch (error: any) {
+            this.logger.error(`AI Chat Failure: ${error.message}`);
+            if (error.response) {
+                this.logger.error(`Response details: ${JSON.stringify(error.response.data)}`);
+            }
+            throw new InternalServerErrorException(`LIVIA Intelligence error: ${error.message}`);
+        }
+    }
 }

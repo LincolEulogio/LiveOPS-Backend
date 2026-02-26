@@ -26,4 +26,13 @@ export class AiController {
         const briefing = await this.aiService.generateBriefing(body);
         return { briefing };
     }
+
+    @Post('chat')
+    @Permissions('production:view')
+    async chat(
+        @Body() body: { history: { role: 'user' | 'assistant'; content: string }[]; context: string }
+    ) {
+        const reply = await this.aiService.chat(body.history, body.context);
+        return { reply };
+    }
 }
