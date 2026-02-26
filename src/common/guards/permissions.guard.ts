@@ -56,7 +56,7 @@ export class PermissionsGuard implements CanActivate {
 
       const globalPermissions =
         dbUser.globalRole?.permissions
-          .filter((rp) => rp.permission)
+          ?.filter((rp) => rp.permission)
           .map((rp) => rp.permission.action) || [];
 
       const hasGlobalPermission = requiredPermissions.every((perm) =>
@@ -73,12 +73,14 @@ export class PermissionsGuard implements CanActivate {
         request.params.id ||
         request.body.productionId;
 
+      // Robust UUID validation
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
       if (
         productionId &&
         typeof productionId === 'string' &&
-        productionId.length > 20
+        uuidRegex.test(productionId)
       ) {
-        // Simple UUID check
         const productionUser = await this.prisma.productionUser.findUnique({
           where: {
             userId_productionId: {
@@ -96,9 +98,10 @@ export class PermissionsGuard implements CanActivate {
         });
 
         if (productionUser) {
+          const prodRoleName = productionUser.role.name.toUpperCase();
           if (
-            productionUser.role.name === 'SUPERADMIN' ||
-            productionUser.role.name === 'ADMIN'
+            prodRoleName === 'SUPERADMIN' ||
+            prodRoleName === 'ADMIN'
           ) {
             return true;
           }
@@ -108,7 +111,7 @@ export class PermissionsGuard implements CanActivate {
             .map((rp) => rp.permission.action);
 
           // Implicit baseline permissions for ANY user explicitly added to the production
-          // This prevents 403 errors on basic navigation if the role is missing these view strings
+          // This prevents 403 errors on non-sensitive endpoints for any assigned user
           const implicitPermissions = [
             'production:view',
             'rundown:view',
@@ -116,6 +119,10 @@ export class PermissionsGuard implements CanActivate {
             'intercom:view',
             'analytics:view',
             'social:view',
+            // Non-sensitive READ-only endpoints granted to all assigned users:
+            'automation:view',
+            'media:view',
+            'streaming:view',
           ];
 
           const allPermissions = [
@@ -135,8 +142,8 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('Insufficient permissions');
     } catch (error) {
       if (error instanceof ForbiddenException) throw error;
-      console.error('[PermissionsGuard] Crash detected:', error);
-      throw new ForbiddenException('Authorization system failure');
+      console.error('[PermissionsGuard] Error:', error.message || error);
+      throw new ForbiddenException('Insufficient permissions');
     }
 
     return true;

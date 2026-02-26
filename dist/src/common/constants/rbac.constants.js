@@ -16,9 +16,14 @@ var PermissionAction;
     PermissionAction["INTERCOM_SEND"] = "intercom:send";
     PermissionAction["AUTOMATION_VIEW"] = "automation:view";
     PermissionAction["AUTOMATION_MANAGE"] = "automation:manage";
+    PermissionAction["MEDIA_VIEW"] = "media:view";
+    PermissionAction["MEDIA_MANAGE"] = "media:manage";
     PermissionAction["ANALYTICS_VIEW"] = "analytics:view";
     PermissionAction["SOCIAL_VIEW"] = "social:view";
     PermissionAction["SOCIAL_MANAGE"] = "social:manage";
+    PermissionAction["STREAMING_VIEW"] = "streaming:view";
+    PermissionAction["STREAMING_MANAGE"] = "streaming:manage";
+    PermissionAction["STREAMING_CONTROL"] = "streaming:control";
     PermissionAction["ADMIN_ACCESS"] = "admin:access";
 })(PermissionAction || (exports.PermissionAction = PermissionAction = {}));
 exports.StandardRoles = {
@@ -46,6 +51,11 @@ exports.StandardRoles = {
             PermissionAction.ANALYTICS_VIEW,
             PermissionAction.SOCIAL_VIEW,
             PermissionAction.SOCIAL_MANAGE,
+            PermissionAction.MEDIA_VIEW,
+            PermissionAction.MEDIA_MANAGE,
+            PermissionAction.STREAMING_VIEW,
+            PermissionAction.STREAMING_MANAGE,
+            PermissionAction.STREAMING_CONTROL,
         ],
     },
     OPERATOR: {
@@ -62,6 +72,9 @@ exports.StandardRoles = {
             PermissionAction.AUTOMATION_VIEW,
             PermissionAction.ANALYTICS_VIEW,
             PermissionAction.SOCIAL_VIEW,
+            PermissionAction.MEDIA_VIEW,
+            PermissionAction.STREAMING_VIEW,
+            PermissionAction.STREAMING_CONTROL,
         ],
     },
     TALENT: {
@@ -71,6 +84,7 @@ exports.StandardRoles = {
             PermissionAction.PRODUCTION_VIEW,
             PermissionAction.SCRIPT_VIEW,
             PermissionAction.RUNDOWN_VIEW,
+            PermissionAction.STREAMING_VIEW,
         ],
     },
     VIEWER: {
@@ -80,6 +94,17 @@ exports.StandardRoles = {
             PermissionAction.PRODUCTION_VIEW,
             PermissionAction.SCRIPT_VIEW,
             PermissionAction.RUNDOWN_VIEW,
+            PermissionAction.STREAMING_VIEW,
+        ],
+    },
+    GUEST: {
+        name: 'GUEST',
+        description: 'Invitado o colaborador externo',
+        permissions: [
+            PermissionAction.PRODUCTION_VIEW,
+            PermissionAction.SCRIPT_VIEW,
+            PermissionAction.STREAMING_VIEW,
+            PermissionAction.STREAMING_CONTROL,
         ],
     },
 };

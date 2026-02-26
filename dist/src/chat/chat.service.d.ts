@@ -10,8 +10,8 @@ export declare class ChatService {
     } & {
         id: string;
         createdAt: Date;
-        productionId: string;
         userId: string | null;
+        productionId: string;
         message: string;
     }>;
     getChatHistory(productionId: string, limit?: number): Promise<({
@@ -22,8 +22,8 @@ export declare class ChatService {
     } & {
         id: string;
         createdAt: Date;
-        productionId: string;
         userId: string | null;
+        productionId: string;
         message: string;
     })[]>;
 }

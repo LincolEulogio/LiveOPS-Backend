@@ -43,16 +43,7 @@ export declare class OverlaysController {
         isActive: boolean;
         config: import("@prisma/client/runtime/client").JsonValue;
     }>;
-    remove(id: string): Promise<{
-        id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        description: string | null;
-        productionId: string;
-        isActive: boolean;
-        config: import("@prisma/client/runtime/client").JsonValue;
-    }>;
+    remove(id: string): Promise<void>;
     toggleActive(id: string, productionId: string, isActive: boolean): Promise<{
         id: string;
         name: string;

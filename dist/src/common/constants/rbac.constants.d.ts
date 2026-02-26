@@ -12,9 +12,14 @@ export declare enum PermissionAction {
     INTERCOM_SEND = "intercom:send",
     AUTOMATION_VIEW = "automation:view",
     AUTOMATION_MANAGE = "automation:manage",
+    MEDIA_VIEW = "media:view",
+    MEDIA_MANAGE = "media:manage",
     ANALYTICS_VIEW = "analytics:view",
     SOCIAL_VIEW = "social:view",
     SOCIAL_MANAGE = "social:manage",
+    STREAMING_VIEW = "streaming:view",
+    STREAMING_MANAGE = "streaming:manage",
+    STREAMING_CONTROL = "streaming:control",
     ADMIN_ACCESS = "admin:access"
 }
 export declare const StandardRoles: {
@@ -39,6 +44,11 @@ export declare const StandardRoles: {
         permissions: PermissionAction[];
     };
     VIEWER: {
+        name: string;
+        description: string;
+        permissions: PermissionAction[];
+    };
+    GUEST: {
         name: string;
         description: string;
         permissions: PermissionAction[];

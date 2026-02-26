@@ -395,6 +395,16 @@ let EventsGateway = class EventsGateway {
             .to(`production_${payload.productionId}`)
             .emit(`overlay.template_update:${payload.template.id}`, payload.template);
     }
+    handleOverlayListUpdated(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('overlay.list_updated', payload);
+    }
+    handleProductionUpdated(payload) {
+        this.server
+            .to(`production_${payload.productionId}`)
+            .emit('production.updated', payload);
+    }
 };
 exports.EventsGateway = EventsGateway;
 __decorate([
@@ -642,6 +652,18 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], EventsGateway.prototype, "handleOverlayTemplateUpdated", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('overlay.list_updated'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleOverlayListUpdated", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('production.updated'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsGateway.prototype, "handleProductionUpdated", null);
 exports.EventsGateway = EventsGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {

@@ -44,9 +44,9 @@ export declare class ProductionsService {
             } & {
                 createdAt: Date;
                 updatedAt: Date;
-                productionId: string;
                 roleId: string;
                 userId: string;
+                productionId: string;
             })[];
         } & {
             id: string;
@@ -85,9 +85,9 @@ export declare class ProductionsService {
         } & {
             createdAt: Date;
             updatedAt: Date;
-            productionId: string;
             roleId: string;
             userId: string;
+            productionId: string;
         })[];
         obsConnection: {
             id: string;
@@ -162,16 +162,16 @@ export declare class ProductionsService {
     } & {
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         roleId: string;
         userId: string;
+        productionId: string;
     }>;
     removeUser(productionId: string, userIdToRemove: string): Promise<{
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         roleId: string;
         userId: string;
+        productionId: string;
     }>;
     remove(productionId: string): Promise<{
         id: string;

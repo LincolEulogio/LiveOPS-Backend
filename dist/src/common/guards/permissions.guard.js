@@ -50,7 +50,7 @@ let PermissionsGuard = class PermissionsGuard {
                 return true;
             }
             const globalPermissions = dbUser.globalRole?.permissions
-                .filter((rp) => rp.permission)
+                ?.filter((rp) => rp.permission)
                 .map((rp) => rp.permission.action) || [];
             const hasGlobalPermission = requiredPermissions.every((perm) => globalPermissions.includes(perm));
             if (hasGlobalPermission) {
@@ -59,9 +59,10 @@ let PermissionsGuard = class PermissionsGuard {
             const productionId = request.params.productionId ||
                 request.params.id ||
                 request.body.productionId;
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
             if (productionId &&
                 typeof productionId === 'string' &&
-                productionId.length > 20) {
+                uuidRegex.test(productionId)) {
                 const productionUser = await this.prisma.productionUser.findUnique({
                     where: {
                         userId_productionId: {
@@ -78,8 +79,9 @@ let PermissionsGuard = class PermissionsGuard {
                     },
                 });
                 if (productionUser) {
-                    if (productionUser.role.name === 'SUPERADMIN' ||
-                        productionUser.role.name === 'ADMIN') {
+                    const prodRoleName = productionUser.role.name.toUpperCase();
+                    if (prodRoleName === 'SUPERADMIN' ||
+                        prodRoleName === 'ADMIN') {
                         return true;
                     }
                     const productionPermissions = productionUser.role.permissions
@@ -92,6 +94,9 @@ let PermissionsGuard = class PermissionsGuard {
                         'intercom:view',
                         'analytics:view',
                         'social:view',
+                        'automation:view',
+                        'media:view',
+                        'streaming:view',
                     ];
                     const allPermissions = [
                         ...productionPermissions,
@@ -108,8 +113,8 @@ let PermissionsGuard = class PermissionsGuard {
         catch (error) {
             if (error instanceof common_1.ForbiddenException)
                 throw error;
-            console.error('[PermissionsGuard] Crash detected:', error);
-            throw new common_1.ForbiddenException('Authorization system failure');
+            console.error('[PermissionsGuard] Error:', error.message || error);
+            throw new common_1.ForbiddenException('Insufficient permissions');
         }
         return true;
     }

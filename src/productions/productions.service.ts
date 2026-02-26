@@ -303,14 +303,19 @@ export class ProductionsService {
       }
 
       return production;
+    }).then(prod => {
+      this.eventEmitter.emit('production.updated', { productionId });
+      return prod;
     });
   }
 
   async updateState(productionId: string, dto: UpdateProductionStateDto) {
-    return this.prisma.production.update({
+    const updated = await this.prisma.production.update({
       where: { id: productionId },
       data: { status: dto.status },
     });
+    this.eventEmitter.emit('production.updated', { productionId });
+    return updated;
   }
 
   async assignUser(productionId: string, dto: AssignUserDto) {

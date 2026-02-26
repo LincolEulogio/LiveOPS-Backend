@@ -12,18 +12,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OverlaysService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const event_emitter_1 = require("@nestjs/event-emitter");
 let OverlaysService = class OverlaysService {
     prisma;
-    constructor(prisma) {
+    eventEmitter;
+    constructor(prisma, eventEmitter) {
         this.prisma = prisma;
+        this.eventEmitter = eventEmitter;
     }
     async create(productionId, dto) {
-        return this.prisma.overlayTemplate.create({
+        const overlay = await this.prisma.overlayTemplate.create({
             data: {
                 ...dto,
                 productionId,
             },
         });
+        this.eventEmitter.emit('overlay.list_updated', { productionId });
+        return overlay;
     }
     async findAll(productionId) {
         return this.prisma.overlayTemplate.findMany({
@@ -40,15 +45,19 @@ let OverlaysService = class OverlaysService {
         return overlay;
     }
     async update(id, dto) {
-        return this.prisma.overlayTemplate.update({
+        const overlay = await this.prisma.overlayTemplate.update({
             where: { id },
             data: dto,
         });
+        this.eventEmitter.emit('overlay.template_updated', { productionId: overlay.productionId, template: overlay });
+        return overlay;
     }
     async remove(id) {
-        return this.prisma.overlayTemplate.delete({
+        const overlay = await this.findOne(id);
+        await this.prisma.overlayTemplate.delete({
             where: { id },
         });
+        this.eventEmitter.emit('overlay.list_updated', { productionId: overlay.productionId });
     }
     async toggleActive(id, productionId, isActive) {
         if (isActive) {
@@ -57,15 +66,18 @@ let OverlaysService = class OverlaysService {
                 data: { isActive: false },
             });
         }
-        return this.prisma.overlayTemplate.update({
+        const overlay = await this.prisma.overlayTemplate.update({
             where: { id },
             data: { isActive },
         });
+        this.eventEmitter.emit('overlay.list_updated', { productionId });
+        return overlay;
     }
 };
 exports.OverlaysService = OverlaysService;
 exports.OverlaysService = OverlaysService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        event_emitter_1.EventEmitter2])
 ], OverlaysService);
 //# sourceMappingURL=overlays.service.js.map

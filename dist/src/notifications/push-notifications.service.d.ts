@@ -11,8 +11,8 @@ export declare class PushNotificationsService implements OnModuleInit {
     subscribe(userId: string, subscription: webpush.PushSubscription): Promise<{
         id: string;
         createdAt: Date;
-        endpoint: string;
         userId: string;
+        endpoint: string;
         p256dh: string;
         auth: string;
     } | null>;

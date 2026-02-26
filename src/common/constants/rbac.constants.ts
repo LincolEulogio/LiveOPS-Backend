@@ -22,12 +22,21 @@ export enum PermissionAction {
   AUTOMATION_VIEW = 'automation:view',
   AUTOMATION_MANAGE = 'automation:manage',
 
+  // Media permissions
+  MEDIA_VIEW = 'media:view',
+  MEDIA_MANAGE = 'media:manage',
+
   // Analytics permissions
   ANALYTICS_VIEW = 'analytics:view',
 
   // Social permissions
   SOCIAL_VIEW = 'social:view',
   SOCIAL_MANAGE = 'social:manage',
+
+  // Streaming permissions
+  STREAMING_VIEW = 'streaming:view',
+  STREAMING_MANAGE = 'streaming:manage',
+  STREAMING_CONTROL = 'streaming:control',
 
   // Admin permissions
   ADMIN_ACCESS = 'admin:access',
@@ -58,6 +67,11 @@ export const StandardRoles = {
       PermissionAction.ANALYTICS_VIEW,
       PermissionAction.SOCIAL_VIEW,
       PermissionAction.SOCIAL_MANAGE,
+      PermissionAction.MEDIA_VIEW,
+      PermissionAction.MEDIA_MANAGE,
+      PermissionAction.STREAMING_VIEW,
+      PermissionAction.STREAMING_MANAGE,
+      PermissionAction.STREAMING_CONTROL,
     ],
   },
   OPERATOR: {
@@ -74,6 +88,9 @@ export const StandardRoles = {
       PermissionAction.AUTOMATION_VIEW,
       PermissionAction.ANALYTICS_VIEW,
       PermissionAction.SOCIAL_VIEW,
+      PermissionAction.MEDIA_VIEW,
+      PermissionAction.STREAMING_VIEW,
+      PermissionAction.STREAMING_CONTROL,
     ],
   },
   TALENT: {
@@ -83,6 +100,7 @@ export const StandardRoles = {
       PermissionAction.PRODUCTION_VIEW,
       PermissionAction.SCRIPT_VIEW,
       PermissionAction.RUNDOWN_VIEW,
+      PermissionAction.STREAMING_VIEW,
     ],
   },
   VIEWER: {
@@ -92,6 +110,17 @@ export const StandardRoles = {
       PermissionAction.PRODUCTION_VIEW,
       PermissionAction.SCRIPT_VIEW,
       PermissionAction.RUNDOWN_VIEW,
+      PermissionAction.STREAMING_VIEW,
+    ],
+  },
+  GUEST: {
+    name: 'GUEST',
+    description: 'Invitado o colaborador externo',
+    permissions: [
+      PermissionAction.PRODUCTION_VIEW,
+      PermissionAction.SCRIPT_VIEW,
+      PermissionAction.STREAMING_VIEW,
+      PermissionAction.STREAMING_CONTROL, // Added so they can get tokens and publish
     ],
   },
 };

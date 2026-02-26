@@ -37,6 +37,7 @@ const notifications_module_1 = require("./notifications/notifications.module");
 const overlays_module_1 = require("./overlays/overlays.module");
 const audit_module_1 = require("./audit/audit.module");
 const ai_module_1 = require("./ai/ai.module");
+const video_call_module_1 = require("./video-call/video-call.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer.apply(production_middleware_1.ProductionMiddleware).forRoutes('*');
@@ -84,6 +85,7 @@ exports.AppModule = AppModule = __decorate([
             notifications_module_1.NotificationsModule,
             overlays_module_1.OverlaysModule,
             audit_module_1.AuditModule,
+            video_call_module_1.VideoCallModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

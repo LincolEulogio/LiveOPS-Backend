@@ -10,16 +10,16 @@ export declare class PublicAnalyticsController {
         engineType: import("@prisma/client").$Enums.EngineType;
         activeSegment: string;
         telemetry: {
-            productionId: string;
             id: string;
-            timestamp: Date;
-            cpuUsage: number | null;
-            memoryUsage: number | null;
-            fps: number | null;
-            bitrate: number | null;
-            droppedFrames: number | null;
+            productionId: string;
             isStreaming: boolean;
             isRecording: boolean;
+            cpuUsage: number | null;
+            fps: number | null;
+            timestamp: Date;
+            memoryUsage: number | null;
+            bitrate: number | null;
+            droppedFrames: number | null;
         }[];
     }>;
 }

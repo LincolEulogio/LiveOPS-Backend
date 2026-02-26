@@ -1,18 +1,24 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateOverlayDto, UpdateOverlayDto } from '@/overlays/dto/overlay.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class OverlaysService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private eventEmitter: EventEmitter2
+    ) { }
 
     async create(productionId: string, dto: CreateOverlayDto) {
-        return this.prisma.overlayTemplate.create({
+        const overlay = await this.prisma.overlayTemplate.create({
             data: {
                 ...dto,
                 productionId,
             },
         });
+        this.eventEmitter.emit('overlay.list_updated', { productionId });
+        return overlay;
     }
 
     async findAll(productionId: string) {
@@ -31,16 +37,20 @@ export class OverlaysService {
     }
 
     async update(id: string, dto: UpdateOverlayDto) {
-        return this.prisma.overlayTemplate.update({
+        const overlay = await this.prisma.overlayTemplate.update({
             where: { id },
             data: dto,
         });
+        this.eventEmitter.emit('overlay.template_updated', { productionId: overlay.productionId, template: overlay });
+        return overlay;
     }
 
     async remove(id: string) {
-        return this.prisma.overlayTemplate.delete({
+        const overlay = await this.findOne(id);
+        await this.prisma.overlayTemplate.delete({
             where: { id },
         });
+        this.eventEmitter.emit('overlay.list_updated', { productionId: overlay.productionId });
     }
 
     async toggleActive(id: string, productionId: string, isActive: boolean) {
@@ -52,9 +62,12 @@ export class OverlaysService {
             });
         }
 
-        return this.prisma.overlayTemplate.update({
+        const overlay = await this.prisma.overlayTemplate.update({
             where: { id },
             data: { isActive },
         });
+
+        this.eventEmitter.emit('overlay.list_updated', { productionId });
+        return overlay;
     }
 }

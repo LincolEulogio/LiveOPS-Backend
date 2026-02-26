@@ -28,6 +28,7 @@ import { NotificationsModule } from '@/notifications/notifications.module';
 import { OverlaysModule } from '@/overlays/overlays.module';
 import { AuditModule } from '@/audit/audit.module';
 import { AiModule } from '@/ai/ai.module';
+import { VideoCallModule } from '@/video-call/video-call.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { AiModule } from '@/ai/ai.module';
     NotificationsModule,
     OverlaysModule,
     AuditModule,
+    VideoCallModule,
   ],
   controllers: [AppController],
   providers: [

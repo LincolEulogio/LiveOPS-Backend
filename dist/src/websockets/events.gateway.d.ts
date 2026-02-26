@@ -227,5 +227,11 @@ export declare class EventsGateway implements OnGatewayInit, OnGatewayConnection
         productionId: string;
         template: any;
     }): void;
+    handleOverlayListUpdated(payload: {
+        productionId: string;
+    }): void;
+    handleProductionUpdated(payload: {
+        productionId: string;
+    }): void;
 }
 export {};

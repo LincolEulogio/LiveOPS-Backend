@@ -14,7 +14,7 @@ import {
 } from '@/users/dto/users.dto';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
-import { PermissionAction } from '@/common/constants/rbac.constants';
+import { PermissionAction, StandardRoles } from '@/common/constants/rbac.constants';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -61,32 +61,46 @@ export class UsersService implements OnModuleInit {
       });
     }
 
-    const defaultRoles = [
-      { name: 'SUPERADMIN', description: 'Global System Administrator' },
-    ];
+    const allRoles = Object.values(StandardRoles) as any[];
 
-    for (const roleData of defaultRoles) {
+    for (const roleData of allRoles) {
+      const { permissions, ...roleBasic } = roleData;
       let role = await this.prisma.role.findUnique({
-        where: { name: roleData.name },
+        where: { name: roleBasic.name },
       });
+
       if (!role) {
-        role = await this.prisma.role.create({ data: roleData });
-        this.logger.log(`Created default role: ${roleData.name}`);
+        role = await this.prisma.role.create({ data: roleBasic });
+        this.logger.log(`Created default role: ${roleBasic.name}`);
       }
 
-      // Sync permissions for default roles
-      const allPerms = await this.prisma.permission.findMany();
-
-      if (role.name === 'SUPERADMIN') {
-        for (const p of allPerms) {
+      // Sync specific permissions for each role
+      for (const action of permissions) {
+        const perm = await this.prisma.permission.findUnique({ where: { action } });
+        if (perm) {
           await this.prisma.rolePermission.upsert({
             where: {
-              roleId_permissionId: { roleId: role.id, permissionId: p.id },
+              roleId_permissionId: { roleId: role.id, permissionId: perm.id },
             },
-            create: { roleId: role.id, permissionId: p.id },
+            create: { roleId: role.id, permissionId: perm.id },
             update: {},
           });
         }
+      }
+    }
+
+    // Special case for SUPERADMIN (gets ALL permissions)
+    const superAdminRole = await this.prisma.role.findUnique({ where: { name: 'SUPERADMIN' } });
+    if (superAdminRole) {
+      const allPerms = await this.prisma.permission.findMany();
+      for (const p of allPerms) {
+        await this.prisma.rolePermission.upsert({
+          where: {
+            roleId_permissionId: { roleId: superAdminRole.id, permissionId: p.id },
+          },
+          create: { roleId: superAdminRole.id, permissionId: p.id },
+          update: {},
+        });
       }
     }
   }

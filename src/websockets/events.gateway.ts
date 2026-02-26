@@ -709,4 +709,18 @@ export class EventsGateway
       .to(`production_${payload.productionId}`)
       .emit(`overlay.template_update:${payload.template.id}`, payload.template);
   }
+
+  @OnEvent('overlay.list_updated')
+  handleOverlayListUpdated(payload: { productionId: string }) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('overlay.list_updated', payload);
+  }
+
+  @OnEvent('production.updated')
+  handleProductionUpdated(payload: { productionId: string }) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('production.updated', payload);
+  }
 }

@@ -61,8 +61,8 @@ export declare class WebhooksController {
     subscribe(req: any, subscription: CreateSubscriptionDto): Promise<{
         id: string;
         createdAt: Date;
-        endpoint: string;
         userId: string;
+        endpoint: string;
         p256dh: string;
         auth: string;
     } | null>;
