@@ -6,11 +6,11 @@ export declare class SocialController {
         id: string;
         status: string;
         productionId: string;
-        content: string;
-        platform: string;
         timestamp: Date;
+        platform: string;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
         aiSentiment: string | null;
         aiCategory: string | null;
@@ -25,11 +25,11 @@ export declare class SocialController {
         id: string;
         status: string;
         productionId: string;
-        content: string;
-        platform: string;
         timestamp: Date;
+        platform: string;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
         aiSentiment: string | null;
         aiCategory: string | null;
@@ -38,11 +38,11 @@ export declare class SocialController {
         id: string;
         status: string;
         productionId: string;
-        content: string;
-        platform: string;
         timestamp: Date;
+        platform: string;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
         aiSentiment: string | null;
         aiCategory: string | null;
@@ -52,39 +52,39 @@ export declare class SocialController {
         options: string[];
     }): Promise<{
         id: string;
+        options: import("@prisma/client/runtime/client").JsonValue;
+        productionId: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isActive: boolean;
         question: string;
-        options: import("@prisma/client/runtime/client").JsonValue;
     }>;
     getActivePoll(productionId: string): Promise<{
         id: string;
+        options: import("@prisma/client/runtime/client").JsonValue;
+        productionId: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isActive: boolean;
         question: string;
-        options: import("@prisma/client/runtime/client").JsonValue;
     } | null>;
     votePoll(id: string, optionId: string): Promise<{
         id: string;
+        options: import("@prisma/client/runtime/client").JsonValue;
+        productionId: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isActive: boolean;
         question: string;
-        options: import("@prisma/client/runtime/client").JsonValue;
     }>;
     closePoll(productionId: string, id: string): Promise<{
         id: string;
+        options: import("@prisma/client/runtime/client").JsonValue;
+        productionId: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isActive: boolean;
         question: string;
-        options: import("@prisma/client/runtime/client").JsonValue;
     }>;
     getBlacklist(productionId: string): string[];
     updateBlacklist(productionId: string, words: string[]): {

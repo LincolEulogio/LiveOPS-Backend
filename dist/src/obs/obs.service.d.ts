@@ -13,8 +13,8 @@ export declare class ObsService {
         password: string | null;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         url: string;
+        productionId: string;
         isEnabled: boolean;
     }>;
     getConnection(productionId: string): Promise<{
@@ -22,8 +22,8 @@ export declare class ObsService {
         password: string | null;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         url: string;
+        productionId: string;
         isEnabled: boolean;
     }>;
     isConnected(productionId: string): boolean;

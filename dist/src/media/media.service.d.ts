@@ -27,8 +27,8 @@ export declare class MediaService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         url: string;
+        productionId: string;
         type: import("@prisma/client").$Enums.AssetType;
         size: number;
         mimeType: string;
@@ -38,8 +38,8 @@ export declare class MediaService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         url: string;
+        productionId: string;
         type: import("@prisma/client").$Enums.AssetType;
         size: number;
         mimeType: string;

@@ -12,22 +12,22 @@ export declare class AnalyticsService {
     getTelemetryLogs(productionId: string, minutes?: number): Promise<{
         id: string;
         productionId: string;
-        isStreaming: boolean;
-        isRecording: boolean;
-        cpuUsage: number | null;
-        fps: number | null;
         timestamp: Date;
+        cpuUsage: number | null;
         memoryUsage: number | null;
+        fps: number | null;
         bitrate: number | null;
         droppedFrames: number | null;
+        isStreaming: boolean;
+        isRecording: boolean;
     }[]>;
     generateShowReport(productionId: string): Promise<{
         id: string;
         productionId: string;
-        durationMs: number | null;
+        generatedAt: Date;
         startTime: Date | null;
         endTime: Date | null;
-        generatedAt: Date;
+        durationMs: number | null;
         peakViewers: number | null;
         alertsCount: number | null;
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
@@ -36,10 +36,10 @@ export declare class AnalyticsService {
     getShowReport(productionId: string): Promise<{
         id: string;
         productionId: string;
-        durationMs: number | null;
+        generatedAt: Date;
         startTime: Date | null;
         endTime: Date | null;
-        generatedAt: Date;
+        durationMs: number | null;
         peakViewers: number | null;
         alertsCount: number | null;
         metrics: import("@prisma/client/runtime/client").JsonValue | null;

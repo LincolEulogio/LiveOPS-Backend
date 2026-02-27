@@ -12,8 +12,8 @@ export declare class VmixService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         url: string;
+        productionId: string;
         isEnabled: boolean;
         pollingInterval: number;
     }>;
@@ -21,8 +21,8 @@ export declare class VmixService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         url: string;
+        productionId: string;
         isEnabled: boolean;
         pollingInterval: number;
     }>;

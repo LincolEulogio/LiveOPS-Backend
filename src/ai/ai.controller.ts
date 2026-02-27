@@ -1,4 +1,5 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { AiService } from './ai.service';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/common/guards/permissions.guard';
@@ -34,5 +35,15 @@ export class AiController {
     ) {
         const reply = await this.aiService.chat(body.history, body.context);
         return { reply };
+    }
+
+    @Post('chat-stream')
+    @Permissions('production:view')
+    async streamChat(
+        @Res() res: Response,
+        @Body() body: { history: { role: 'user' | 'assistant'; content: string }[]; context: string }
+    ) {
+        const result = await this.aiService.streamChat(body.history, body.context);
+        result.pipeTextStreamToResponse(res);
     }
 }

@@ -23,11 +23,11 @@ export declare class SocialService {
         id: string;
         status: string;
         productionId: string;
-        content: string;
-        platform: string;
         timestamp: Date;
+        platform: string;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
         aiSentiment: string | null;
         aiCategory: string | null;
@@ -36,11 +36,11 @@ export declare class SocialService {
         id: string;
         status: string;
         productionId: string;
-        content: string;
-        platform: string;
         timestamp: Date;
+        platform: string;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
         aiSentiment: string | null;
         aiCategory: string | null;
@@ -49,49 +49,49 @@ export declare class SocialService {
         id: string;
         status: string;
         productionId: string;
-        content: string;
-        platform: string;
         timestamp: Date;
+        platform: string;
         author: string;
         authorAvatar: string | null;
+        content: string;
         externalId: string | null;
         aiSentiment: string | null;
         aiCategory: string | null;
     }>;
     createPoll(productionId: string, question: string, options: string[]): Promise<{
         id: string;
+        options: Prisma.JsonValue;
+        productionId: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isActive: boolean;
         question: string;
-        options: Prisma.JsonValue;
     }>;
     getActivePoll(productionId: string): Promise<{
         id: string;
+        options: Prisma.JsonValue;
+        productionId: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isActive: boolean;
         question: string;
-        options: Prisma.JsonValue;
     } | null>;
     votePoll(pollId: string, optionId: string): Promise<{
         id: string;
+        options: Prisma.JsonValue;
+        productionId: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isActive: boolean;
         question: string;
-        options: Prisma.JsonValue;
     }>;
     closePoll(productionId: string, pollId: string): Promise<{
         id: string;
+        options: Prisma.JsonValue;
+        productionId: string;
         createdAt: Date;
         updatedAt: Date;
-        productionId: string;
         isActive: boolean;
         question: string;
-        options: Prisma.JsonValue;
     }>;
 }

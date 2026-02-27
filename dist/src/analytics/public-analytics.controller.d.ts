@@ -12,14 +12,14 @@ export declare class PublicAnalyticsController {
         telemetry: {
             id: string;
             productionId: string;
-            isStreaming: boolean;
-            isRecording: boolean;
-            cpuUsage: number | null;
-            fps: number | null;
             timestamp: Date;
+            cpuUsage: number | null;
             memoryUsage: number | null;
+            fps: number | null;
             bitrate: number | null;
             droppedFrames: number | null;
+            isStreaming: boolean;
+            isRecording: boolean;
         }[];
     }>;
 }

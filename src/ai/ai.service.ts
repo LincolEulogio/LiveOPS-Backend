@@ -1,62 +1,77 @@
-import { Injectable, Logger, OnModuleInit, InternalServerErrorException, ServiceUnavailableException } from '@nestjs/common';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import {
+  generateText,
+  streamText,
+  generateObject,
+  type LanguageModel,
+} from 'ai';
+import { z } from 'zod';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  ServiceUnavailableException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 
 @Injectable()
 export class AiService implements OnModuleInit {
-    private readonly logger = new Logger(AiService.name);
-    private genAI: GoogleGenerativeAI;
-    private model: GenerativeModel;
+  private readonly logger = new Logger(AiService.name);
+  private googleModel: LanguageModel;
 
-    constructor(private configService: ConfigService) { }
+  constructor(private configService: ConfigService) {}
 
-    async onModuleInit() {
-        const rawApiKey = this.configService.get<string>('GEMINI_API_KEY');
-        const apiKey = rawApiKey?.replace(/["']/g, '').trim();
+  async onModuleInit() {
+    const rawApiKey = this.configService.get<string>('GEMINI_API_KEY');
+    const apiKey = rawApiKey?.replace(/["']/g, '').trim();
 
-        if (!apiKey) {
-            this.logger.warn('GEMINI_API_KEY not found in environment variables. AI features will be disabled.');
-            return;
-        }
-
-        try {
-            this.genAI = new GoogleGenerativeAI(apiKey);
-            // Según las métricas que envías, 'gemini-2.5-flash' es el que tiene actividad (4/5 RPM).
-            // En este contexto de 2026, usaremos ese modelo que es el que tu cuenta reconoce.
-            this.model = this.genAI.getGenerativeModel(
-                { model: 'gemini-2.5-flash' },
-                { apiVersion: 'v1' }
-            );
-            this.logger.log(`LIVIA AI Node synchronized: gemini-2.5-flash (2026 Series)`);
-        } catch (error: any) {
-            this.logger.error(`AI initialization failed: ${error.message}`);
-        }
+    if (!apiKey) {
+      this.logger.warn(
+        'GEMINI_API_KEY not found in environment variables. AI features will be disabled.',
+      );
+      return;
     }
 
-    async generateText(prompt: string): Promise<string> {
-        if (!this.model) {
-            this.logger.error('Gemini Model not initialized. Check API Key.');
-            throw new ServiceUnavailableException('LIVIA AI Node is not configured or API Key is missing.');
-        }
+    try {
+      const google = createGoogleGenerativeAI({ apiKey });
+      this.googleModel = google('gemini-2.5-flash');
+      this.logger.log(
+        `LIVIA AI SDK Node synchronized: gemini-2.5-flash (2026 Series)`,
+      );
+    } catch (error: any) {
+      this.logger.error(`AI SDK initialization failed: ${error.message}`);
+    }
+  }
 
-        try {
-            this.logger.debug(`Generating text for prompt: ${prompt.substring(0, 100)}...`);
-            const result = await this.model.generateContent(prompt);
-            const response = await result.response;
-            const text = response.text();
-            this.logger.debug(`Successfully generated ${text.length} characters.`);
-            return text;
-        } catch (error: any) {
-            this.logger.error(`AI Core Failure: ${error.message}`);
-            if (error.response) {
-                this.logger.error(`Response details: ${JSON.stringify(error.response.data)}`);
-            }
-            throw new InternalServerErrorException(`LIVIA Intelligence error: ${error.message || 'Unknown provider error'}`);
-        }
+  async generateText(prompt: string): Promise<string> {
+    if (!this.googleModel) {
+      this.logger.error('Google Model not initialized. Check API Key.');
+      throw new ServiceUnavailableException(
+        'LIVIA AI Node is not configured or API Key is missing.',
+      );
     }
 
-    async analyzeShowPerformance(metrics: any): Promise<string> {
-        const prompt = `
+    try {
+      this.logger.debug(
+        `Generating text for prompt: ${prompt.substring(0, 100)}...`,
+      );
+      const { text } = await generateText({
+        model: this.googleModel,
+        prompt: prompt,
+      });
+      this.logger.debug(`Successfully generated ${text.length} characters.`);
+      return text;
+    } catch (error: any) {
+      this.logger.error(`AI Core Failure: ${error.message}`);
+      throw new InternalServerErrorException(
+        `LIVIA Intelligence error: ${error.message || 'Unknown provider error'}`,
+      );
+    }
+  }
+
+  async analyzeShowPerformance(metrics: any): Promise<string> {
+    const prompt = `
       Eres un director de producción técnica experto. Analiza el siguiente log de telemetría de una producción en vivo y genera un resumen ejecutivo profesional.
       Enfócate en la estabilidad del stream, el uso de recursos y cualquier anomalía detectada.
       
@@ -75,33 +90,33 @@ export class AiService implements OnModuleInit {
       
       Responde en Español.
     `;
-        return this.generateText(prompt);
+    return this.generateText(prompt);
+  }
+
+  async analyzeSocialMessage(
+    content: string,
+  ): Promise<{ sentiment: string; category: string }> {
+    try {
+      const { object } = await generateObject({
+        model: this.googleModel,
+        schema: z.object({
+          sentiment: z.enum(['POSITIVO', 'NEGATIVO', 'NEUTRAL']),
+          category: z.enum(['PREGUNTA', 'COMENTARIO', 'CUMPLIDO', 'CRITICA']),
+        }),
+        prompt: `Analiza el siguiente mensaje de redes sociales para una producción en vivo: "${content}"`,
+      });
+      return object;
+    } catch (e) {
+      this.logger.error('Failed to parse AI social sentiment:', e);
+      return { sentiment: 'NEUTRAL', category: 'COMENTARIO' };
     }
+  }
 
-    async analyzeSocialMessage(content: string): Promise<{ sentiment: string, category: string }> {
-        const prompt = `
-      Analiza el siguiente mensaje de redes sociales para una producción en vivo.
-      Determina el sentimiento (POSITIVO, NEGATIVO, NEUTRAL) y la categoría (PREGUNTA, COMENTARIO, CUMPLIDO, CRITICA).
-      
-      Mensaje: "${content}"
-      
-      Responde SOLO con este formato JSON:
-      {"sentiment": "VALOR", "category": "VALOR"}
-    `;
-
-        try {
-            const response = await this.generateText(prompt);
-            // Clean possible markdown formatting if AI includes it
-            const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
-            return JSON.parse(cleanJson);
-        } catch (e) {
-            this.logger.error('Failed to parse AI social sentiment:', e);
-            return { sentiment: 'NEUTRAL', category: 'COMENTARIO' };
-        }
-    }
-
-    async suggestScriptContent(title: string, currentContent: string): Promise<string> {
-        const prompt = `
+  async suggestScriptContent(
+    title: string,
+    currentContent: string,
+  ): Promise<string> {
+    const prompt = `
       Eres un asistente de producción creativa para un programa en vivo.
       Basado en el título del bloque y el contenido actual, genera 3 puntos clave (talking points) 
       y una sugerencia de acción de cámara o visual para este segmento.
@@ -116,11 +131,15 @@ export class AiService implements OnModuleInit {
       
       Responde en Español.
     `;
-        return this.generateText(prompt);
-    }
+    return this.generateText(prompt);
+  }
 
-    async generateBriefing(data: { social: string; telemetry: string; script: string }): Promise<string> {
-        const prompt = `
+  async generateBriefing(data: {
+    social: string;
+    telemetry: string;
+    script: string;
+  }): Promise<string> {
+    const prompt = `
       Eres LIVIA, la IA de control de dirección de LiveOPS.
       Analiza el estado actual de la producción:
       
@@ -142,35 +161,69 @@ export class AiService implements OnModuleInit {
       
       Responde en Español de forma ejecutiva.
     `;
-        return this.generateText(prompt);
+    return this.generateText(prompt);
+  }
+
+  async streamChat(
+    history: { role: 'user' | 'assistant' | 'system'; content: string }[],
+    systemContext: string,
+  ): Promise<any> {
+    if (!this.googleModel) {
+      throw new ServiceUnavailableException(
+        'LIVIA AI Node is not configured or API Key is missing.',
+      );
     }
 
-    async chat(history: { role: 'user' | 'assistant'; content: string }[], systemContext: string): Promise<string> {
-        if (!this.model) {
-            throw new ServiceUnavailableException('LIVIA AI Node is not configured or API Key is missing.');
-        }
+    try {
+      const messages = [
+        { role: 'system' as const, content: systemContext },
+        ...history.map((m) => ({
+          role: (m.role === 'assistant' ? 'assistant' : 'user') as
+            | 'assistant'
+            | 'user',
+          content: m.content,
+        })),
+      ];
 
-        try {
-            const chatSession = this.model.startChat();
-
-            // Reconstruct the history manually into a single prompt for safety
-            let reconstructedPrompt = `[SYSTEM INSTRUCTION]\n${systemContext}\n\n[CONVERSATION HISTORY]\n`;
-            for (let i = 0; i < history.length - 1; i++) {
-                const msg = history[i];
-                reconstructedPrompt += `${msg.role.toUpperCase()}: ${msg.content}\n`;
-            }
-
-            const lastMessage = history[history.length - 1].content;
-            reconstructedPrompt += `\n[CURRENT USER MESSAGE]\nUSER: ${lastMessage}\n\nPlease respond as the ASSISTANT.`;
-
-            const result = await chatSession.sendMessage(reconstructedPrompt);
-            return result.response.text();
-        } catch (error: any) {
-            this.logger.error(`AI Chat Failure: ${error.message}`);
-            if (error.response) {
-                this.logger.error(`Response details: ${JSON.stringify(error.response.data)}`);
-            }
-            throw new InternalServerErrorException(`LIVIA Intelligence error: ${error.message}`);
-        }
+      return streamText({
+        model: this.googleModel,
+        messages,
+      });
+    } catch (error: any) {
+      this.logger.error(`AI Stream Chat Failure: ${error.message}`);
+      throw new InternalServerErrorException(
+        `LIVIA Intelligence error: ${error.message}`,
+      );
     }
+  }
+
+  async chat(
+    history: { role: 'user' | 'assistant'; content: string }[],
+    systemContext: string,
+  ): Promise<string> {
+    if (!this.googleModel) {
+      throw new ServiceUnavailableException(
+        'LIVIA AI Node is not configured or API Key is missing.',
+      );
+    }
+
+    try {
+      const { text } = await generateText({
+        model: this.googleModel,
+        messages: [
+          { role: 'system', content: systemContext },
+          ...history.map((m) => ({
+            role: m.role as 'assistant' | 'user',
+            content: m.content,
+          })),
+        ],
+      });
+      return text;
+    } catch (error: any) {
+      this.logger.error(`AI Chat Failure: ${error.message}`);
+      throw new InternalServerErrorException(
+        `LIVIA Intelligence error: ${error.message}`,
+      );
+    }
+  }
 }
