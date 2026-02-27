@@ -19,7 +19,7 @@ import { Permissions } from '@/common/decorators/permissions.decorator';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions/:productionId/intercom')
 export class IntercomController {
-  constructor(private readonly intercomService: IntercomService) { }
+  constructor(private readonly intercomService: IntercomService) {}
 
   @Post('templates')
   @Permissions('intercom:manage')
@@ -59,5 +59,11 @@ export class IntercomController {
   @Permissions('intercom:view')
   getCommandHistory(@Param('productionId') productionId: string) {
     return this.intercomService.getCommandHistory(productionId);
+  }
+
+  @Get('ai-summary')
+  @Permissions('intercom:view')
+  getAiSummary(@Param('productionId') productionId: string) {
+    return this.intercomService.getAiSummary(productionId);
   }
 }

@@ -13,11 +13,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MediaService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const ai_service_1 = require("../ai/ai.service");
 let MediaService = MediaService_1 = class MediaService {
     prisma;
+    aiService;
     logger = new common_1.Logger(MediaService_1.name);
-    constructor(prisma) {
+    constructor(prisma, aiService) {
         this.prisma = prisma;
+        this.aiService = aiService;
     }
     async getAssets(productionId) {
         try {
@@ -33,13 +36,18 @@ let MediaService = MediaService_1 = class MediaService {
     }
     async saveAsset(data) {
         try {
+            const aiMetadata = await this.aiService.analyzeMediaAsset(data.name, data.type, data.mimeType);
             return await this.prisma.mediaAsset.create({
-                data,
+                data: {
+                    ...data,
+                    tags: aiMetadata.tags,
+                    aiMetadata: aiMetadata,
+                },
             });
         }
         catch (err) {
             this.logger.error(`Failed to save asset: ${err.message}`);
-            throw err;
+            return await this.prisma.mediaAsset.create({ data });
         }
     }
     async deleteAsset(id, productionId) {
@@ -57,6 +65,7 @@ let MediaService = MediaService_1 = class MediaService {
 exports.MediaService = MediaService;
 exports.MediaService = MediaService = MediaService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        ai_service_1.AiService])
 ], MediaService);
 //# sourceMappingURL=media.service.js.map

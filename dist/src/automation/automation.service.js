@@ -13,12 +13,15 @@ exports.AutomationService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const event_emitter_1 = require("@nestjs/event-emitter");
+const ai_service_1 = require("../ai/ai.service");
 let AutomationService = class AutomationService {
     prisma;
     eventEmitter;
-    constructor(prisma, eventEmitter) {
+    aiService;
+    constructor(prisma, eventEmitter, aiService) {
         this.prisma = prisma;
         this.eventEmitter = eventEmitter;
+        this.aiService = aiService;
     }
     async getRules(productionId) {
         return this.prisma.rule.findMany({
@@ -110,11 +113,16 @@ let AutomationService = class AutomationService {
         });
         return { success: true, message: `Macro "${rule.name}" triggered` };
     }
+    async generateRuleAi(productionId, prompt) {
+        const macro = await this.aiService.generateAutomationMacro(prompt);
+        return this.createRule(productionId, macro);
+    }
 };
 exports.AutomationService = AutomationService;
 exports.AutomationService = AutomationService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        event_emitter_1.EventEmitter2])
+        event_emitter_1.EventEmitter2,
+        ai_service_1.AiService])
 ], AutomationService);
 //# sourceMappingURL=automation.service.js.map

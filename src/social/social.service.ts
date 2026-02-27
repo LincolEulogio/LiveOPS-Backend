@@ -5,198 +5,222 @@ import { AiService } from '@/ai/ai.service';
 import { Prisma } from '@prisma/client';
 
 export interface SocialMessagePayload {
-    productionId: string;
-    platform: string;
-    author: string;
-    avatarUrl?: string;
-    content: string;
-    externalId?: string;
+  productionId: string;
+  platform: string;
+  author: string;
+  avatarUrl?: string;
+  content: string;
+  externalId?: string;
 }
 
 interface PollOption {
-    id: string;
-    text: string;
-    votes: number;
+  id: string;
+  text: string;
+  votes: number;
 }
 
 @Injectable()
 export class SocialService {
-    private readonly logger = new Logger(SocialService.name);
-    private blacklists = new Map<string, string[]>(); // productionId -> blocked words
+  private readonly logger = new Logger(SocialService.name);
+  private blacklists = new Map<string, string[]>(); // productionId -> blocked words
 
-    constructor(
-        private prisma: PrismaService,
-        private eventEmitter: EventEmitter2,
-        private aiService: AiService
+  constructor(
+    private prisma: PrismaService,
+    private eventEmitter: EventEmitter2,
+    private aiService: AiService,
+  ) {
+    this.blacklists.set('default', ['spam', 'buy followers', 'scam']);
+  }
+
+  setBlacklist(productionId: string, words: string[]) {
+    this.blacklists.set(
+      productionId,
+      words.map((w) => w.toLowerCase()),
+    );
+  }
+
+  getBlacklist(productionId: string): string[] {
+    return this.blacklists.get(productionId) || [];
+  }
+
+  async ingestMessage(productionId: string, payload: SocialMessagePayload) {
+    const blacklist = this.getBlacklist(productionId);
+
+    const isClean = !blacklist.some((word) =>
+      payload.content.toLowerCase().includes(word),
+    );
+
+    // Mandatory AI analysis for moderation
+    let aiSentiment = 'NEUTRAL';
+    let aiCategory = 'COMENTARIO';
+    let isToxic = false;
+
+    try {
+      const aiResult = await this.aiService.analyzeSocialMessage(
+        payload.content,
+      );
+      aiSentiment = aiResult.sentiment;
+      aiCategory = aiResult.category;
+      isToxic = aiResult.isToxic;
+    } catch (e) {
+      this.logger.warn('AI social analysis failed, continuing with defaults');
+    }
+
+    const status = !isClean || isToxic ? 'REJECTED' : 'PENDING';
+
+    const message = await this.prisma.socialMessage.create({
+      data: {
+        productionId,
+        platform: payload.platform,
+        author: payload.author,
+        authorAvatar: payload.avatarUrl,
+        content: payload.content,
+        externalId: payload.externalId,
+        status,
+        aiSentiment,
+        aiCategory,
+      },
+    });
+
+    this.eventEmitter.emit('social.message.new', message);
+
+    if (!isClean) {
+      this.logger.debug(
+        `Message rejected due to blacklist: ${message.content}`,
+      );
+    }
+
+    return message;
+  }
+
+  async getMessages(productionId: string, status?: string) {
+    return this.prisma.socialMessage.findMany({
+      where: {
+        productionId,
+        ...(status ? { status } : {}),
+      },
+      orderBy: { timestamp: 'desc' },
+      take: 100,
+    });
+  }
+
+  async updateMessageStatus(
+    productionId: string,
+    messageId: string,
+    status: string,
+  ) {
+    if (status === 'ON_AIR') {
+      // Unset previous on-air messages
+      await this.prisma.socialMessage.updateMany({
+        where: { productionId, status: 'ON_AIR' },
+        data: { status: 'APPROVED' },
+      });
+    }
+
+    const message = await this.prisma.socialMessage.update({
+      where: { id: messageId },
+      data: { status },
+    });
+
+    this.eventEmitter.emit('social.message.updated', message);
+
+    if (status === 'ON_AIR') {
+      this.eventEmitter.emit('graphics.social.show', message);
+
+      // Also broadcast for general Overlay Data Binding
+      this.eventEmitter.emit('overlay.broadcast_data', {
+        productionId,
+        data: {
+          latest_comment_author: message.author,
+          latest_comment_content: message.content,
+          latest_comment_platform: message.platform,
+          latest_comment_avatar: message.authorAvatar || '',
+        },
+      });
+    } else if (
+      status === 'APPROVED' ||
+      status === 'REJECTED' ||
+      status === 'PENDING'
     ) {
-        this.blacklists.set('default', ['spam', 'buy followers', 'scam']);
+      // If it was on-air and moved to something else, clear overlay
+      this.eventEmitter.emit('graphics.social.hide', { productionId });
     }
 
-    setBlacklist(productionId: string, words: string[]) {
-        this.blacklists.set(productionId, words.map(w => w.toLowerCase()));
+    return message;
+  }
+
+  // Poll logic
+  async createPoll(productionId: string, question: string, options: string[]) {
+    // Deactivate previous active polls
+    await this.prisma.socialPoll.updateMany({
+      where: { productionId, isActive: true },
+      data: { isActive: false },
+    });
+
+    const pollOptions = options.map((opt, index) => ({
+      id: `opt-${index}`,
+      text: opt,
+      votes: 0,
+    }));
+
+    const poll = await this.prisma.socialPoll.create({
+      data: {
+        productionId,
+        question,
+        options: pollOptions,
+        isActive: true,
+      },
+    });
+
+    this.eventEmitter.emit('social.poll.created', poll);
+    return poll;
+  }
+
+  async getActivePoll(productionId: string) {
+    return this.prisma.socialPoll.findFirst({
+      where: { productionId, isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async votePoll(pollId: string, optionId: string) {
+    const poll = await this.prisma.socialPoll.findUnique({
+      where: { id: pollId },
+    });
+
+    if (!poll || !poll.isActive) {
+      throw new NotFoundException('Poll not found or inactive');
     }
 
-    getBlacklist(productionId: string): string[] {
-        return this.blacklists.get(productionId) || [];
+    const options = poll.options as unknown as PollOption[];
+    const option = options.find((o) => o.id === optionId);
+
+    if (option) {
+      option.votes += 1;
+      const updatedPoll = await this.prisma.socialPoll.update({
+        where: { id: pollId },
+        data: { options: options as unknown as Prisma.InputJsonValue },
+      });
+
+      this.eventEmitter.emit('social.poll.updated', updatedPoll);
+      return updatedPoll;
     }
 
-    async ingestMessage(productionId: string, payload: SocialMessagePayload) {
-        const blacklist = this.getBlacklist(productionId);
+    throw new NotFoundException('Option not found');
+  }
 
-        const isClean = !blacklist.some(word =>
-            payload.content.toLowerCase().includes(word)
-        );
+  async closePoll(productionId: string, pollId: string) {
+    const poll = await this.prisma.socialPoll.update({
+      where: { id: pollId },
+      data: { isActive: false },
+    });
 
-        // Optional AI analysis (async to not block core flow too much)
-        let aiSentiment = null;
-        let aiCategory = null;
+    this.eventEmitter.emit('social.poll.closed', poll);
+    return poll;
+  }
 
-        try {
-            const aiResult = await this.aiService.analyzeSocialMessage(payload.content);
-            aiSentiment = aiResult.sentiment;
-            aiCategory = aiResult.category;
-        } catch (e) {
-            this.logger.warn('AI social analysis failed, continuing without it');
-        }
-
-        const message = await this.prisma.socialMessage.create({
-            data: {
-                productionId,
-                platform: payload.platform,
-                author: payload.author,
-                authorAvatar: payload.avatarUrl,
-                content: payload.content,
-                externalId: payload.externalId,
-                status: isClean ? 'PENDING' : 'REJECTED',
-                aiSentiment,
-                aiCategory,
-            },
-        });
-
-        this.eventEmitter.emit('social.message.new', message);
-
-        if (!isClean) {
-            this.logger.debug(`Message rejected due to blacklist: ${message.content}`);
-        }
-
-        return message;
-    }
-
-    async getMessages(productionId: string, status?: string) {
-        return this.prisma.socialMessage.findMany({
-            where: {
-                productionId,
-                ...(status ? { status } : {}),
-            },
-            orderBy: { timestamp: 'desc' },
-            take: 100,
-        });
-    }
-
-    async updateMessageStatus(productionId: string, messageId: string, status: string) {
-        if (status === 'ON_AIR') {
-            // Unset previous on-air messages
-            await this.prisma.socialMessage.updateMany({
-                where: { productionId, status: 'ON_AIR' },
-                data: { status: 'APPROVED' },
-            });
-        }
-
-        const message = await this.prisma.socialMessage.update({
-            where: { id: messageId },
-            data: { status },
-        });
-
-        this.eventEmitter.emit('social.message.updated', message);
-
-        if (status === 'ON_AIR') {
-            this.eventEmitter.emit('graphics.social.show', message);
-
-            // Also broadcast for general Overlay Data Binding
-            this.eventEmitter.emit('overlay.broadcast_data', {
-                productionId,
-                data: {
-                    latest_comment_author: message.author,
-                    latest_comment_content: message.content,
-                    latest_comment_platform: message.platform,
-                    latest_comment_avatar: message.authorAvatar || '',
-                }
-            });
-        } else if (status === 'APPROVED' || status === 'REJECTED' || status === 'PENDING') {
-            // If it was on-air and moved to something else, clear overlay
-            this.eventEmitter.emit('graphics.social.hide', { productionId });
-        }
-
-        return message;
-    }
-
-    // Poll logic
-    async createPoll(productionId: string, question: string, options: string[]) {
-        // Deactivate previous active polls
-        await this.prisma.socialPoll.updateMany({
-            where: { productionId, isActive: true },
-            data: { isActive: false },
-        });
-
-        const pollOptions = options.map((opt, index) => ({
-            id: `opt-${index}`,
-            text: opt,
-            votes: 0,
-        }));
-
-        const poll = await this.prisma.socialPoll.create({
-            data: {
-                productionId,
-                question,
-                options: pollOptions,
-                isActive: true,
-            },
-        });
-
-        this.eventEmitter.emit('social.poll.created', poll);
-        return poll;
-    }
-
-    async getActivePoll(productionId: string) {
-        return this.prisma.socialPoll.findFirst({
-            where: { productionId, isActive: true },
-            orderBy: { createdAt: 'desc' },
-        });
-    }
-
-    async votePoll(pollId: string, optionId: string) {
-        const poll = await this.prisma.socialPoll.findUnique({
-            where: { id: pollId },
-        });
-
-        if (!poll || !poll.isActive) {
-            throw new NotFoundException('Poll not found or inactive');
-        }
-
-        const options = poll.options as unknown as PollOption[];
-        const option = options.find(o => o.id === optionId);
-
-        if (option) {
-            option.votes += 1;
-            const updatedPoll = await this.prisma.socialPoll.update({
-                where: { id: pollId },
-                data: { options: options as unknown as Prisma.InputJsonValue },
-            });
-
-            this.eventEmitter.emit('social.poll.updated', updatedPoll);
-            return updatedPoll;
-        }
-
-        throw new NotFoundException('Option not found');
-    }
-
-    async closePoll(productionId: string, pollId: string) {
-        const poll = await this.prisma.socialPoll.update({
-            where: { id: pollId },
-            data: { isActive: false },
-        });
-
-        this.eventEmitter.emit('social.poll.closed', poll);
-        return poll;
-    }
+  async getAiHighlights(productionId: string) {
+    const messages = await this.getMessages(productionId, 'APPROVED');
+    return this.aiService.suggestSocialHighlights(messages);
+  }
 }

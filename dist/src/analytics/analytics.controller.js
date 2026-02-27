@@ -39,6 +39,9 @@ let AnalyticsController = class AnalyticsController {
     async generateReport(id) {
         return this.analyticsService.generateShowReport(id);
     }
+    async getSeoPackage(id) {
+        return this.analyticsService.getPostShowSeo(id);
+    }
 };
 exports.AnalyticsController = AnalyticsController;
 __decorate([
@@ -66,6 +69,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AnalyticsController.prototype, "generateReport", null);
+__decorate([
+    (0, common_1.Get)('seo-package'),
+    (0, permissions_decorator_1.Permissions)('production:view'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AnalyticsController.prototype, "getSeoPackage", null);
 exports.AnalyticsController = AnalyticsController = __decorate([
     (0, common_1.Controller)('productions/:id/analytics'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),

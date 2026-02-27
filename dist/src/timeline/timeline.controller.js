@@ -28,6 +28,9 @@ let TimelineController = class TimelineController {
     getBlocks(productionId) {
         return this.timelineService.getBlocks(productionId);
     }
+    getAiAdvice(productionId) {
+        return this.timelineService.getAiAdvice(productionId);
+    }
     createBlock(productionId, dto) {
         return this.timelineService.createBlock(productionId, dto);
     }
@@ -59,6 +62,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], TimelineController.prototype, "getBlocks", null);
+__decorate([
+    (0, common_1.Get)('ai-advice'),
+    (0, permissions_decorator_1.Permissions)(rbac_constants_1.PermissionAction.RUNDOWN_VIEW),
+    __param(0, (0, common_1.Param)('productionId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], TimelineController.prototype, "getAiAdvice", null);
 __decorate([
     (0, common_1.Post)(),
     (0, permissions_decorator_1.Permissions)(rbac_constants_1.PermissionAction.RUNDOWN_EDIT),

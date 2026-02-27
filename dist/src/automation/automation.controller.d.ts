@@ -124,4 +124,31 @@ export declare class AutomationController {
         success: boolean;
         message: string;
     }>;
+    generateRuleAi(productionId: string, prompt: string): Promise<{
+        triggers: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            eventType: string;
+            condition: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
+        }[];
+        actions: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            order: number;
+            actionType: string;
+            payload: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
+        }[];
+    } & {
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        productionId: string;
+        isEnabled: boolean;
+    }>;
 }

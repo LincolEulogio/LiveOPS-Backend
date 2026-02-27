@@ -2,13 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateRuleDto, UpdateRuleDto } from '@/automation/dto/automation.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AiService } from '@/ai/ai.service';
 
 @Injectable()
 export class AutomationService {
   constructor(
     private prisma: PrismaService,
-    private eventEmitter: EventEmitter2
-  ) { }
+    private eventEmitter: EventEmitter2,
+    private aiService: AiService,
+  ) {}
 
   async getRules(productionId: string) {
     return this.prisma.rule.findMany({
@@ -109,5 +111,10 @@ export class AutomationService {
     });
 
     return { success: true, message: `Macro "${rule.name}" triggered` };
+  }
+
+  async generateRuleAi(productionId: string, prompt: string) {
+    const macro = await this.aiService.generateAutomationMacro(prompt);
+    return this.createRule(productionId, macro);
   }
 }

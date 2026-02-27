@@ -1,10 +1,12 @@
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateRuleDto, UpdateRuleDto } from '@/automation/dto/automation.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AiService } from '@/ai/ai.service';
 export declare class AutomationService {
     private prisma;
     private eventEmitter;
-    constructor(prisma: PrismaService, eventEmitter: EventEmitter2);
+    private aiService;
+    constructor(prisma: PrismaService, eventEmitter: EventEmitter2, aiService: AiService);
     getRules(productionId: string): Promise<({
         triggers: {
             id: string;
@@ -125,5 +127,32 @@ export declare class AutomationService {
     runRuleManual(productionId: string, ruleId: string): Promise<{
         success: boolean;
         message: string;
+    }>;
+    generateRuleAi(productionId: string, prompt: string): Promise<{
+        triggers: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            eventType: string;
+            condition: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
+        }[];
+        actions: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            order: number;
+            actionType: string;
+            payload: import("@prisma/client/runtime/client").JsonValue | null;
+            ruleId: string;
+        }[];
+    } & {
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        productionId: string;
+        isEnabled: boolean;
     }>;
 }

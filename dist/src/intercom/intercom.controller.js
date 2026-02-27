@@ -39,6 +39,9 @@ let IntercomController = class IntercomController {
     getCommandHistory(productionId) {
         return this.intercomService.getCommandHistory(productionId);
     }
+    getAiSummary(productionId) {
+        return this.intercomService.getAiSummary(productionId);
+    }
 };
 exports.IntercomController = IntercomController;
 __decorate([
@@ -85,6 +88,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], IntercomController.prototype, "getCommandHistory", null);
+__decorate([
+    (0, common_1.Get)('ai-summary'),
+    (0, permissions_decorator_1.Permissions)('intercom:view'),
+    __param(0, (0, common_1.Param)('productionId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], IntercomController.prototype, "getAiSummary", null);
 exports.IntercomController = IntercomController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     (0, common_1.Controller)('productions/:productionId/intercom'),

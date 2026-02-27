@@ -14,8 +14,8 @@ export class AnalyticsService {
 
   constructor(
     private prisma: PrismaService,
-    private aiService: AiService
-  ) { }
+    private aiService: AiService,
+  ) {}
 
   @OnEvent('production.health.stats')
   async handleProductionHealthStats(payload: ProductionHealthStats) {
@@ -45,7 +45,10 @@ export class AnalyticsService {
         },
       });
     } catch (error) {
-      this.logger.error(`Failed to save telemetry for production ${payload.productionId}:`, error);
+      this.logger.error(
+        `Failed to save telemetry for production ${payload.productionId}:`,
+        error,
+      );
     }
   }
 
@@ -56,7 +59,7 @@ export class AnalyticsService {
         productionId,
         timestamp: { gte: since },
       },
-      orderBy: { timestamp: 'asc' }
+      orderBy: { timestamp: 'asc' },
     });
   }
 
@@ -64,33 +67,37 @@ export class AnalyticsService {
     try {
       // 1. Check if report already exists
       const existing = await this.prisma.showReport.findUnique({
-        where: { productionId }
+        where: { productionId },
       });
       if (existing) return existing;
 
       // 2. Fetch data (telemetry, alerts, timeline blocks)
       const telemetry = await this.prisma.telemetryLog.findMany({
         where: { productionId },
-        orderBy: { timestamp: 'asc' }
+        orderBy: { timestamp: 'asc' },
       });
 
       const timelineBlocks = await this.prisma.timelineBlock.findMany({
         where: { productionId },
-        orderBy: { order: 'asc' }
+        orderBy: { order: 'asc' },
       });
 
       // 3. Compute metrics
-      const streamingLogs = telemetry.filter(t => t.isStreaming);
-      let startTime = streamingLogs.length > 0 ? streamingLogs[0].timestamp : undefined;
-      let endTime = streamingLogs.length > 0 ? streamingLogs[streamingLogs.length - 1].timestamp : undefined;
+      const streamingLogs = telemetry.filter((t) => t.isStreaming);
+      let startTime =
+        streamingLogs.length > 0 ? streamingLogs[0].timestamp : undefined;
+      let endTime =
+        streamingLogs.length > 0
+          ? streamingLogs[streamingLogs.length - 1].timestamp
+          : undefined;
 
       let durationMs = 0;
       if (startTime && endTime) {
         durationMs = endTime.getTime() - startTime.getTime();
       } else {
         // Fallback to timeline blocks if stream wasn't detected
-        const firstBlock = timelineBlocks.find(b => b.startTime);
-        const lastBlock = timelineBlocks.reverse().find(b => b.endTime);
+        const firstBlock = timelineBlocks.find((b) => b.startTime);
+        const lastBlock = timelineBlocks.reverse().find((b) => b.endTime);
         if (firstBlock?.startTime && lastBlock?.endTime) {
           startTime = firstBlock.startTime;
           endTime = lastBlock.endTime;
@@ -98,9 +105,15 @@ export class AnalyticsService {
         }
       }
 
-      const totalDroppedFrames = telemetry.reduce((sum, log) => sum + (log.droppedFrames || 0), 0);
-      const maxCpu = Math.max(...telemetry.map(t => t.cpuUsage || 0), 0);
-      const avgFps = telemetry.length ? telemetry.reduce((sum, log) => sum + (log.fps || 0), 0) / telemetry.length : 0;
+      const totalDroppedFrames = telemetry.reduce(
+        (sum, log) => sum + (log.droppedFrames || 0),
+        0,
+      );
+      const maxCpu = Math.max(...telemetry.map((t) => t.cpuUsage || 0), 0);
+      const avgFps = telemetry.length
+        ? telemetry.reduce((sum, log) => sum + (log.fps || 0), 0) /
+          telemetry.length
+        : 0;
 
       // 4. Save Report
       const report = await this.prisma.showReport.create({
@@ -115,9 +128,9 @@ export class AnalyticsService {
             totalDroppedFrames,
             maxCpu,
             avgFps,
-            samples: telemetry.length
-          }
-        }
+            samples: telemetry.length,
+          },
+        },
       });
 
       // 5. Generate AI Analysis asynchronously (don't block the initial return or do it before saving)
@@ -128,16 +141,15 @@ export class AnalyticsService {
         avgFps,
         maxCpu,
         totalDroppedFrames,
-        samples: telemetry.length
+        samples: telemetry.length,
       });
 
       const updatedReport = await this.prisma.showReport.update({
         where: { id: report.id },
-        data: { aiAnalysis }
+        data: { aiAnalysis },
       });
 
       return updatedReport;
-
     } catch (e) {
       this.logger.error(`Error generating show report for ${productionId}`, e);
       throw e;
@@ -146,7 +158,26 @@ export class AnalyticsService {
 
   async getShowReport(productionId: string) {
     return this.prisma.showReport.findUnique({
-      where: { productionId }
+      where: { productionId },
     });
+  }
+
+  async getPostShowSeo(productionId: string) {
+    const report = await this.getShowReport(productionId);
+    const production = await this.prisma.production.findUnique({
+      where: { id: productionId },
+      include: { script: true, timelineBlocks: true },
+    });
+
+    if (!report) throw new Error('No report found. Generate it first.');
+
+    const data = {
+      name: production?.name || 'Show en Vivo',
+      duration: `${Math.round((report.durationMs || 0) / 60000)} min`,
+      topics:
+        production?.timelineBlocks.map((b) => b.title).join(', ') || 'Varios',
+    };
+
+    return this.aiService.generatePostShowSEO(data);
   }
 }

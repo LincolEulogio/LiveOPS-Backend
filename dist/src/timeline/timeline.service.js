@@ -15,15 +15,18 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const event_emitter_1 = require("@nestjs/event-emitter");
 const audit_service_1 = require("../common/services/audit.service");
+const ai_service_1 = require("../ai/ai.service");
 let TimelineService = TimelineService_1 = class TimelineService {
     prisma;
     eventEmitter;
     auditService;
+    aiService;
     logger = new common_1.Logger(TimelineService_1.name);
-    constructor(prisma, eventEmitter, auditService) {
+    constructor(prisma, eventEmitter, auditService, aiService) {
         this.prisma = prisma;
         this.eventEmitter = eventEmitter;
         this.auditService = auditService;
+        this.aiService = aiService;
     }
     async getBlocks(productionId) {
         return this.prisma.timelineBlock.findMany({
@@ -102,7 +105,11 @@ let TimelineService = TimelineService_1 = class TimelineService {
         await this.auditService.log({
             productionId,
             action: audit_service_1.AuditAction.TIMELINE_START,
-            details: { blockId: block.id, title: block.title, scene: block.linkedScene }
+            details: {
+                blockId: block.id,
+                title: block.title,
+                scene: block.linkedScene,
+            },
         });
         this.eventEmitter.emit('overlay.broadcast_data', {
             productionId,
@@ -110,8 +117,10 @@ let TimelineService = TimelineService_1 = class TimelineService {
                 active_block_title: updated.title,
                 active_block_notes: updated.notes || '',
                 active_block_guest: (updated.notes?.match(/Guest:\s*([^|]*)/) || [])[1]?.trim() || '',
-                active_block_duration: updated.durationMs ? `${Math.floor(updated.durationMs / 1000)}s` : '',
-            }
+                active_block_duration: updated.durationMs
+                    ? `${Math.floor(updated.durationMs / 1000)}s`
+                    : '',
+            },
         });
         this.emitTimelineUpdated(productionId);
         return updated;
@@ -133,7 +142,7 @@ let TimelineService = TimelineService_1 = class TimelineService {
         await this.auditService.log({
             productionId,
             action: audit_service_1.AuditAction.TIMELINE_COMPLETE,
-            details: { blockId: block.id, title: block.title }
+            details: { blockId: block.id, title: block.title },
         });
         return updated;
     }
@@ -155,9 +164,14 @@ let TimelineService = TimelineService_1 = class TimelineService {
         await this.auditService.log({
             productionId,
             action: audit_service_1.AuditAction.TIMELINE_RESET,
-            details: { blockId: block.id, title: block.title }
+            details: { blockId: block.id, title: block.title },
         });
         return updated;
+    }
+    async getAiAdvice(productionId) {
+        const blocks = await this.getBlocks(productionId);
+        const advice = await this.aiService.analyzeTimelineTiming(blocks);
+        return { advice };
     }
     emitTimelineUpdated(productionId) {
         this.eventEmitter.emit('timeline.updated', { productionId });
@@ -168,6 +182,7 @@ exports.TimelineService = TimelineService = TimelineService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         event_emitter_1.EventEmitter2,
-        audit_service_1.AuditService])
+        audit_service_1.AuditService,
+        ai_service_1.AiService])
 ], TimelineService);
 //# sourceMappingURL=timeline.service.js.map

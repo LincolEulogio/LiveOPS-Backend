@@ -19,8 +19,10 @@ export declare class MediaController {
         url: string;
         productionId: string;
         type: import("@prisma/client").$Enums.AssetType;
+        tags: string[];
         size: number;
         mimeType: string;
+        aiMetadata: import("@prisma/client/runtime/client").JsonValue | null;
     }>;
     deleteAsset(productionId: string, id: string): Promise<{
         id: string;
@@ -30,8 +32,10 @@ export declare class MediaController {
         url: string;
         productionId: string;
         type: import("@prisma/client").$Enums.AssetType;
+        tags: string[];
         size: number;
         mimeType: string;
+        aiMetadata: import("@prisma/client/runtime/client").JsonValue | null;
     }>;
 }
 export {};

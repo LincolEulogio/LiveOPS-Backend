@@ -21,16 +21,19 @@ export declare class TimelineController {
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         productionId: string;
+        source: string | null;
         title: string;
         durationMs: number;
         order: number;
         linkedScene: string | null;
-        source: string | null;
         notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
         endTime: Date | null;
     })[]>;
+    getAiAdvice(productionId: string): Promise<{
+        advice: string;
+    }>;
     createBlock(productionId: string, dto: CreateTimelineBlockDto): Promise<{
         id: string;
         createdAt: Date;
@@ -38,11 +41,11 @@ export declare class TimelineController {
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         productionId: string;
+        source: string | null;
         title: string;
         durationMs: number;
         order: number;
         linkedScene: string | null;
-        source: string | null;
         notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
@@ -58,11 +61,11 @@ export declare class TimelineController {
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         productionId: string;
+        source: string | null;
         title: string;
         durationMs: number;
         order: number;
         linkedScene: string | null;
-        source: string | null;
         notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
@@ -78,11 +81,11 @@ export declare class TimelineController {
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         productionId: string;
+        source: string | null;
         title: string;
         durationMs: number;
         order: number;
         linkedScene: string | null;
-        source: string | null;
         notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
@@ -95,11 +98,11 @@ export declare class TimelineController {
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         productionId: string;
+        source: string | null;
         title: string;
         durationMs: number;
         order: number;
         linkedScene: string | null;
-        source: string | null;
         notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
@@ -112,11 +115,11 @@ export declare class TimelineController {
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         productionId: string;
+        source: string | null;
         title: string;
         durationMs: number;
         order: number;
         linkedScene: string | null;
-        source: string | null;
         notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;

@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PushNotificationsService } from '@/notifications/push-notifications.service';
-import { CreateCommandTemplateDto, SendCommandDto } from '@/intercom/dto/intercom.dto';
+import {
+  CreateCommandTemplateDto,
+  SendCommandDto,
+} from '@/intercom/dto/intercom.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AuditService, AuditAction } from '@/common/services/audit.service';
+import { AiService } from '@/ai/ai.service';
 
 @Injectable()
 export class IntercomService {
@@ -12,7 +16,8 @@ export class IntercomService {
     private eventEmitter: EventEmitter2,
     private pushService: PushNotificationsService,
     private auditService: AuditService,
-  ) { }
+    private aiService: AiService,
+  ) {}
 
   async createTemplate(productionId: string, dto: CreateCommandTemplateDto) {
     return this.prisma.commandTemplate.create({
@@ -33,14 +38,18 @@ export class IntercomService {
     });
 
     if (templates.length === 0) {
-      console.log(`[Intercom] No templates found for production ${productionId}. Seeding defaults...`);
+      console.log(
+        `[Intercom] No templates found for production ${productionId}. Seeding defaults...`,
+      );
       await this.seedDefaultTemplates(productionId);
       return this.prisma.commandTemplate.findMany({
         where: { productionId },
         orderBy: { createdAt: 'asc' },
       });
     }
-    console.log(`[Intercom] Found ${templates.length} templates for production ${productionId}`);
+    console.log(
+      `[Intercom] Found ${templates.length} templates for production ${productionId}`,
+    );
 
     return templates;
   }
@@ -124,6 +133,18 @@ export class IntercomService {
     });
   }
 
+  async getAiSummary(productionId: string) {
+    const history = await this.getCommandHistory(productionId, 20);
+    const summary = await this.aiService.summarizeIntercom(history);
+    return { summary };
+  }
+
+  async summarizeHistory(productionId: string) {
+    const history = await this.getCommandHistory(productionId, 20);
+    const summary = await this.aiService.summarizeIntercom(history);
+    return { summary };
+  }
+
   async sendCommand(dto: SendCommandDto) {
     const command = await this.prisma.command.create({
       data: {
@@ -169,14 +190,15 @@ export class IntercomService {
 
   private async handlePushNotification(command: any) {
     try {
-      const { productionId, targetUserId, targetRoleId, message, sender } = command;
+      const { productionId, targetUserId, targetRoleId, message, sender } =
+        command;
 
       if (targetUserId) {
         // Direct notification to a specific user
         await this.pushService.sendNotification(targetUserId, {
           title: `Nuevo Comando de ${sender?.name || 'Director'}`,
           body: message,
-          data: { productionId, commandId: command.id }
+          data: { productionId, commandId: command.id },
         });
       } else if (targetRoleId) {
         // Notify all users with this role in the production
@@ -190,15 +212,21 @@ export class IntercomService {
             await this.pushService.sendNotification(userId, {
               title: `Alerta de Producción: ${message}`,
               body: 'Revisa tu panel para más detalles.',
-              data: { productionId, commandId: command.id }
+              data: { productionId, commandId: command.id },
             });
           } catch (innerError) {
-            console.error(`[Intercom] Failed to send push to individual user ${userId}:`, innerError.message);
+            console.error(
+              `[Intercom] Failed to send push to individual user ${userId}:`,
+              innerError.message,
+            );
           }
         }
       }
     } catch (error) {
-      console.error('[Intercom] Error in handlePushNotification:', error.message);
+      console.error(
+        '[Intercom] Error in handlePushNotification:',
+        error.message,
+      );
     }
   }
 }

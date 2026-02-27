@@ -3,12 +3,14 @@ import { PushNotificationsService } from '@/notifications/push-notifications.ser
 import { CreateCommandTemplateDto, SendCommandDto } from '@/intercom/dto/intercom.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AuditService } from '@/common/services/audit.service';
+import { AiService } from '@/ai/ai.service';
 export declare class IntercomService {
     private prisma;
     private eventEmitter;
     private pushService;
     private auditService;
-    constructor(prisma: PrismaService, eventEmitter: EventEmitter2, pushService: PushNotificationsService, auditService: AuditService);
+    private aiService;
+    constructor(prisma: PrismaService, eventEmitter: EventEmitter2, pushService: PushNotificationsService, auditService: AuditService, aiService: AiService);
     createTemplate(productionId: string, dto: CreateCommandTemplateDto): Promise<{
         id: string;
         name: string;
@@ -94,6 +96,12 @@ export declare class IntercomService {
         message: string;
         requiresAck: boolean;
     })[]>;
+    getAiSummary(productionId: string): Promise<{
+        summary: string;
+    }>;
+    summarizeHistory(productionId: string): Promise<{
+        summary: string;
+    }>;
     sendCommand(dto: SendCommandDto): Promise<{
         sender: {
             id: string;

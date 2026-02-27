@@ -87,4 +87,7 @@ export declare class IntercomController {
         message: string;
         requiresAck: boolean;
     })[]>;
+    getAiSummary(productionId: string): Promise<{
+        summary: string;
+    }>;
 }

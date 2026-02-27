@@ -17,7 +17,7 @@ import { Permissions } from '@/common/decorators/permissions.decorator';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions/:productionId/automation')
 export class AutomationController {
-  constructor(private readonly automationService: AutomationService) { }
+  constructor(private readonly automationService: AutomationService) {}
 
   @Get('rules')
   @Permissions('automation:view')
@@ -83,5 +83,14 @@ export class AutomationController {
     @Param('id') id: string,
   ) {
     return this.automationService.runRuleManual(productionId, id);
+  }
+
+  @Post('ai-generate')
+  @Permissions('automation:manage')
+  generateRuleAi(
+    @Param('productionId') productionId: string,
+    @Body('prompt') prompt: string,
+  ) {
+    return this.automationService.generateRuleAi(productionId, prompt);
   }
 }

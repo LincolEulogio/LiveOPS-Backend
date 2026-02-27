@@ -26,10 +26,13 @@ let SocialController = class SocialController {
     getMessages(productionId, status) {
         return this.socialService.getMessages(productionId, status);
     }
+    getAiHighlights(productionId) {
+        return this.socialService.getAiHighlights(productionId);
+    }
     injectMessage(productionId, payload) {
         return this.socialService.ingestMessage(productionId, {
             ...payload,
-            productionId
+            productionId,
         });
     }
     updateStatus(productionId, id, status) {
@@ -60,11 +63,19 @@ __decorate([
     (0, common_1.Get)('messages'),
     (0, permissions_decorator_1.Permissions)('social:view'),
     __param(0, (0, common_1.Param)('productionId')),
-    __param(1, (0, common_1.Param)('status')),
+    __param(1, (0, common_1.Query)('status')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], SocialController.prototype, "getMessages", null);
+__decorate([
+    (0, common_1.Get)('ai-highlights'),
+    (0, permissions_decorator_1.Permissions)('social:view'),
+    __param(0, (0, common_1.Param)('productionId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], SocialController.prototype, "getAiHighlights", null);
 __decorate([
     (0, common_1.Post)('messages'),
     (0, permissions_decorator_1.Permissions)('social:manage'),

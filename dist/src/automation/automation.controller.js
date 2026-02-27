@@ -48,6 +48,9 @@ let AutomationController = class AutomationController {
     triggerRule(productionId, id) {
         return this.automationService.runRuleManual(productionId, id);
     }
+    generateRuleAi(productionId, prompt) {
+        return this.automationService.generateRuleAi(productionId, prompt);
+    }
 };
 exports.AutomationController = AutomationController;
 __decorate([
@@ -120,6 +123,15 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], AutomationController.prototype, "triggerRule", null);
+__decorate([
+    (0, common_1.Post)('ai-generate'),
+    (0, permissions_decorator_1.Permissions)('automation:manage'),
+    __param(0, (0, common_1.Param)('productionId')),
+    __param(1, (0, common_1.Body)('prompt')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], AutomationController.prototype, "generateRuleAi", null);
 exports.AutomationController = AutomationController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, permissions_guard_1.PermissionsGuard),
     (0, common_1.Controller)('productions/:productionId/automation'),

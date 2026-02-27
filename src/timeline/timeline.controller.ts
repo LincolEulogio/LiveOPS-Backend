@@ -31,6 +31,12 @@ export class TimelineController {
     return this.timelineService.getBlocks(productionId);
   }
 
+  @Get('ai-advice')
+  @Permissions(PermissionAction.RUNDOWN_VIEW)
+  getAiAdvice(@Param('productionId') productionId: string) {
+    return this.timelineService.getAiAdvice(productionId);
+  }
+
   @Post()
   @Permissions(PermissionAction.RUNDOWN_EDIT)
   createBlock(

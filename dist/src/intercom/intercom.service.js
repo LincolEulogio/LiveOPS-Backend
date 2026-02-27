@@ -15,16 +15,19 @@ const prisma_service_1 = require("../prisma/prisma.service");
 const push_notifications_service_1 = require("../notifications/push-notifications.service");
 const event_emitter_1 = require("@nestjs/event-emitter");
 const audit_service_1 = require("../common/services/audit.service");
+const ai_service_1 = require("../ai/ai.service");
 let IntercomService = class IntercomService {
     prisma;
     eventEmitter;
     pushService;
     auditService;
-    constructor(prisma, eventEmitter, pushService, auditService) {
+    aiService;
+    constructor(prisma, eventEmitter, pushService, auditService, aiService) {
         this.prisma = prisma;
         this.eventEmitter = eventEmitter;
         this.pushService = pushService;
         this.auditService = auditService;
+        this.aiService = aiService;
     }
     async createTemplate(productionId, dto) {
         return this.prisma.commandTemplate.create({
@@ -121,6 +124,16 @@ let IntercomService = class IntercomService {
             take: limit,
         });
     }
+    async getAiSummary(productionId) {
+        const history = await this.getCommandHistory(productionId, 20);
+        const summary = await this.aiService.summarizeIntercom(history);
+        return { summary };
+    }
+    async summarizeHistory(productionId) {
+        const history = await this.getCommandHistory(productionId, 20);
+        const summary = await this.aiService.summarizeIntercom(history);
+        return { summary };
+    }
     async sendCommand(dto) {
         const command = await this.prisma.command.create({
             data: {
@@ -163,7 +176,7 @@ let IntercomService = class IntercomService {
                 await this.pushService.sendNotification(targetUserId, {
                     title: `Nuevo Comando de ${sender?.name || 'Director'}`,
                     body: message,
-                    data: { productionId, commandId: command.id }
+                    data: { productionId, commandId: command.id },
                 });
             }
             else if (targetRoleId) {
@@ -176,7 +189,7 @@ let IntercomService = class IntercomService {
                         await this.pushService.sendNotification(userId, {
                             title: `Alerta de Producción: ${message}`,
                             body: 'Revisa tu panel para más detalles.',
-                            data: { productionId, commandId: command.id }
+                            data: { productionId, commandId: command.id },
                         });
                     }
                     catch (innerError) {
@@ -196,6 +209,7 @@ exports.IntercomService = IntercomService = __decorate([
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         event_emitter_1.EventEmitter2,
         push_notifications_service_1.PushNotificationsService,
-        audit_service_1.AuditService])
+        audit_service_1.AuditService,
+        ai_service_1.AiService])
 ], IntercomService);
 //# sourceMappingURL=intercom.service.js.map

@@ -5,22 +5,22 @@ export declare class AnalyticsController {
     getTelemetry(id: string, minutes?: string): Promise<{
         id: string;
         productionId: string;
-        timestamp: Date;
-        cpuUsage: number | null;
-        memoryUsage: number | null;
-        fps: number | null;
-        bitrate: number | null;
-        droppedFrames: number | null;
         isStreaming: boolean;
         isRecording: boolean;
+        cpuUsage: number | null;
+        fps: number | null;
+        timestamp: Date;
+        memoryUsage: number | null;
+        bitrate: number | null;
+        droppedFrames: number | null;
     }[]>;
     getReport(id: string): Promise<{
         id: string;
         productionId: string;
-        generatedAt: Date;
+        durationMs: number | null;
         startTime: Date | null;
         endTime: Date | null;
-        durationMs: number | null;
+        generatedAt: Date;
         peakViewers: number | null;
         alertsCount: number | null;
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
@@ -29,13 +29,14 @@ export declare class AnalyticsController {
     generateReport(id: string): Promise<{
         id: string;
         productionId: string;
-        generatedAt: Date;
+        durationMs: number | null;
         startTime: Date | null;
         endTime: Date | null;
-        durationMs: number | null;
+        generatedAt: Date;
         peakViewers: number | null;
         alertsCount: number | null;
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
         aiAnalysis: string | null;
     }>;
+    getSeoPackage(id: string): Promise<any>;
 }

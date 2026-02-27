@@ -571,12 +571,15 @@ model MediaAsset {
   size         Int
   mimeType     String
   productionId String    @db.Uuid
+  tags         String[]  @default([])
+  aiMetadata   Json?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
   production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
 
   @@index([productionId])
+  @@index([tags])
 }
 
 enum AssetType {

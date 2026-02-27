@@ -28,24 +28,27 @@ let SocialService = SocialService_1 = class SocialService {
         this.blacklists.set('default', ['spam', 'buy followers', 'scam']);
     }
     setBlacklist(productionId, words) {
-        this.blacklists.set(productionId, words.map(w => w.toLowerCase()));
+        this.blacklists.set(productionId, words.map((w) => w.toLowerCase()));
     }
     getBlacklist(productionId) {
         return this.blacklists.get(productionId) || [];
     }
     async ingestMessage(productionId, payload) {
         const blacklist = this.getBlacklist(productionId);
-        const isClean = !blacklist.some(word => payload.content.toLowerCase().includes(word));
-        let aiSentiment = null;
-        let aiCategory = null;
+        const isClean = !blacklist.some((word) => payload.content.toLowerCase().includes(word));
+        let aiSentiment = 'NEUTRAL';
+        let aiCategory = 'COMENTARIO';
+        let isToxic = false;
         try {
             const aiResult = await this.aiService.analyzeSocialMessage(payload.content);
             aiSentiment = aiResult.sentiment;
             aiCategory = aiResult.category;
+            isToxic = aiResult.isToxic;
         }
         catch (e) {
-            this.logger.warn('AI social analysis failed, continuing without it');
+            this.logger.warn('AI social analysis failed, continuing with defaults');
         }
+        const status = !isClean || isToxic ? 'REJECTED' : 'PENDING';
         const message = await this.prisma.socialMessage.create({
             data: {
                 productionId,
@@ -54,7 +57,7 @@ let SocialService = SocialService_1 = class SocialService {
                 authorAvatar: payload.avatarUrl,
                 content: payload.content,
                 externalId: payload.externalId,
-                status: isClean ? 'PENDING' : 'REJECTED',
+                status,
                 aiSentiment,
                 aiCategory,
             },
@@ -96,10 +99,12 @@ let SocialService = SocialService_1 = class SocialService {
                     latest_comment_content: message.content,
                     latest_comment_platform: message.platform,
                     latest_comment_avatar: message.authorAvatar || '',
-                }
+                },
             });
         }
-        else if (status === 'APPROVED' || status === 'REJECTED' || status === 'PENDING') {
+        else if (status === 'APPROVED' ||
+            status === 'REJECTED' ||
+            status === 'PENDING') {
             this.eventEmitter.emit('graphics.social.hide', { productionId });
         }
         return message;
@@ -139,7 +144,7 @@ let SocialService = SocialService_1 = class SocialService {
             throw new common_1.NotFoundException('Poll not found or inactive');
         }
         const options = poll.options;
-        const option = options.find(o => o.id === optionId);
+        const option = options.find((o) => o.id === optionId);
         if (option) {
             option.votes += 1;
             const updatedPoll = await this.prisma.socialPoll.update({
@@ -158,6 +163,10 @@ let SocialService = SocialService_1 = class SocialService {
         });
         this.eventEmitter.emit('social.poll.closed', poll);
         return poll;
+    }
+    async getAiHighlights(productionId) {
+        const messages = await this.getMessages(productionId, 'APPROVED');
+        return this.aiService.suggestSocialHighlights(messages);
     }
 };
 exports.SocialService = SocialService;

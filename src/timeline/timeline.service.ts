@@ -11,6 +11,7 @@ import {
   UpdateTimelineBlockDto,
 } from '@/timeline/dto/timeline.dto';
 import { AuditService, AuditAction } from '@/common/services/audit.service';
+import { AiService } from '@/ai/ai.service';
 
 @Injectable()
 export class TimelineService {
@@ -20,7 +21,8 @@ export class TimelineService {
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
     private auditService: AuditService,
-  ) { }
+    private aiService: AiService,
+  ) {}
 
   // --- CRUD Operations --- //
 
@@ -124,7 +126,11 @@ export class TimelineService {
     await this.auditService.log({
       productionId,
       action: AuditAction.TIMELINE_START,
-      details: { blockId: block.id, title: block.title, scene: block.linkedScene }
+      details: {
+        blockId: block.id,
+        title: block.title,
+        scene: block.linkedScene,
+      },
     });
 
     // Broadcast data for Overlays
@@ -133,9 +139,12 @@ export class TimelineService {
       data: {
         active_block_title: updated.title,
         active_block_notes: updated.notes || '',
-        active_block_guest: (updated.notes?.match(/Guest:\s*([^|]*)/) || [])[1]?.trim() || '',
-        active_block_duration: updated.durationMs ? `${Math.floor(updated.durationMs / 1000)}s` : '',
-      }
+        active_block_guest:
+          (updated.notes?.match(/Guest:\s*([^|]*)/) || [])[1]?.trim() || '',
+        active_block_duration: updated.durationMs
+          ? `${Math.floor(updated.durationMs / 1000)}s`
+          : '',
+      },
     });
 
     this.emitTimelineUpdated(productionId);
@@ -162,7 +171,7 @@ export class TimelineService {
     await this.auditService.log({
       productionId,
       action: AuditAction.TIMELINE_COMPLETE,
-      details: { blockId: block.id, title: block.title }
+      details: { blockId: block.id, title: block.title },
     });
 
     return updated;
@@ -189,13 +198,19 @@ export class TimelineService {
     await this.auditService.log({
       productionId,
       action: AuditAction.TIMELINE_RESET,
-      details: { blockId: block.id, title: block.title }
+      details: { blockId: block.id, title: block.title },
     });
 
     return updated;
   }
 
   // --- Helpers --- //
+
+  async getAiAdvice(productionId: string) {
+    const blocks = await this.getBlocks(productionId);
+    const advice = await this.aiService.analyzeTimelineTiming(blocks);
+    return { advice };
+  }
 
   private emitTimelineUpdated(productionId: string) {
     this.eventEmitter.emit('timeline.updated', { productionId });

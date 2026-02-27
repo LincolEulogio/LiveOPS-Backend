@@ -60,34 +60,36 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
                 productionId,
                 timestamp: { gte: since },
             },
-            orderBy: { timestamp: 'asc' }
+            orderBy: { timestamp: 'asc' },
         });
     }
     async generateShowReport(productionId) {
         try {
             const existing = await this.prisma.showReport.findUnique({
-                where: { productionId }
+                where: { productionId },
             });
             if (existing)
                 return existing;
             const telemetry = await this.prisma.telemetryLog.findMany({
                 where: { productionId },
-                orderBy: { timestamp: 'asc' }
+                orderBy: { timestamp: 'asc' },
             });
             const timelineBlocks = await this.prisma.timelineBlock.findMany({
                 where: { productionId },
-                orderBy: { order: 'asc' }
+                orderBy: { order: 'asc' },
             });
-            const streamingLogs = telemetry.filter(t => t.isStreaming);
+            const streamingLogs = telemetry.filter((t) => t.isStreaming);
             let startTime = streamingLogs.length > 0 ? streamingLogs[0].timestamp : undefined;
-            let endTime = streamingLogs.length > 0 ? streamingLogs[streamingLogs.length - 1].timestamp : undefined;
+            let endTime = streamingLogs.length > 0
+                ? streamingLogs[streamingLogs.length - 1].timestamp
+                : undefined;
             let durationMs = 0;
             if (startTime && endTime) {
                 durationMs = endTime.getTime() - startTime.getTime();
             }
             else {
-                const firstBlock = timelineBlocks.find(b => b.startTime);
-                const lastBlock = timelineBlocks.reverse().find(b => b.endTime);
+                const firstBlock = timelineBlocks.find((b) => b.startTime);
+                const lastBlock = timelineBlocks.reverse().find((b) => b.endTime);
                 if (firstBlock?.startTime && lastBlock?.endTime) {
                     startTime = firstBlock.startTime;
                     endTime = lastBlock.endTime;
@@ -95,8 +97,11 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
                 }
             }
             const totalDroppedFrames = telemetry.reduce((sum, log) => sum + (log.droppedFrames || 0), 0);
-            const maxCpu = Math.max(...telemetry.map(t => t.cpuUsage || 0), 0);
-            const avgFps = telemetry.length ? telemetry.reduce((sum, log) => sum + (log.fps || 0), 0) / telemetry.length : 0;
+            const maxCpu = Math.max(...telemetry.map((t) => t.cpuUsage || 0), 0);
+            const avgFps = telemetry.length
+                ? telemetry.reduce((sum, log) => sum + (log.fps || 0), 0) /
+                    telemetry.length
+                : 0;
             const report = await this.prisma.showReport.create({
                 data: {
                     productionId,
@@ -109,20 +114,20 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
                         totalDroppedFrames,
                         maxCpu,
                         avgFps,
-                        samples: telemetry.length
-                    }
-                }
+                        samples: telemetry.length,
+                    },
+                },
             });
             const aiAnalysis = await this.aiService.analyzeShowPerformance({
                 durationMs,
                 avgFps,
                 maxCpu,
                 totalDroppedFrames,
-                samples: telemetry.length
+                samples: telemetry.length,
             });
             const updatedReport = await this.prisma.showReport.update({
                 where: { id: report.id },
-                data: { aiAnalysis }
+                data: { aiAnalysis },
             });
             return updatedReport;
         }
@@ -133,8 +138,23 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
     }
     async getShowReport(productionId) {
         return this.prisma.showReport.findUnique({
-            where: { productionId }
+            where: { productionId },
         });
+    }
+    async getPostShowSeo(productionId) {
+        const report = await this.getShowReport(productionId);
+        const production = await this.prisma.production.findUnique({
+            where: { id: productionId },
+            include: { script: true, timelineBlocks: true },
+        });
+        if (!report)
+            throw new Error('No report found. Generate it first.');
+        const data = {
+            name: production?.name || 'Show en Vivo',
+            duration: `${Math.round((report.durationMs || 0) / 60000)} min`,
+            topics: production?.timelineBlocks.map((b) => b.title).join(', ') || 'Varios',
+        };
+        return this.aiService.generatePostShowSEO(data);
     }
 };
 exports.AnalyticsService = AnalyticsService;

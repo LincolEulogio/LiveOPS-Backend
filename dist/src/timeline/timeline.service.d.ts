@@ -2,12 +2,14 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CreateTimelineBlockDto, UpdateTimelineBlockDto } from '@/timeline/dto/timeline.dto';
 import { AuditService } from '@/common/services/audit.service';
+import { AiService } from '@/ai/ai.service';
 export declare class TimelineService {
     private prisma;
     private eventEmitter;
     private auditService;
+    private aiService;
     private readonly logger;
-    constructor(prisma: PrismaService, eventEmitter: EventEmitter2, auditService: AuditService);
+    constructor(prisma: PrismaService, eventEmitter: EventEmitter2, auditService: AuditService, aiService: AiService);
     getBlocks(productionId: string): Promise<({
         intercomTemplate: {
             id: string;
@@ -26,11 +28,11 @@ export declare class TimelineService {
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         productionId: string;
+        source: string | null;
         title: string;
         durationMs: number;
         order: number;
         linkedScene: string | null;
-        source: string | null;
         notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
@@ -43,11 +45,11 @@ export declare class TimelineService {
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         productionId: string;
+        source: string | null;
         title: string;
         durationMs: number;
         order: number;
         linkedScene: string | null;
-        source: string | null;
         notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
@@ -60,11 +62,11 @@ export declare class TimelineService {
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         productionId: string;
+        source: string | null;
         title: string;
         durationMs: number;
         order: number;
         linkedScene: string | null;
-        source: string | null;
         notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
@@ -83,11 +85,11 @@ export declare class TimelineService {
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         productionId: string;
+        source: string | null;
         title: string;
         durationMs: number;
         order: number;
         linkedScene: string | null;
-        source: string | null;
         notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
@@ -100,11 +102,11 @@ export declare class TimelineService {
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         productionId: string;
+        source: string | null;
         title: string;
         durationMs: number;
         order: number;
         linkedScene: string | null;
-        source: string | null;
         notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
@@ -117,15 +119,18 @@ export declare class TimelineService {
         description: string | null;
         status: import("@prisma/client").$Enums.BlockStatus;
         productionId: string;
+        source: string | null;
         title: string;
         durationMs: number;
         order: number;
         linkedScene: string | null;
-        source: string | null;
         notes: string | null;
         intercomTemplateId: string | null;
         startTime: Date | null;
         endTime: Date | null;
+    }>;
+    getAiAdvice(productionId: string): Promise<{
+        advice: string;
     }>;
     private emitTimelineUpdated;
 }
