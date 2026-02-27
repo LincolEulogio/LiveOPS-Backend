@@ -50,7 +50,7 @@ export class UsersService implements OnModuleInit {
   }
 
   public async seedDefaultRoles() {
-    // Seed all permissions defined in the enum
+    // 1. Seed all permissions defined in the enum
     const allEnumPermissions = Object.values(PermissionAction) as string[];
 
     for (const action of allEnumPermissions) {
@@ -64,7 +64,7 @@ export class UsersService implements OnModuleInit {
       });
     }
 
-    // Auto-seed for SUPERADMIN if it doesn't exist
+    // 2. Auto-seed for SUPERADMIN if it doesn't exist
     let superAdminRole = await this.prisma.role.findUnique({
       where: { name: 'SUPERADMIN' },
     });
@@ -79,7 +79,7 @@ export class UsersService implements OnModuleInit {
       this.logger.log('Created mandatory SUPERADMIN role');
     }
 
-    // Ensure SUPERADMIN has all permissions
+    // 3. Ensure SUPERADMIN ALWAYS has all permissions (Sync)
     const allPerms = await this.prisma.permission.findMany();
     for (const p of allPerms) {
       await this.prisma.rolePermission.upsert({
@@ -94,12 +94,10 @@ export class UsersService implements OnModuleInit {
       });
     }
 
-    // Commented out to allow manual CRUD via UI
+    // 4. Standard roles are now managed manually via UI
     /*
     const allRoles = Object.values(StandardRoles) as any[];
-    for (const roleData of allRoles) {
-      ...
-    }
+    ...
     */
   }
 
