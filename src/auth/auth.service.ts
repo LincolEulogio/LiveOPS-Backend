@@ -82,35 +82,29 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    // If it's the first user, make them ADMIN
-    const userCount = await this.prisma.user.count();
-    let globalRoleId: string | undefined;
+    // Get or Create SUPERADMIN role
+    let superAdminRole = await this.prisma.role.findUnique({
+      where: { name: 'SUPERADMIN' },
+    });
 
-    if (userCount === 0) {
-      let superAdminRole = await this.prisma.role.findUnique({
-        where: { name: 'SUPERADMIN' },
+    if (!superAdminRole) {
+      superAdminRole = await this.prisma.role.create({
+        data: {
+          name: 'SUPERADMIN',
+          description: 'Global System Administrator',
+        },
       });
-
-      if (!superAdminRole) {
-        superAdminRole = await this.prisma.role.create({
-          data: {
-            name: 'SUPERADMIN',
-            description: 'Global System Administrator',
-          },
-        });
-      }
-
-      globalRoleId = superAdminRole.id;
-      // Trigger full seeding to ensure permissions are attached
+      // Ensure it has all permissions
       await this.usersService.seedDefaultRoles();
     }
 
-    let defaultTenant = await this.prisma.tenant.findFirst();
-    if (!defaultTenant) {
-      defaultTenant = await this.prisma.tenant.create({
-        data: { name: 'System Default' },
-      });
-    }
+    // Every new registrant is a SUPERADMIN of their own workspace
+    const globalRoleId = superAdminRole.id;
+
+    // Create a NEW unique tenant for this new user
+    const tenant = await this.prisma.tenant.create({
+      data: { name: `${dto.name || email.split('@')[0]}'s Workspace` },
+    });
 
     const user = await this.prisma.user.create({
       data: {
@@ -118,7 +112,7 @@ export class AuthService {
         password: hashedPassword,
         name: dto.name,
         globalRoleId: globalRoleId,
-        tenantId: defaultTenant.id,
+        tenantId: tenant.id,
       },
     });
 
