@@ -18,7 +18,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private usersService: UsersService,
-  ) { }
+  ) {}
 
   async getProfile(userId: string) {
     return this.prisma.user.findUnique({
@@ -72,8 +72,9 @@ export class AuthService {
   }
 
   async register(dto: RegisterUserDto) {
+    const email = dto.email.toLowerCase().trim();
     const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email },
     });
     if (existing) {
       throw new ConflictException('Email already in use');
@@ -92,7 +93,10 @@ export class AuthService {
 
       if (!superAdminRole) {
         superAdminRole = await this.prisma.role.create({
-          data: { name: 'SUPERADMIN', description: 'Global System Administrator' }
+          data: {
+            name: 'SUPERADMIN',
+            description: 'Global System Administrator',
+          },
         });
       }
 
@@ -103,12 +107,14 @@ export class AuthService {
 
     let defaultTenant = await this.prisma.tenant.findFirst();
     if (!defaultTenant) {
-      defaultTenant = await this.prisma.tenant.create({ data: { name: 'System Default' } });
+      defaultTenant = await this.prisma.tenant.create({
+        data: { name: 'System Default' },
+      });
     }
 
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
+        email,
         password: hashedPassword,
         name: dto.name,
         globalRoleId: globalRoleId,
@@ -139,8 +145,9 @@ export class AuthService {
   }
 
   async login(dto: LoginUserDto, ipAddress?: string) {
+    const email = dto.email.toLowerCase().trim();
     const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email },
     });
 
     if (!user || user.deletedAt) {
@@ -197,8 +204,13 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const user = await this.prisma.user.findUnique({ where: { id: session.userId } });
-    const tokens = await this.generateTokens(session.userId, user?.tenantId || null);
+    const user = await this.prisma.user.findUnique({
+      where: { id: session.userId },
+    });
+    const tokens = await this.generateTokens(
+      session.userId,
+      user?.tenantId || null,
+    );
 
     // Revoke old session
     await this.prisma.session.update({

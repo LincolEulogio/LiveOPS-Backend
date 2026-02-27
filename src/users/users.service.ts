@@ -14,13 +14,16 @@ import {
 } from '@/users/dto/users.dto';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
-import { PermissionAction, StandardRoles } from '@/common/constants/rbac.constants';
+import {
+  PermissionAction,
+  StandardRoles,
+} from '@/common/constants/rbac.constants';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
   private readonly logger = new Logger(UsersService.name);
 
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async onModuleInit() {
     await this.seedDefaultRoles();
@@ -76,7 +79,9 @@ export class UsersService implements OnModuleInit {
 
       // Sync specific permissions for each role
       for (const action of permissions) {
-        const perm = await this.prisma.permission.findUnique({ where: { action } });
+        const perm = await this.prisma.permission.findUnique({
+          where: { action },
+        });
         if (perm) {
           await this.prisma.rolePermission.upsert({
             where: {
@@ -90,13 +95,18 @@ export class UsersService implements OnModuleInit {
     }
 
     // Special case for SUPERADMIN (gets ALL permissions)
-    const superAdminRole = await this.prisma.role.findUnique({ where: { name: 'SUPERADMIN' } });
+    const superAdminRole = await this.prisma.role.findUnique({
+      where: { name: 'SUPERADMIN' },
+    });
     if (superAdminRole) {
       const allPerms = await this.prisma.permission.findMany();
       for (const p of allPerms) {
         await this.prisma.rolePermission.upsert({
           where: {
-            roleId_permissionId: { roleId: superAdminRole.id, permissionId: p.id },
+            roleId_permissionId: {
+              roleId: superAdminRole.id,
+              permissionId: p.id,
+            },
           },
           create: { roleId: superAdminRole.id, permissionId: p.id },
           update: {},
@@ -141,18 +151,23 @@ export class UsersService implements OnModuleInit {
   }
 
   async createUser(dto: CreateUserDto) {
+    const email = dto.email.toLowerCase().trim();
     const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email },
     });
     if (existing) throw new ConflictException('Email already exists');
+
+    // Assign a default tenant if one exists
+    const defaultTenant = await this.prisma.tenant.findFirst();
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     return this.prisma.user.create({
       data: {
-        email: dto.email,
+        email,
         name: dto.name,
         password: hashedPassword,
         globalRoleId: dto.globalRoleId || null,
+        tenantId: defaultTenant?.id || null,
       },
       select: {
         id: true,
@@ -232,7 +247,9 @@ export class UsersService implements OnModuleInit {
   async deleteRole(id: string) {
     const role = await this.prisma.role.findUnique({ where: { id } });
     if (role?.name === 'SUPERADMIN') {
-      throw new ConflictException('The SUPERADMIN role is protected and cannot be deleted.');
+      throw new ConflictException(
+        'The SUPERADMIN role is protected and cannot be deleted.',
+      );
     }
     return this.prisma.role.delete({ where: { id } });
   }
