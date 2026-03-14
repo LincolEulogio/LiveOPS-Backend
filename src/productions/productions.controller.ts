@@ -93,6 +93,17 @@ export class ProductionsController {
     return this.productionsService.assignUser(id, dto);
   }
 
+  @Patch(':id/users/:userId/role')
+  @Roles(Role.ADMIN, Role.SUPERADMIN)
+  @Permissions('production:manage')
+  updateRole(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body('roleName') roleName: string,
+  ) {
+    return this.productionsService.updateUserRole(id, userId, roleName);
+  }
+
   @Delete(':id/users/:userId')
   @Roles(Role.ADMIN, Role.SUPERADMIN)
   @Permissions('production:manage')

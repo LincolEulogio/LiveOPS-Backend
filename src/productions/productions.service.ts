@@ -366,6 +366,37 @@ export class ProductionsService {
     return result;
   }
 
+  async updateUserRole(productionId: string, userId: string, roleName: string) {
+    const role = await this.prisma.role.findUnique({
+      where: { name: roleName },
+    });
+    if (!role) throw new NotFoundException('Role not found');
+
+    const result = await this.prisma.productionUser.update({
+      where: {
+        userId_productionId: {
+          userId,
+          productionId,
+        },
+      },
+      data: {
+        roleId: role.id,
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        role: true,
+      },
+    });
+
+    this.eventEmitter.emit('production.user.role.updated', {
+      productionId,
+      userId,
+      roleName,
+    });
+
+    return result;
+  }
+
   async removeUser(productionId: string, userIdToRemove: string) {
     const result = await this.prisma.productionUser.delete({
       where: {
