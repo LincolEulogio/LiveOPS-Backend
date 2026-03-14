@@ -17,10 +17,14 @@ import {
 } from '@/users/dto/users.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
+import { Roles } from '@/common/decorators/roles.decorator';
+import { Role } from '@/common/constants/roles.enum';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+@Roles(Role.ADMIN, Role.SUPERADMIN)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

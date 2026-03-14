@@ -185,6 +185,7 @@ model Production {
   publicStatusEnabled   Boolean                @default(false)
   streamingDestinations StreamingDestination[]
   mediaAssets           MediaAsset[]
+  scriptHistory         ScriptHistory[]
 
   @@index([deletedAt])
   @@index([status])
@@ -213,6 +214,18 @@ model ProductionScript {
   content      Bytes
   updatedAt    DateTime   @updatedAt
   production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+}
+
+model ScriptHistory {
+  id           String     @id @default(uuid()) @db.Uuid
+  productionId String     @db.Uuid
+  content      Bytes
+  version      String
+  createdAt    DateTime   @default(now())
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
+  @@index([productionId])
+  @@index([createdAt])
 }
 
 model ProductionUser {
@@ -573,6 +586,7 @@ model MediaAsset {
   productionId String    @db.Uuid
   tags         String[]  @default([])
   aiMetadata   Json?
+  thumbnailUrl String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

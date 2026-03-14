@@ -18,6 +18,7 @@ import {
   PermissionAction,
   StandardRoles,
 } from '@/common/constants/rbac.constants';
+import { Role } from '@/common/constants/roles.enum';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -32,7 +33,7 @@ export class UsersService implements OnModuleInit {
 
   private async bootstrapAdmin() {
     const adminRole = await this.prisma.role.findUnique({
-      where: { name: 'ADMIN' },
+      where: { name: Role.ADMIN },
     });
     if (!adminRole) return;
 
@@ -66,13 +67,13 @@ export class UsersService implements OnModuleInit {
 
     // 2. Auto-seed for SUPERADMIN if it doesn't exist
     let superAdminRole = await this.prisma.role.findUnique({
-      where: { name: 'SUPERADMIN' },
+      where: { name: Role.SUPERADMIN },
     });
 
     if (!superAdminRole) {
       superAdminRole = await this.prisma.role.create({
         data: {
-          name: 'SUPERADMIN',
+          name: Role.SUPERADMIN,
           description: 'Global System Administrator',
         },
       });
@@ -232,7 +233,7 @@ export class UsersService implements OnModuleInit {
 
   async deleteRole(id: string) {
     const role = await this.prisma.role.findUnique({ where: { id } });
-    if (role?.name === 'SUPERADMIN') {
+    if (role?.name === Role.SUPERADMIN) {
       throw new ConflictException(
         'The SUPERADMIN role is protected and cannot be deleted.',
       );

@@ -79,6 +79,7 @@ export class EventsGateway
 
   afterInit(server: Server) {
     this.logger.log('WebSocket Gateway initialized');
+    this.startPresenceCleanup();
   }
 
   @SubscribeMessage('chat.send')
@@ -402,6 +403,42 @@ export class EventsGateway
     }
 
     return { status: 'ok' };
+  }
+
+  @SubscribeMessage('user.heartbeat')
+  handleHeartbeat(@ConnectedSocket() client: Socket) {
+    const user = this.activeUsers.get(client.id);
+    if (user) {
+      user.lastSeen = new Date().toISOString();
+      user.status = user.status === 'OFFLINE' ? 'IDLE' : user.status;
+    }
+  }
+
+  private startPresenceCleanup() {
+    setInterval(() => {
+      const now = Date.now();
+      const timeout = 60000; // 1 minute
+      let changed = false;
+
+      for (const [clientId, user] of this.activeUsers.entries()) {
+        const lastSeen = new Date(user.lastSeen).getTime();
+        if (now - lastSeen > timeout && user.status !== 'OFFLINE') {
+          user.status = 'OFFLINE';
+          changed = true;
+          this.logger.warn(`User ${user.userId} (Client: ${clientId}) marked as OFFLINE due to inactivity.`);
+        }
+      }
+
+      if (changed) {
+        // Broadcast presence update for each room involved or global
+        // For simplicity and performance, we'll just broadcast to all active productions mentioned in clients
+        const productions = new Set<string>();
+        this.server.sockets.sockets.forEach(s => {
+          if (s.data.productionId) productions.add(s.data.productionId);
+        });
+        productions.forEach(pid => this.broadcastPresence(pid));
+      }
+    }, 30000); // Check every 30s
   }
 
   @SubscribeMessage('role.identify')

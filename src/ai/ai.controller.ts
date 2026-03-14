@@ -3,10 +3,13 @@ import type { Response } from 'express';
 import { AiService } from './ai.service';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
+import { Roles } from '@/common/decorators/roles.decorator';
+import { Role } from '@/common/constants/roles.enum';
 
 @Controller('ai')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 export class AiController {
     constructor(private readonly aiService: AiService) { }
 
@@ -45,5 +48,14 @@ export class AiController {
     ) {
         const result = await this.aiService.streamChat(body.history, body.context);
         result.pipeTextStreamToResponse(res);
+    }
+
+    @Post('process-direction')
+    @Roles(Role.ADMIN, Role.SUPERADMIN, Role.OPERATOR)
+    @Permissions('production:manage')
+    async processDirection(
+        @Body() body: { productionId: string; input: string }
+    ) {
+        return await this.aiService.processDirection(body.productionId, body.input);
     }
 }

@@ -14,6 +14,7 @@ import {
 } from '@/productions/dto/production.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, ProductionStatus } from '@prisma/client';
+import { Role } from '@/common/constants/roles.enum';
 
 @Injectable()
 export class ProductionsService {
@@ -26,19 +27,19 @@ export class ProductionsService {
     // We assume the creator gets an 'ADMIN' role in this production
     // First, find or ensure the 'ADMIN' role exists
     let adminRole = await this.prisma.role.findUnique({
-      where: { name: 'ADMIN' },
+      where: { name: Role.ADMIN },
     });
 
     if (!adminRole) {
       // Fallback to SUPERADMIN if ADMIN is not found for some reason
       adminRole = await this.prisma.role.findUnique({
-        where: { name: 'SUPERADMIN' },
+        where: { name: Role.SUPERADMIN },
       });
     }
 
     if (!adminRole) {
       adminRole = await this.prisma.role.create({
-        data: { name: 'ADMIN', description: 'Production Administrator' },
+        data: { name: Role.ADMIN, description: 'Production Administrator' },
       });
     }
 
@@ -113,7 +114,7 @@ export class ProductionsService {
       include: { globalRole: true },
     });
 
-    const isSuperAdmin = user?.globalRole?.name === 'SUPERADMIN';
+    const isSuperAdmin = user?.globalRole?.name === Role.SUPERADMIN;
 
     const where: Prisma.ProductionWhereInput = {
       deletedAt: null,
@@ -177,7 +178,7 @@ export class ProductionsService {
       include: { globalRole: true },
     });
 
-    const isSuperAdmin = user?.globalRole?.name === 'SUPERADMIN';
+    const isSuperAdmin = user?.globalRole?.name === Role.SUPERADMIN;
 
     const where: Prisma.ProductionWhereInput = {
       id: productionId,

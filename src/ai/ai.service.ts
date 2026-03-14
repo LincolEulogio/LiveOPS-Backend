@@ -12,15 +12,27 @@ import {
   OnModuleInit,
   ServiceUnavailableException,
   InternalServerErrorException,
+  Inject,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { ObsService } from '@/obs/obs.service';
+import { OverlaysService } from '@/overlays/overlays.service';
+import { NotificationsService } from '@/notifications/notifications.service';
 
 @Injectable()
 export class AiService implements OnModuleInit {
   private readonly logger = new Logger(AiService.name);
   private googleModel: LanguageModel;
 
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    private obsService: ObsService,
+    private overlaysService: OverlaysService,
+    private notificationsService: NotificationsService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) { }
 
   async onModuleInit() {
     const rawApiKey = this.configService.get<string>('GEMINI_API_KEY');
@@ -71,6 +83,13 @@ export class AiService implements OnModuleInit {
   }
 
   async analyzeShowPerformance(metrics: any): Promise<string> {
+    const cacheKey = `performance_analysis_${JSON.stringify(metrics)}`;
+    const cached = await this.cacheManager.get<string>(cacheKey);
+    if (cached) {
+      this.logger.debug('Returning cached performance analysis');
+      return cached;
+    }
+
     const prompt = `
       Eres un director de producción técnica experto. Analiza el siguiente log de telemetría de una producción en vivo y genera un resumen ejecutivo profesional.
       Enfócate en la estabilidad del stream, el uso de recursos y cualquier anomalía detectada.
@@ -90,7 +109,9 @@ export class AiService implements OnModuleInit {
       
       Responde en Español.
     `;
-    return this.generateText(prompt);
+    const result = await this.generateText(prompt);
+    await this.cacheManager.set(cacheKey, result, 3600000); // Cache for 1 hour
+    return result;
   }
 
   async analyzeSocialMessage(
@@ -233,6 +254,13 @@ export class AiService implements OnModuleInit {
     type: string,
     mimeType: string,
   ): Promise<{ tags: string[]; description: string; colors?: string[] }> {
+    const cacheKey = `media_analysis_${name}_${type}_${mimeType}`;
+    const cached = await this.cacheManager.get<any>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Returning cached analysis for media asset: ${name}`);
+      return cached;
+    }
+
     if (!this.googleModel) return { tags: [], description: 'AI node offline' };
 
     const prompt = `Analiza este recurso multimedia para una producción en vivo y genera etiquetas y descripción.
@@ -259,6 +287,7 @@ export class AiService implements OnModuleInit {
         }),
         prompt,
       });
+      await this.cacheManager.set(cacheKey, object, 86400000); // Cache for 24 hours
       return object;
     } catch (e) {
       this.logger.error('Failed to analyze media asset:', e);
@@ -465,5 +494,57 @@ export class AiService implements OnModuleInit {
     } catch (e) {
       return { error: 'No se pudo generar el SEO' };
     }
+  }
+
+  /**
+   * Procesa una instrucción del director usando herramientas de IA.
+   */
+  async processDirection(productionId: string, userInput: string): Promise<any> {
+    if (!this.googleModel) {
+      throw new ServiceUnavailableException('AI Node is offline.');
+    }
+
+    const { text, toolResults } = await generateText({
+      model: this.googleModel,
+      system: `Eres LIVIA, la asistente de dirección de LiveOPS. 
+      Tienes permiso para realizar acciones técnicas en la producción.
+      Si el usuario pide algo que requiere una herramienta, úsala inmediatamente.
+      Sé breve y profesional en tus respuestas.`,
+      prompt: userInput,
+      tools: {
+        changeScene: {
+          description: 'Cambia la escena activa en OBS.',
+          inputSchema: z.object({
+            sceneName: z.string().describe('El nombre de la escena a la que cambiar.'),
+          }),
+          execute: async ({ sceneName }: { sceneName: string }) => {
+            this.logger.log(`LIVIA executing scene change: ${sceneName}`);
+            return await this.obsService.changeScene(productionId, { sceneName });
+          },
+        },
+        toggleOverlay: {
+          description: 'Activa o desactiva un overlay gráfico.',
+          inputSchema: z.object({
+            overlayId: z.string().describe('El ID del overlay.'),
+            isActive: z.boolean().describe('Si debe estar activo o no.'),
+          }),
+          execute: async ({ overlayId, isActive }: { overlayId: string; isActive: boolean }) => {
+            return await this.overlaysService.toggleActive(overlayId, productionId, isActive);
+          },
+        },
+        sendAlert: {
+          description: 'Envía una alerta o notificación al equipo.',
+          inputSchema: z.object({
+            message: z.string().describe('El contenido de la alerta.'),
+          }),
+          execute: async ({ message }: { message: string }) => {
+            await this.notificationsService.sendNotification(productionId, message);
+            return { success: true };
+          },
+        },
+      },
+    });
+
+    return { response: text, actions: toolResults };
   }
 }

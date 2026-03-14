@@ -47,6 +47,7 @@ export class AuditLoggingInterceptor implements NestInterceptor {
                             method,
                             body: request.body,
                             durationMs: duration,
+                            userAgent: request.headers['user-agent'],
                             status: 'success'
                         },
                         ipAddress: request.ip
@@ -63,6 +64,7 @@ export class AuditLoggingInterceptor implements NestInterceptor {
                             method,
                             body: request.body,
                             durationMs: duration,
+                            userAgent: request.headers['user-agent'],
                             error: err.message,
                             status: 'failed'
                         },

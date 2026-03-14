@@ -25,7 +25,7 @@ export class ScriptService {
     Y.applyUpdate(doc, new Uint8Array(update));
     const mergedContent = Y.encodeStateAsUpdate(doc);
 
-    return this.prisma.productionScript.upsert({
+    const result = await this.prisma.productionScript.upsert({
       where: { productionId },
       update: { content: Buffer.from(mergedContent) },
       create: {
@@ -33,5 +33,17 @@ export class ScriptService {
         content: Buffer.from(mergedContent),
       },
     });
+
+    // Create a history snapshot if it's been a while or the change is significant
+    // For now, we'll create a snapshot every time for simplicity during development
+    await this.prisma.scriptHistory.create({
+      data: {
+        productionId,
+        content: Buffer.from(mergedContent),
+        version: new Date().toISOString(),
+      },
+    });
+
+    return result;
   }
 }

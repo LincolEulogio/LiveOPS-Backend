@@ -40,6 +40,7 @@ interface ObsInstance {
 @Injectable()
 export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ObsConnectionManager.name);
+  private readonly MAX_RECONNECT_ATTEMPTS = 50; // Allow sufficient attempts for transient network issues
   // Map of productionId -> ObsInstance
   private connections = new Map<string, ObsInstance>();
 
@@ -275,11 +276,18 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     }
 
     instance.reconnectAttempts++;
+    if (instance.reconnectAttempts > this.MAX_RECONNECT_ATTEMPTS) {
+      this.logger.error(
+        `MAX_RECONNECT_ATTEMPTS reached for OBS (Production: ${productionId}). Stopping auto-reconnect.`,
+      );
+      return;
+    }
+
     // Exponential backoff: 2s, 4s, 8s, 16s, up to 30s max
     const delay = Math.min(Math.pow(2, instance.reconnectAttempts) * 1000, 30000);
 
-    this.logger.log(
-      `Scheduling reconnect attempt ${instance.reconnectAttempts} for OBS (Production: ${productionId}) in ${delay / 1000}s`,
+    this.logger.warn(
+      `Scheduling reconnect attempt ${instance.reconnectAttempts}/${this.MAX_RECONNECT_ATTEMPTS} for OBS (Production: ${productionId}) in ${delay / 1000}s`,
     );
 
     instance.reconnectTimeout = setTimeout(() => {

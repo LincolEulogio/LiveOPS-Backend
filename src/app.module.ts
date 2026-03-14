@@ -1,4 +1,5 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -29,11 +30,17 @@ import { NotificationsModule } from '@/notifications/notifications.module';
 import { OverlaysModule } from '@/overlays/overlays.module';
 import { AuditModule } from '@/audit/audit.module';
 import { AiModule } from '@/ai/ai.module';
+import { HealthModule } from '@/health/health.module';
 import { VideoCallModule } from '@/video-call/video-call.module';
 
 @Module({
   imports: [
     AiModule,
+    HealthModule,
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 60000,
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
