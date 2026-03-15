@@ -25,6 +25,7 @@ import { NotificationsService } from '@/notifications/notifications.service';
 export class AiService implements OnModuleInit {
   private readonly logger = new Logger(AiService.name);
   private googleModel: LanguageModel;
+  private quotaBackoffUntil = 0;
 
   constructor(
     private configService: ConfigService,
@@ -64,6 +65,14 @@ export class AiService implements OnModuleInit {
       );
     }
 
+    if (Date.now() < this.quotaBackoffUntil) {
+      const waitMs = this.quotaBackoffUntil - Date.now();
+      const waitSec = Math.ceil(waitMs / 1000);
+      throw new ServiceUnavailableException(
+        `LIVIA AI temporalmente en cooldown por cuota. Reintenta en ~${waitSec}s.`,
+      );
+    }
+
     try {
       this.logger.debug(
         `Generating text for prompt: ${prompt.substring(0, 100)}...`,
@@ -75,11 +84,39 @@ export class AiService implements OnModuleInit {
       this.logger.debug(`Successfully generated ${text.length} characters.`);
       return text;
     } catch (error: any) {
+      const msg = String(error?.message || error || '').toLowerCase();
+      if (
+        msg.includes('quota exceeded') ||
+        msg.includes('rate limit') ||
+        msg.includes('too many requests')
+      ) {
+        const retryMs = this.extractRetryMs(String(error?.message || ''));
+        this.quotaBackoffUntil = Date.now() + retryMs;
+        this.logger.warn(
+          `AI quota/rate limited. Enabling cooldown for ${Math.ceil(retryMs / 1000)}s.`,
+        );
+        throw new ServiceUnavailableException(
+          `LIVIA AI en límite de cuota. Reintenta en ~${Math.ceil(retryMs / 1000)}s.`,
+        );
+      }
+
       this.logger.error(`AI Core Failure: ${error.message}`);
       throw new InternalServerErrorException(
         `LIVIA Intelligence error: ${error.message || 'Unknown provider error'}`,
       );
     }
+  }
+
+  private extractRetryMs(message: string): number {
+    const secondsMatch = message.match(/retry in\s+([\d.]+)s/i);
+    if (secondsMatch?.[1]) {
+      const seconds = Number(secondsMatch[1]);
+      if (!Number.isNaN(seconds) && seconds > 0) {
+        return Math.ceil(seconds * 1000);
+      }
+    }
+    // Fallback conservador para evitar martilleo cuando no hay hint.
+    return 60000;
   }
 
   async analyzeShowPerformance(metrics: any): Promise<string> {

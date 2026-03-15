@@ -93,10 +93,8 @@ export class GuestService {
       throw new UnauthorizedException('El token de invitado ha expirado');
     }
 
-    if (invitation.status === 'USED') {
-      console.warn('[GuestService] Token already used:', token);
-      throw new BadRequestException('Este enlace de invitado ya ha sido utilizado');
-    }
+    // Permitimos reutilizar el mismo link mientras no haya expirado.
+    // Esto habilita reingreso tras recarga o reconexión del invitado sin bloquear el acceso.
 
     console.log('[GuestService] Token validated successfully:', token);
     return invitation;

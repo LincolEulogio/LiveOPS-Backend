@@ -95,7 +95,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     // Setup Event Listeners
     obs.on('ConnectionClosed', (error) => {
       this.logger.warn(
-        `OBS connection closed for production ${productionId}: ${error?.message || 'Unknown'}`,
+        `OBS connection closed for production ${productionId}: ${error?.message || 'Unknown'} | code=${error?.code ?? 'n/a'}`,
       );
       instance.isConnected = false;
       this.scheduleReconnect(productionId, url, password);
@@ -108,7 +108,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
 
     obs.on('ConnectionError', (error) => {
       this.logger.error(
-        `OBS connection error for production ${productionId}`,
+        `OBS connection error for production ${productionId} (${url})`,
         error,
       );
     });
@@ -170,7 +170,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     try {
       await obs.connect(url, password);
       this.logger.log(
-        `Successfully connected to OBS for production ${productionId}`,
+        `Successfully connected to OBS for production ${productionId} (${url})`,
       );
 
       // Mark as connected IMMEDIATELY after handshake
@@ -187,45 +187,67 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
         connected: true,
       });
 
-      // Fetch metadata in background or before final resolution
-      const [sceneList, streamStatus, recordStatus, stats, videoSettings] =
-        await Promise.all([
-          obs.call('GetSceneList'),
-          obs.call('GetStreamStatus'),
-          obs.call('GetRecordStatus'),
-          obs.call('GetStats'),
-          obs.call('GetVideoSettings'),
-        ]);
-
-      const fps = Math.round(
-        videoSettings.fpsNumerator / videoSettings.fpsDenominator,
-      );
-
-      instance.lastState = {
-        currentScene: sceneList.currentProgramSceneName,
-        scenes: (sceneList.scenes as unknown as ObsScene[]).map((s) => s.sceneName),
-        isStreaming: streamStatus.outputActive,
-        isRecording: recordStatus.outputActive,
-        cpuUsage: stats.cpuUsage,
-        fps: fps,
-        bitrate: streamStatus.outputSkippedFrames !== undefined ? 0 : undefined, // streamStatus might not have bitrate initially
-      };
-
-      // Start polling immediately after connection, even if not streaming
+      // Start health loops as soon as transport is up.
       this.startStatsPolling(productionId, instance);
       this.startHeartbeat(productionId, instance);
 
-      // Re-emit scene change if we have one to populate frontend
-      this.eventEmitter.emit('obs.scene.changed', {
-        productionId,
-        sceneName: sceneList.currentProgramSceneName,
-        cpuUsage: stats.cpuUsage,
-        fps: fps,
-      });
+      // Best-effort metadata bootstrap.
+      try {
+        const [sceneListRes, streamStatusRes, recordStatusRes, statsRes, videoSettingsRes] =
+          await Promise.allSettled([
+            obs.call('GetSceneList'),
+            obs.call('GetStreamStatus'),
+            obs.call('GetRecordStatus'),
+            obs.call('GetStats'),
+            obs.call('GetVideoSettings'),
+          ]);
+
+        const sceneList = sceneListRes.status === 'fulfilled' ? sceneListRes.value : undefined;
+        const streamStatus = streamStatusRes.status === 'fulfilled' ? streamStatusRes.value : undefined;
+        const recordStatus = recordStatusRes.status === 'fulfilled' ? recordStatusRes.value : undefined;
+        const stats = statsRes.status === 'fulfilled' ? statsRes.value : undefined;
+        const videoSettings = videoSettingsRes.status === 'fulfilled' ? videoSettingsRes.value : undefined;
+
+        const fps = videoSettings
+          ? Math.round(videoSettings.fpsNumerator / videoSettings.fpsDenominator)
+          : 0;
+
+        instance.lastState = {
+          currentScene: sceneList?.currentProgramSceneName || 'Unknown',
+          scenes: sceneList
+            ? (sceneList.scenes as unknown as ObsScene[]).map((s) => s.sceneName)
+            : [],
+          isStreaming: !!streamStatus?.outputActive,
+          isRecording: !!recordStatus?.outputActive,
+          cpuUsage: stats?.cpuUsage ?? 0,
+          fps,
+          bitrate: streamStatus?.outputSkippedFrames !== undefined ? 0 : undefined,
+        };
+
+        if (sceneList?.currentProgramSceneName) {
+          this.eventEmitter.emit('obs.scene.changed', {
+            productionId,
+            sceneName: sceneList.currentProgramSceneName,
+            cpuUsage: stats?.cpuUsage,
+            fps: fps || undefined,
+          });
+        }
+
+        if (sceneListRes.status === 'rejected') {
+          this.logger.warn(`OBS metadata warning (GetSceneList) for production ${productionId}: ${String(sceneListRes.reason)}`);
+        }
+        if (videoSettingsRes.status === 'rejected') {
+          this.logger.warn(`OBS metadata warning (GetVideoSettings) for production ${productionId}: ${String(videoSettingsRes.reason)}`);
+        }
+      } catch (metadataError) {
+        this.logger.warn(
+          `OBS metadata bootstrap failed for production ${productionId}, keeping connection alive: ${metadataError instanceof Error ? metadataError.message : String(metadataError)}`,
+        );
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
-        `Failed to connect to OBS for production ${productionId}: ${message}`,
+        `Failed to connect to OBS for production ${productionId} (${url}): ${message}`,
       );
       this.scheduleReconnect(productionId, url, password);
     }
@@ -272,7 +294,10 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     if (!instance) return; // Production was probably removed/disabled manually
 
     if (instance.reconnectTimeout) {
-      clearTimeout(instance.reconnectTimeout);
+      this.logger.debug(
+        `Reconnect already scheduled for OBS (Production: ${productionId}). Skipping duplicate schedule.`,
+      );
+      return;
     }
 
     instance.reconnectAttempts++;
@@ -291,6 +316,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     );
 
     instance.reconnectTimeout = setTimeout(() => {
+      instance.reconnectTimeout = undefined;
       this.connectObs(productionId, url, password);
     }, delay);
   }

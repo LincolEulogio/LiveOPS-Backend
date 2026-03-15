@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PushNotificationsService } from '@/notifications/push-notifications.service';
 import {
@@ -11,13 +11,15 @@ import { AiService } from '@/ai/ai.service';
 
 @Injectable()
 export class IntercomService {
+  private readonly logger = new Logger(IntercomService.name);
+
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
     private pushService: PushNotificationsService,
     private auditService: AuditService,
     private aiService: AiService,
-  ) {}
+  ) { }
 
   async createTemplate(productionId: string, dto: CreateCommandTemplateDto) {
     return this.prisma.commandTemplate.create({
@@ -135,14 +137,44 @@ export class IntercomService {
 
   async getAiSummary(productionId: string) {
     const history = await this.getCommandHistory(productionId, 20);
-    const summary = await this.aiService.summarizeIntercom(history);
+    const summary = await this.getSafeIntercomSummary(history, productionId);
     return { summary };
   }
 
   async summarizeHistory(productionId: string) {
     const history = await this.getCommandHistory(productionId, 20);
-    const summary = await this.aiService.summarizeIntercom(history);
+    const summary = await this.getSafeIntercomSummary(history, productionId);
     return { summary };
+  }
+
+  private async getSafeIntercomSummary(
+    history: any[],
+    productionId: string,
+  ): Promise<string> {
+    try {
+      return await this.aiService.summarizeIntercom(history);
+    } catch (error: any) {
+      this.logger.warn(
+        `AI summary unavailable for production ${productionId}: ${error?.message || error}`,
+      );
+
+      if (!history.length) {
+        return 'Sin comandos recientes.';
+      }
+
+      const recent = history.slice(0, 5);
+      const lines = recent.map((c: any) => {
+        const sender = c?.sender?.name || 'Operador';
+        const msg = c?.message || c?.template?.name || 'Comando enviado';
+        return `• ${sender}: ${msg}`;
+      });
+
+      return [
+        'Resumen operativo (modo contingencia):',
+        ...lines,
+        'IA temporalmente no disponible; mostrando resumen local.',
+      ].join('\n');
+    }
   }
 
   async sendCommand(dto: SendCommandDto) {

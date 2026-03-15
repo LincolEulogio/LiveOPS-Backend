@@ -219,7 +219,23 @@ export class ProductionsService {
       });
 
       if (obsConfig) {
-        let host = obsConfig.host || '127.0.0.1';
+        let host = (obsConfig.host || '127.0.0.1').trim();
+        let port = (obsConfig.port || '4455').trim();
+        let protocol: 'ws' | 'wss' = 'ws';
+
+        // Detect full URL in host field (e.g. ws://127.0.0.1:4455)
+        if (host.includes('://')) {
+          try {
+            const parsed = new URL(host);
+            protocol = parsed.protocol === 'wss:' ? 'wss' : 'ws';
+            host = parsed.hostname;
+            if (parsed.port) port = parsed.port;
+          } catch (e) {
+            // Fallback cleanup if user pasted malformed URL-like string
+            host = host.replace(/^wss?:\/\//, '').split('/')[0].split(':')[0];
+          }
+        }
+
         // Wrap IPv6 in brackets if it contains colons and isn't already wrapped
         if (
           host.includes(':') &&
@@ -228,7 +244,7 @@ export class ProductionsService {
         ) {
           host = `[${host}]`;
         }
-        const url = `ws://${host}:${obsConfig.port || '4455'}`;
+        const url = `${protocol}://${host}:${port}`;
 
         await tx.obsConnection.upsert({
           where: { productionId },

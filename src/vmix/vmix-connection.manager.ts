@@ -23,6 +23,7 @@ export interface VmixInput {
 interface VmixInstance {
   url: string;
   pollInterval?: NodeJS.Timeout;
+  pollInFlight: boolean;
   activeInput?: number;
   previewInput?: number;
   isStreaming: boolean;
@@ -31,6 +32,7 @@ interface VmixInstance {
   isMultiCorder: boolean;
   inputs: VmixInput[];
   pollingFailureCount: number;
+  firstFailureAt?: number;
   isConnected: boolean;
   lastHeartbeat?: string;
   lastLatency?: number;
@@ -41,6 +43,10 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(VmixConnectionManager.name);
   private connections = new Map<string, VmixInstance>();
   private readonly POLLING_RATE_MS = 1000; // Poll vMix API every second
+  private readonly MIN_POLLING_RATE_MS = 500;
+  private readonly VMIX_API_TIMEOUT_MS = 3000;
+  private readonly DISCONNECT_AFTER_FAILURES = 12;
+  private readonly DISCONNECT_AFTER_MS = 15000;
 
   constructor(
     private prisma: PrismaService,
@@ -79,6 +85,8 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
     const instance: VmixInstance = {
       url,
       pollingFailureCount: 0,
+      firstFailureAt: undefined,
+      pollInFlight: false,
       isConnected: false,
       isStreaming: false,
       isRecording: false,
@@ -88,10 +96,20 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
     };
     this.connections.set(productionId, instance);
 
-    const interval = pollingInterval || this.POLLING_RATE_MS;
+    const requestedInterval = pollingInterval || this.POLLING_RATE_MS;
+    const interval = Math.max(this.MIN_POLLING_RATE_MS, requestedInterval);
+    if (requestedInterval < this.MIN_POLLING_RATE_MS) {
+      this.logger.warn(
+        `Polling interval too low for production ${productionId}: ${requestedInterval}ms. Clamped to ${interval}ms to avoid flapping/timeouts.`,
+      );
+    }
+
     this.logger.log(
       `Starting vMix polling for production ${productionId} at ${url} (${interval}ms)`,
     );
+
+    // Warm-up poll immediately so connection state doesn't wait one full interval.
+    void this.pollApi(productionId, instance);
 
     // Start Polling Loop
     instance.pollInterval = setInterval(async () => {
@@ -137,10 +155,17 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
    * Polls the vMix XML API, parses it, and checks for Active/Preview input changes.
    */
   private async pollApi(productionId: string, instance: VmixInstance) {
+    if (instance.pollInFlight) {
+      return;
+    }
+
+    instance.pollInFlight = true;
     try {
       const apiUrl = this.getApiUrl(instance.url);
       const startTime = Date.now();
-      const response = await axios.get(apiUrl, { timeout: 1200 }); // Slightly longer timeout
+      const response = await axios.get(apiUrl, {
+        timeout: this.VMIX_API_TIMEOUT_MS,
+      });
       const latency = Date.now() - startTime;
 
       const xml = response.data;
@@ -178,6 +203,13 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
       const renderTime = parseInt(parsed.vmix.renderTime || '0', 10);
       const vmixCpu = parsed.vmix.vmixCpuUsage ? parseFloat(parsed.vmix.vmixCpuUsage) : 0;
 
+      // Snapshot previous values BEFORE overwrite (needed to detect actual changes).
+      const prevActive = instance.activeInput;
+      const prevPreview = instance.previewInput;
+      const prevStreaming = instance.isStreaming;
+      const prevRecording = instance.isRecording;
+      const prevInputsLen = instance.inputs.length;
+
       // Update Instance State
       instance.activeInput = newActive;
       instance.previewInput = newPreview;
@@ -191,11 +223,11 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
 
       // Only emit change if actual data changed to save bandwidth and prevent UI flickering
       const hasChanged =
-        instance.activeInput !== newActive ||
-        instance.previewInput !== newPreview ||
-        instance.isStreaming !== isStreaming ||
-        instance.isRecording !== isRecording ||
-        instance.inputs.length !== inputs.length;
+        prevActive !== newActive ||
+        prevPreview !== newPreview ||
+        prevStreaming !== isStreaming ||
+        prevRecording !== isRecording ||
+        prevInputsLen !== inputs.length;
 
       if (hasChanged) {
         this.eventEmitter.emit('vmix.input.changed', {
@@ -225,6 +257,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
         });
       }
       instance.pollingFailureCount = 0;
+      instance.firstFailureAt = undefined;
 
       this.eventEmitter.emit('production.health.stats', {
         productionId,
@@ -245,10 +278,21 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
       });
     } catch (error: any) {
       instance.pollingFailureCount++;
+      if (!instance.firstFailureAt) {
+        instance.firstFailureAt = Date.now();
+      }
 
-      // If we fail 5 times (default 5s at 1s rate), mark as disconnected
-      if (instance.isConnected && instance.pollingFailureCount >= 5) {
-        this.logger.warn(`vMix connection lost for production ${productionId} after ${instance.pollingFailureCount} failures.`);
+      const failureWindowMs = Date.now() - instance.firstFailureAt;
+
+      // Mark disconnected only when failures are both sustained and enough in count.
+      if (
+        instance.isConnected &&
+        instance.pollingFailureCount >= this.DISCONNECT_AFTER_FAILURES &&
+        failureWindowMs >= this.DISCONNECT_AFTER_MS
+      ) {
+        this.logger.warn(
+          `vMix connection lost for production ${productionId} after ${instance.pollingFailureCount} failures in ${Math.round(failureWindowMs / 1000)}s.`,
+        );
         instance.isConnected = false;
         this.eventEmitter.emit('vmix.connection.state', {
           productionId,
@@ -256,10 +300,18 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
         });
       }
 
-      // Log error only if it's the first few failures or we are transitioning to disconnected
-      if (instance.pollingFailureCount === 1 || instance.pollingFailureCount === 5) {
-        this.logger.debug(`vMix polling error for ${productionId}: ${error.message}`);
+      // Log first, mid and threshold failures with timing to aid diagnosis.
+      if (
+        instance.pollingFailureCount === 1 ||
+        instance.pollingFailureCount === 5 ||
+        instance.pollingFailureCount === this.DISCONNECT_AFTER_FAILURES
+      ) {
+        this.logger.debug(
+          `vMix polling error for ${productionId}: ${error.message} | failures=${instance.pollingFailureCount} | window=${Math.round(failureWindowMs / 1000)}s`,
+        );
       }
+    } finally {
+      instance.pollInFlight = false;
     }
   }
 
@@ -310,7 +362,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
    * Check if a production has an active vMix connection
    */
   isConnected(productionId: string): boolean {
-    return this.connections.has(productionId);
+    return this.connections.get(productionId)?.isConnected ?? false;
   }
 
   /**
@@ -323,6 +375,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
   ) {
     const instance = this.connections.get(productionId);
     if (!instance) throw new Error('vMix connection is not active or enabled');
+    if (!instance.isConnected) throw new Error('vMix is not connected');
 
     const apiUrl = this.getApiUrl(instance.url);
 
