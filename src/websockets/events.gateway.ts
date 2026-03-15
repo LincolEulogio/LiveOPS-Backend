@@ -839,4 +839,24 @@ export class EventsGateway
       .to(`production_${payload.productionId}`)
       .emit('production.updated', payload);
   }
+
+  @OnEvent('guest.slots.updated')
+  handleGuestSlotsUpdated(payload: { productionId: string; slots: any[]; updatedAt?: string }) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('guest.slots.updated', payload);
+  }
+
+  @OnEvent('guest.returnfeed.updated')
+  handleGuestReturnFeedUpdated(payload: {
+    productionId: string;
+    slotId: string;
+    participantIdentity: string;
+    returnFeed: 'PROGRAM' | 'PREVIEW' | 'CONTROL' | 'NONE';
+    updatedAt?: string;
+  }) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('guest.returnfeed.updated', payload);
+  }
 }
