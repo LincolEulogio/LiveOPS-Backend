@@ -2,15 +2,21 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { RegisterUserDto } from '@/auth/dto/register-user.dto';
 import { LoginUserDto } from '@/auth/dto/login-user.dto';
+import { ForgotPasswordDto } from '@/auth/dto/forgot-password.dto';
+import { ResetPasswordDto } from '@/auth/dto/reset-password.dto';
 import { Prisma } from '@prisma/client';
+import * as crypto from 'crypto';
 
 import { UsersService } from '@/users/users.service';
+import { MailerService } from '@/common/services/mailer.service';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +24,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private usersService: UsersService,
+    private mailerService: MailerService,
   ) {}
 
   async getProfile(userId: string) {
@@ -71,7 +78,79 @@ export class AuthService {
     });
   }
 
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email.toLowerCase().trim() },
+    });
+
+    if (!user) {
+      // For security reasons, don't reveal if the user exists
+      return { message: 'If an account exists, a reset link has been sent.' };
+    }
+
+    // Generate token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiry
+
+    // Store token
+    await this.prisma.passwordReset.upsert({
+      where: { token },
+      update: { token, expiresAt },
+      create: {
+        email: user.email,
+        token,
+        expiresAt,
+      },
+    });
+
+    // Send email
+    await this.mailerService.sendPasswordResetEmail(user.email, token);
+
+    return { message: 'If an account exists, a reset link has been sent.' };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    if (dto.password !== dto.passwordConfirm) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
+    const resetRecord = await this.prisma.passwordReset.findUnique({
+      where: { token: dto.token },
+    });
+
+    if (!resetRecord || resetRecord.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { email: resetRecord.email },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Update password
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    // Delete used token
+    await this.prisma.passwordReset.delete({
+      where: { token: dto.token },
+    });
+
+    return { success: true, message: 'Password has been reset successfully' };
+  }
+
   async register(dto: RegisterUserDto) {
+    if (dto.password !== dto.passwordConfirm) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
     const email = dto.email.toLowerCase().trim();
     const existing = await this.prisma.user.findUnique({
       where: { email },

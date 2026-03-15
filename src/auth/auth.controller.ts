@@ -12,6 +12,8 @@ import {
 import { AuthService } from '@/auth/auth.service';
 import { RegisterUserDto } from '@/auth/dto/register-user.dto';
 import { LoginUserDto } from '@/auth/dto/login-user.dto';
+import { ForgotPasswordDto } from '@/auth/dto/forgot-password.dto';
+import { ResetPasswordDto } from '@/auth/dto/reset-password.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import type { Request } from 'express';
 
@@ -29,6 +31,18 @@ export class AuthController {
   @Post('register')
   register(@Body() dto: RegisterUserDto) {
     return this.authService.register(dto);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 
   @Get('check-setup')

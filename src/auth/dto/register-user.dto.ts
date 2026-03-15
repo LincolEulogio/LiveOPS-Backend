@@ -10,5 +10,10 @@ export class RegisterUserDto {
   password: string;
 
   @IsString()
+  @IsNotEmpty()
+  @MinLength(6)
+  passwordConfirm: string;
+
+  @IsString()
   name?: string;
 }
