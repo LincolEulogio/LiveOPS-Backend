@@ -85,7 +85,7 @@ export class AuthService {
 
     if (!user) {
       // For security reasons, don't reveal if the user exists
-      return { message: 'If an account exists, a reset link has been sent.' };
+      return { message: 'Si la cuenta existe, se ha enviado un enlace de recuperación.' };
     }
 
     // Generate token
@@ -107,12 +107,12 @@ export class AuthService {
     // Send email
     await this.mailerService.sendPasswordResetEmail(user.email, token);
 
-    return { message: 'If an account exists, a reset link has been sent.' };
+    return { message: 'Si la cuenta existe, se ha enviado un enlace de recuperación.' };
   }
 
   async resetPassword(dto: ResetPasswordDto) {
     if (dto.password !== dto.passwordConfirm) {
-      throw new BadRequestException('Passwords do not match');
+      throw new BadRequestException('Las contraseñas no coinciden');
     }
 
     const resetRecord = await this.prisma.passwordReset.findUnique({
@@ -120,7 +120,7 @@ export class AuthService {
     });
 
     if (!resetRecord || resetRecord.expiresAt < new Date()) {
-      throw new BadRequestException('Invalid or expired reset token');
+      throw new BadRequestException('El token de recuperación es inválido o ha expirado');
     }
 
     const user = await this.prisma.user.findUnique({
@@ -128,7 +128,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('Usuario no encontrado');
     }
 
     // Update password
@@ -143,12 +143,12 @@ export class AuthService {
       where: { token: dto.token },
     });
 
-    return { success: true, message: 'Password has been reset successfully' };
+    return { success: true, message: 'La contraseña se ha restablecido correctamente' };
   }
 
   async register(dto: RegisterUserDto) {
     if (dto.password !== dto.passwordConfirm) {
-      throw new BadRequestException('Passwords do not match');
+      throw new BadRequestException('Las contraseñas no coinciden');
     }
 
     const email = dto.email.toLowerCase().trim();
@@ -156,7 +156,7 @@ export class AuthService {
       where: { email },
     });
     if (existing) {
-      throw new ConflictException('Email already in use');
+      throw new ConflictException('El correo electrónico ya está en uso');
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -224,12 +224,12 @@ export class AuthService {
     });
 
     if (!user || user.deletedAt) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Usuario o contraseña inválidos');
     }
 
     const isMatch = await bcrypt.compare(dto.password, user.password);
     if (!isMatch) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Usuario o contraseña inválidos');
     }
 
     // Attempt to log audit event
@@ -274,7 +274,7 @@ export class AuthService {
     });
 
     if (!session || session.isRevoked || session.expiresAt < new Date()) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException('La sesión ha expirado o es inválida');
     }
 
     const user = await this.prisma.user.findUnique({
