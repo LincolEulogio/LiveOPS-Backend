@@ -126,6 +126,42 @@ export class GuestService {
     }
   }
 
+  async finalizeGuest(token: string) {
+    const invitation = await this.prisma.guestInvitation.findUnique({
+      where: { token },
+      select: {
+        id: true,
+        productionId: true,
+        status: true,
+      },
+    });
+
+    if (!invitation) {
+      throw new UnauthorizedException('Token de invitado inválido');
+    }
+
+    if (invitation.status !== 'USED') {
+      await this.prisma.guestInvitation.update({
+        where: { token },
+        data: { status: 'USED' },
+      });
+    }
+
+    // Libera estado de slot persistido para evitar que quede en PROGRAM/PREVIEW.
+    const envelope = await this.getSlotConfigEnvelope(invitation.productionId);
+    if (envelope.slots[invitation.id]) {
+      envelope.slots[invitation.id] = {
+        ...envelope.slots[invitation.id],
+        status: 'FREE',
+      };
+      await this.saveSlotConfigEnvelope(invitation.productionId, envelope);
+    }
+
+    await this.emitGuestSlotsUpdated(invitation.productionId);
+
+    return { success: true };
+  }
+
   private async getSlotConfigEnvelope(productionId: string): Promise<GuestSlotConfigEnvelope> {
     const latestConfig = await this.prisma.productionLog.findFirst({
       where: {

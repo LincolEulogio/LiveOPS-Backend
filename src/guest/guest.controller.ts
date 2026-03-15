@@ -82,4 +82,9 @@ export class GuestController {
     console.log('[GuestController] POST activateGuest called with token:', token);
     return this.guestService.activateGuest(token);
   }
+
+  @Post('guests/finalize/:token')
+  async finalizeGuest(@Param('token') token: string) {
+    return this.guestService.finalizeGuest(token);
+  }
 }
