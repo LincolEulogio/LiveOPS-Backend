@@ -186,6 +186,7 @@ model Production {
   streamingDestinations StreamingDestination[]
   mediaAssets           MediaAsset[]
   scriptHistory         ScriptHistory[]
+  guestInvitations      GuestInvitation[]
 
   @@index([deletedAt])
   @@index([status])
@@ -612,4 +613,19 @@ model PasswordReset {
 
   @@index([email])
   @@index([token])
+}
+
+model GuestInvitation {
+  id           String     @id @default(uuid()) @db.Uuid
+  token        String     @unique
+  guestName    String?
+  productionId String     @db.Uuid
+  status       String     @default("PENDING") // PENDING, ACTIVE, USED
+  expiresAt    DateTime
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([productionId])
 }

@@ -32,10 +32,12 @@ import { AuditModule } from '@/audit/audit.module';
 import { AiModule } from '@/ai/ai.module';
 import { HealthModule } from '@/health/health.module';
 import { VideoCallModule } from '@/video-call/video-call.module';
+import { GuestModule } from '@/guest/guest.module';
 
 @Module({
   imports: [
     AiModule,
+    GuestModule,
     HealthModule,
     CacheModule.register({
       isGlobal: true,

@@ -26,7 +26,7 @@ export class AuditLoggingInterceptor implements NestInterceptor {
         if (!isMutation) return next.handle();
 
         // Skip non-critical or repetitive paths if needed
-        if (url.includes('/telemetry') || url.includes('/health')) return next.handle();
+        if (url.includes('/telemetry') || url.includes('/health') || url.includes('/guests/activate')) return next.handle();
 
         const startTime = Date.now();
         const productionId = request.params.id || request.body.productionId || request.query.productionId;
