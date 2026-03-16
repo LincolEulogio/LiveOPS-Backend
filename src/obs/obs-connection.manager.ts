@@ -24,6 +24,7 @@ interface ObsInstance {
   reconnectTimeout?: NodeJS.Timeout;
   statsInterval?: NodeJS.Timeout;
   heartbeatInterval?: NodeJS.Timeout;
+  screenshotInterval?: NodeJS.Timeout;
   isConnected: boolean;
   reconnectAttempts: number;
   lastState?: {
@@ -205,6 +206,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       // Start health loops as soon as transport is up.
       this.startStatsPolling(productionId, instance);
       this.startHeartbeat(productionId, instance);
+      this.startScreenshotPolling(productionId, instance);
 
       // Best-effort metadata bootstrap.
       try {
@@ -302,6 +304,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     }
     this.stopStatsPolling(instance);
     this.stopHeartbeat(instance);
+    this.stopScreenshotPolling(instance);
     // Remove listeners to prevent memory leaks or unwanted reconnects during manual disconnect
     instance.obs.removeAllListeners();
     instance.obs.disconnect().catch(() => {});
@@ -483,5 +486,80 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       isConnected: instance.isConnected,
       ...instance.lastState,
     };
+  }
+
+  private startScreenshotPolling(productionId: string, instance: ObsInstance) {
+    this.stopScreenshotPolling(instance);
+    
+    // Polling interval for screenshots (e.g., 2 seconds)
+    instance.screenshotInterval = setInterval(async () => {
+      if (!instance.isConnected) return;
+
+      try {
+        // Try to get current scenes dynamically for more robustness
+        const [streamStatus, sceneList] = await Promise.all([
+           instance.obs.call('GetStreamStatus'),
+           instance.obs.call('GetSceneList')
+        ]);
+
+        const programScene = sceneList.currentProgramSceneName;
+        const previewScene = sceneList.currentPreviewSceneName;
+
+        const screenshotOptions = {
+          imageFormat: 'jpeg',
+          imageWidth: 480, 
+          imageHeight: 270,
+          imageCompressionQuality: 80
+        };
+
+        const requests: Promise<any>[] = [];
+        if (programScene) {
+          requests.push(instance.obs.call('GetSourceScreenshot', {
+            sourceName: programScene,
+            ...screenshotOptions
+          }));
+        }
+        if (previewScene) {
+          requests.push(instance.obs.call('GetSourceScreenshot', {
+            sourceName: previewScene,
+            ...screenshotOptions
+          }));
+        }
+
+        const results = await Promise.allSettled(requests);
+        
+        const payload: any = { 
+          productionId,
+          programScene,
+          previewScene
+        };
+        
+        if (results[0]?.status === 'fulfilled') {
+          payload.program = `data:image/jpeg;base64,${(results[0] as any).value.imageData}`;
+        }
+        
+        // If results[1] exists, it's the preview
+        if (results[1] && results[1].status === 'fulfilled') {
+          payload.preview = `data:image/jpeg;base64,${(results[1] as any).value.imageData}`;
+        } else if (!previewScene && payload.program) {
+          // If no studio mode, preview is often same or last program
+          payload.preview = payload.program;
+        }
+
+        if (payload.program || payload.preview) {
+          this.eventEmitter.emit('obs.screenshot.update', payload);
+        }
+
+      } catch (err) {
+        // Silent error for screenshots to avoid spamming logs
+      }
+    }, 2000);
+  }
+
+  private stopScreenshotPolling(instance: ObsInstance) {
+    if (instance.screenshotInterval) {
+      clearInterval(instance.screenshotInterval);
+      instance.screenshotInterval = undefined;
+    }
   }
 }

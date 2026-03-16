@@ -707,6 +707,16 @@ export class EventsGateway
       .to(`production_${payload.productionId}`)
       .emit('chat.received', msg);
   }
+  @OnEvent('obs.screenshot.update')
+  handleObsScreenshotUpdate(payload: {
+    productionId: string;
+    program?: string;
+    preview?: string;
+  }) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('obs.screenshot.update', payload);
+  }
 
   @OnEvent('vmix.input.changed')
   handleVmixInputChanged(payload: any) {
