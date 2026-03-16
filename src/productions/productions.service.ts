@@ -21,7 +21,7 @@ export class ProductionsService {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
-  ) {}
+  ) { }
 
   async create(userId: string, dto: CreateProductionDto) {
     // We assume the creator gets an 'ADMIN' role in this production
@@ -114,11 +114,15 @@ export class ProductionsService {
       include: { globalRole: true },
     });
 
-    const isSuperAdmin = user?.globalRole?.name === Role.SUPERADMIN;
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    const isSuperAdmin = user.globalRole?.name === Role.SUPERADMIN;
 
     const where: Prisma.ProductionWhereInput = {
       deletedAt: null,
-      tenantId: user?.tenantId,
+      tenantId: user.tenantId,
     };
 
     // Only filter by user assignment if NOT a SUPERADMIN

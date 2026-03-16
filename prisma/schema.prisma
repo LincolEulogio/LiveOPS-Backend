@@ -151,42 +151,40 @@ model Permission {
 }
 
 model Production {
-  id               String            @id @default(uuid()) @db.Uuid
-  name             String
-  description      String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  deletedAt        DateTime?
-  engineType       EngineType        @default(OBS)
-  status           ProductionStatus  @default(DRAFT)
-  chatMessages     ChatMessage[]
-  commands         Command[]
-  commandTemplates CommandTemplate[]
-  deviceSessions   DeviceSession[]
-  obsConnection    ObsConnection?
-  logs             ProductionLog[]
-  script           ProductionScript?
-  users            ProductionUser[]
-  rules            Rule[]
-  timelineBlocks   TimelineBlock[]
-  vmixConnection   VmixConnection?
-  telemetryLogs    TelemetryLog[]
-  showReport       ShowReport?
-  hardwareMappings HardwareMapping[]
-  overlayTemplates OverlayTemplate[]
-  socialMessages   SocialMessage[]
-  socialPolls      SocialPoll[]
-  isRehearsal      Boolean           @default(false)
-
-  tenantId String? @db.Uuid
-  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  webhooks              Webhook[]
+  id                    String                 @id @default(uuid()) @db.Uuid
+  name                  String
+  description           String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  deletedAt             DateTime?
+  engineType            EngineType             @default(OBS)
+  status                ProductionStatus       @default(DRAFT)
+  isRehearsal           Boolean                @default(false)
+  tenantId              String?                @db.Uuid
   publicStatusEnabled   Boolean                @default(false)
-  streamingDestinations StreamingDestination[]
-  mediaAssets           MediaAsset[]
-  scriptHistory         ScriptHistory[]
+  chatMessages          ChatMessage[]
+  commands              Command[]
+  commandTemplates      CommandTemplate[]
+  deviceSessions        DeviceSession[]
   guestInvitations      GuestInvitation[]
+  hardwareMappings      HardwareMapping[]
+  mediaAssets           MediaAsset[]
+  obsConnection         ObsConnection?
+  overlayTemplates      OverlayTemplate[]
+  tenant                Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  logs                  ProductionLog[]
+  script                ProductionScript?
+  users                 ProductionUser[]
+  rules                 Rule[]
+  scriptHistory         ScriptHistory[]
+  showReport            ShowReport?
+  socialMessages        SocialMessage[]
+  socialPolls           SocialPoll[]
+  streamingDestinations StreamingDestination[]
+  telemetryLogs         TelemetryLog[]
+  timelineBlocks        TimelineBlock[]
+  vmixConnection        VmixConnection?
+  webhooks              Webhook[]
 
   @@index([deletedAt])
   @@index([status])
@@ -201,7 +199,7 @@ model ProductionLog {
   details      Json?
   createdAt    DateTime   @default(now())
   production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
-  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user         User?      @relation(fields: [userId], references: [id])
 
   @@index([createdAt])
   @@index([eventType])
@@ -276,10 +274,10 @@ model Rule {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   actions          Action[]
+  hardwareMappings HardwareMapping[]
   production       Production         @relation(fields: [productionId], references: [id], onDelete: Cascade)
   executionLogs    RuleExecutionLog[]
   triggers         Trigger[]
-  hardwareMappings HardwareMapping[]
 
   @@index([isEnabled])
   @@index([productionId])
@@ -357,24 +355,21 @@ model User {
   updatedAt          DateTime           @updatedAt
   deletedAt          DateTime?
   globalRoleId       String?            @db.Uuid
+  tenantId           String?            @db.Uuid
   auditLogs          AuditLog[]
   chatMessages       ChatMessage[]
   commands           Command[]
+  receivedCommands   Command[]          @relation("CommandTarget")
   responses          CommandResponse[]
   deviceSessions     DeviceSession[]
   operatorActivities OperatorActivity[]
+  productionLogs     ProductionLog[]
   productions        ProductionUser[]
+  pushSubscriptions  PushSubscription[]
   sessions           Session[]
   globalRole         Role?              @relation(fields: [globalRoleId], references: [id])
-
-  tenantId String? @db.Uuid
-  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  receivedCommands Command[] @relation("CommandTarget")
-
-  pushSubscriptions PushSubscription[]
-  videoCalls        VideoCall[]
-  productionLogs    ProductionLog[]
+  tenant             Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  videoCalls         VideoCall[]
 
   @@index([deletedAt])
   @@index([email])
@@ -393,78 +388,54 @@ model VmixConnection {
 }
 
 model TelemetryLog {
-  id            String   @id @default(uuid()) @db.Uuid
-  productionId  String   @db.Uuid
-  timestamp     DateTime @default(now())
+  id            String     @id @default(uuid()) @db.Uuid
+  productionId  String     @db.Uuid
+  timestamp     DateTime   @default(now())
   cpuUsage      Float?
   memoryUsage   Float?
   fps           Float?
   bitrate       Float?
   droppedFrames Int?
-  isStreaming   Boolean  @default(false)
-  isRecording   Boolean  @default(false)
-
-  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  isStreaming   Boolean    @default(false)
+  isRecording   Boolean    @default(false)
+  production    Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
 
   @@index([productionId])
   @@index([timestamp])
 }
 
 model ShowReport {
-  id           String   @id @default(uuid()) @db.Uuid
-  productionId String   @unique @db.Uuid
-  generatedAt  DateTime @default(now())
-
-  startTime  DateTime?
-  endTime    DateTime?
-  durationMs Int?
-
-  peakViewers Int?
-  alertsCount Int?
-
-  metrics    Json?
-  aiAnalysis String? @db.Text
-
-  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
-}
-
-enum BlockStatus {
-  PENDING
-  ACTIVE
-  COMPLETED
-}
-
-enum EngineType {
-  OBS
-  VMIX
-}
-
-enum ProductionStatus {
-  SETUP
-  ACTIVE
-  ARCHIVED
-  DRAFT
+  id           String     @id @default(uuid()) @db.Uuid
+  productionId String     @unique @db.Uuid
+  generatedAt  DateTime   @default(now())
+  startTime    DateTime?
+  endTime      DateTime?
+  durationMs   Int?
+  peakViewers  Int?
+  alertsCount  Int?
+  metrics      Json?
+  aiAnalysis   String?
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
 }
 
 model Tenant {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  users       User[]
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   productions Production[]
+  users       User[]
 }
 
 model HardwareMapping {
   id           String     @id @default(uuid()) @db.Uuid
   productionId String     @db.Uuid
-  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
-  mapKey       String // e.g., "hid:Btn 1" or "midi:CC 10"
+  mapKey       String
   ruleId       String     @db.Uuid
-  rule         Rule       @relation(fields: [ruleId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  rule         Rule       @relation(fields: [ruleId], references: [id], onDelete: Cascade)
 
   @@unique([productionId, mapKey])
   @@index([productionId])
@@ -473,11 +444,11 @@ model HardwareMapping {
 model SocialMessage {
   id           String     @id @default(uuid()) @db.Uuid
   productionId String     @db.Uuid
-  platform     String // "TWITCH", "YOUTUBE", etc.
+  platform     String
   author       String
   authorAvatar String?
   content      String
-  status       String     @default("PENDING") // PENDING, APPROVED, REJECTED, ON_AIR
+  status       String     @default("PENDING")
   externalId   String?    @unique
   timestamp    DateTime   @default(now())
   aiSentiment  String?
@@ -492,7 +463,7 @@ model SocialPoll {
   id           String     @id @default(uuid()) @db.Uuid
   productionId String     @db.Uuid
   question     String
-  options      Json // Array of { id, text, votes }
+  options      Json
   isActive     Boolean    @default(true)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -506,7 +477,7 @@ model Webhook {
   productionId String     @db.Uuid
   name         String
   url          String
-  platform     String // "DISCORD", "SLACK", "GENERIC"
+  platform     String
   isEnabled    Boolean    @default(true)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -520,7 +491,7 @@ model OverlayTemplate {
   productionId String     @db.Uuid
   name         String
   description  String?
-  config       Json // Layer structure, styles, and data bindings
+  config       Json
   isActive     Boolean    @default(false)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -534,7 +505,7 @@ model StreamingDestination {
   id           String     @id @default(uuid()) @db.Uuid
   productionId String     @db.Uuid
   name         String
-  platform     String // "YOUTUBE", "TWITCH", "FACEBOOK", "CUSTOM"
+  platform     String
   rtmpUrl      String
   streamKey    String
   isEnabled    Boolean    @default(true)
@@ -565,7 +536,7 @@ model VideoCall {
   title       String
   description String?
   hostId      String    @db.Uuid
-  status      String    @default("scheduled") // scheduled | active | ended
+  status      String    @default("scheduled")
   scheduledAt DateTime?
   endedAt     DateTime?
   createdAt   DateTime  @default(now())
@@ -578,30 +549,22 @@ model VideoCall {
 }
 
 model MediaAsset {
-  id           String    @id @default(uuid()) @db.Uuid
+  id           String     @id @default(uuid()) @db.Uuid
   name         String
   url          String
   type         AssetType
   size         Int
   mimeType     String
-  productionId String    @db.Uuid
-  tags         String[]  @default([])
+  productionId String     @db.Uuid
+  tags         String[]   @default([])
   aiMetadata   Json?
   thumbnailUrl String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  production Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
 
   @@index([productionId])
   @@index([tags])
-}
-
-enum AssetType {
-  VIDEO
-  AUDIO
-  IMAGE
-  DOCUMENT
 }
 
 model PasswordReset {
@@ -620,7 +583,7 @@ model GuestInvitation {
   token        String     @unique
   guestName    String?
   productionId String     @db.Uuid
-  status       String     @default("PENDING") // PENDING, ACTIVE, USED
+  status       String     @default("PENDING")
   expiresAt    DateTime
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -628,4 +591,29 @@ model GuestInvitation {
 
   @@index([token])
   @@index([productionId])
+}
+
+enum BlockStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+}
+
+enum EngineType {
+  OBS
+  VMIX
+}
+
+enum ProductionStatus {
+  SETUP
+  ACTIVE
+  ARCHIVED
+  DRAFT
+}
+
+enum AssetType {
+  VIDEO
+  AUDIO
+  IMAGE
+  DOCUMENT
 }

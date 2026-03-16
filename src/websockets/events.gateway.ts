@@ -944,4 +944,78 @@ export class EventsGateway
       .to(`production_${payload.productionId}`)
       .emit('guest.returnfeed.updated', payload);
   }
+
+  // --- NDI Management Events ---
+
+  @SubscribeMessage('ndi.bridge_register')
+  async handleNdiBridgeRegister(
+    @MessageBody() data: { productionId: string; bridgeName: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    this.logger.log(`NDI Bridge ${data.bridgeName} registered for production ${data.productionId}`);
+    client.join(`production_${data.productionId}`);
+    client.data.isNdiBridge = true;
+    
+    // Notify others in the room
+    this.server.to(`production_${data.productionId}`).emit('ndi.bridge_status', {
+      bridgeName: data.bridgeName,
+      status: 'ONLINE',
+    });
+  }
+
+  @SubscribeMessage('ndi.source_update')
+  async handleNdiSourceUpdate(
+    @MessageBody() data: { 
+      productionId: string; 
+      sources: Array<{ name: string; ipAddress?: string; port?: number; status: string }> 
+    },
+  ) {
+    this.logger.debug(`Received NDI sources update for production ${data.productionId}`);
+    
+    // Update DB
+    for (const source of data.sources) {
+      await this.prisma.ndiSource.upsert({
+        where: {
+          productionId_name: {
+            productionId: data.productionId,
+            name: source.name,
+          },
+        },
+        update: {
+          ipAddress: source.ipAddress,
+          port: source.port,
+          status: source.status,
+          lastSeen: new Date(),
+        },
+        create: {
+          productionId: data.productionId,
+          name: source.name,
+          ipAddress: source.ipAddress,
+          port: source.port,
+          status: source.status,
+          lastSeen: new Date(),
+        },
+      });
+    }
+
+    // Broadcast update to the room (dashboard)
+    this.server.to(`production_${data.productionId}`).emit('ndi.sources_received', {
+      productionId: data.productionId,
+      sources: data.sources,
+    });
+  }
+
+  @SubscribeMessage('ndi.tally_control')
+  async handleNdiTallyControl(
+    @MessageBody() data: { 
+      productionId: string; 
+      sourceName: string; 
+      tallyState: 'PROGRAM' | 'PREVIEW' | 'IDLE' 
+    },
+  ) {
+    this.logger.log(`Tally Control for ${data.sourceName} -> ${data.tallyState}`);
+    
+    // Broadcast to the room so the Bridge (and dashboard) receives it
+    this.server.to(`production_${data.productionId}`).emit('ndi.tally_update', data);
+  }
 }

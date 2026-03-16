@@ -2,20 +2,25 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { ObsService } from '@/obs/obs.service';
 import { VmixService } from '@/vmix/vmix.service';
+import { LiveKitService } from './livekit.service';
 import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
 import { IVideoEngine, ISceneEngine, IInputEngine } from './interfaces/video-engine.interface';
 
 @Injectable()
 export class StreamingService {
+  private readonly logger = new Logger(StreamingService.name);
+
   constructor(
     private prisma: PrismaService,
     private obsService: ObsService,
     private vmixService: VmixService,
-  ) {}
+    private liveKitService: LiveKitService,
+  ) { }
 
   private getEngine(production: any): IVideoEngine {
     if (production.engineType === 'OBS') return this.obsService;
@@ -38,10 +43,72 @@ export class StreamingService {
       engineType: production.engineType,
       status: production.status,
       isConnected: state.isConnected,
+      activeEgressId: production.activeEgressId,
       obs: production.engineType === 'OBS' ? state : null,
       vmix: production.engineType === 'VMIX' ? state : null,
       lastUpdate: new Date().toISOString(),
     };
+  }
+
+  async startCloudStream(productionId: string) {
+    const production = await this.prisma.production.findUnique({
+      where: { id: productionId },
+      include: { streamingDestinations: true },
+    });
+
+    if (!production) throw new NotFoundException('Production not found');
+    if (production.activeEgressId) throw new BadRequestException('Cloud stream already active');
+
+    const enabledDestinations = production.streamingDestinations.filter(d => d.isEnabled);
+    if (enabledDestinations.length === 0) {
+      throw new BadRequestException('No enabled streaming destinations found');
+    }
+
+    const rtmpUrls = enabledDestinations.map(d => `${d.rtmpUrl}${d.streamKey}`);
+
+    try {
+      const egressInfo = await this.liveKitService.startRoomCompositeEgress(productionId, rtmpUrls);
+
+      await this.prisma.production.update({
+        where: { id: productionId },
+        data: { activeEgressId: egressInfo.egressId },
+      });
+
+      this.logger.log(`Cloud stream started for production ${productionId} with egressId ${egressInfo.egressId}`);
+      return { success: true, egressId: egressInfo.egressId };
+    } catch (error) {
+      this.logger.error(`Failed to start cloud stream: ${error.message}`);
+      throw new BadRequestException(`Failed to start cloud stream: ${error.message}`);
+    }
+  }
+
+  async stopCloudStream(productionId: string) {
+    const production = await this.prisma.production.findUnique({
+      where: { id: productionId },
+    });
+
+    if (!production) throw new NotFoundException('Production not found');
+    if (!production.activeEgressId) throw new BadRequestException('No active cloud stream found');
+
+    try {
+      await this.liveKitService.stopEgress(production.activeEgressId);
+
+      await this.prisma.production.update({
+        where: { id: productionId },
+        data: { activeEgressId: null },
+      });
+
+      this.logger.log(`Cloud stream stopped for production ${productionId}`);
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`Failed to stop cloud stream: ${error.message}`);
+      // Even if LiveKit fails to stop it (e.g. already stopped), we reset our local state
+      await this.prisma.production.update({
+        where: { id: productionId },
+        data: { activeEgressId: null },
+      });
+      return { success: true, warning: 'Local state reset but LiveKit reported error' };
+    }
   }
 
   async handleCommand(productionId: string, dto: StreamingCommandDto) {
@@ -65,6 +132,10 @@ export class StreamingService {
         return engine.startStream(productionId);
       case 'STOP_STREAM':
         return engine.stopStream(productionId);
+      case 'START_CLOUD_STREAM':
+        return this.startCloudStream(productionId);
+      case 'STOP_CLOUD_STREAM':
+        return this.stopCloudStream(productionId);
       case 'START_RECORD':
         return engine.startRecord(productionId);
       case 'STOP_RECORD':

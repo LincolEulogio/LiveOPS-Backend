@@ -93,4 +93,18 @@ export class StreamingController {
   removeDestination(@Param('destId') id: string) {
     return this.destinationsService.remove(id);
   }
+
+  // --- Cloud Mixing (RTMP Egress) --- //
+
+  @Post(':id/start-cloud')
+  @Permissions('streaming:control')
+  startCloudStream(@Param('id') productionId: string) {
+    return this.streamingService.startCloudStream(productionId);
+  }
+
+  @Post(':id/stop-cloud')
+  @Permissions('streaming:control')
+  stopCloudStream(@Param('id') productionId: string) {
+    return this.streamingService.stopCloudStream(productionId);
+  }
 }

@@ -11,9 +11,7 @@ import {
   Query,
   Logger,
   Inject,
-  UseInterceptors,
 } from '@nestjs/common';
-import { CacheInterceptor, CacheKey } from '@nestjs/cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { Request } from 'express';
@@ -59,8 +57,6 @@ export class ProductionsController {
   }
 
   @Get()
-  @UseInterceptors(CacheInterceptor)
-  @CacheKey('productions_list')
   findAll(@Req() req: RequestWithUser, @Query() query: GetProductionsQueryDto) {
     return this.productionsService.findAllForUser(req.user.userId, query);
   }
