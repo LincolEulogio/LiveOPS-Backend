@@ -19,6 +19,8 @@ export interface ObsScene {
 
 interface ObsInstance {
   obs: OBSWebSocket;
+  url: string;
+  password?: string;
   reconnectTimeout?: NodeJS.Timeout;
   statsInterval?: NodeJS.Timeout;
   heartbeatInterval?: NodeJS.Timeout;
@@ -78,19 +80,23 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Establish a connection to an OBS instance.
-   */
   async connectObs(productionId: string, url: string, password?: string) {
     // Clean up existing connection if there is one
     const existing = this.connections.get(productionId);
     if (existing) {
+      const isSameConfig = existing.url === url && existing.password === password;
+      if (isSameConfig && (existing.isConnected || existing.reconnectTimeout)) {
+        this.logger.debug(`OBS already connected or reconnecting with same config for ${productionId}. Skipping.`);
+        return;
+      }
       this.disconnectInstance(productionId, existing);
     }
 
     const obs = new OBSWebSocket();
     const instance: ObsInstance = {
       obs,
+      url, // Store URL in instance for comparison
+      password, // Store password in instance for comparison
       isConnected: false,
       reconnectAttempts: existing?.reconnectAttempts || 0,
     };
@@ -103,11 +109,16 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       );
       instance.isConnected = false;
       this.scheduleReconnect(productionId, url, password);
-      // Emit internal event for UI updates
-      this.eventEmitter.emit('obs.connection.state', {
-        productionId,
-        connected: false,
-      });
+
+      // Only emit "disconnected" to UI if we don't have a pending timeout soon
+      // or if it's a fatal close. For now, we allow the frontend grace period to handle micro-drops,
+      // but we ensure we don't spam the event if we are mid-reconnect.
+      if (instance.reconnectAttempts >= this.MAX_RECONNECT_ATTEMPTS) {
+        this.eventEmitter.emit('obs.connection.state', {
+          productionId,
+          connected: false,
+        });
+      }
     });
 
     obs.on('ConnectionError', (error) => {

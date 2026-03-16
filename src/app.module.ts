@@ -50,8 +50,16 @@ import { GuestModule } from '@/guest/guest.module';
       pinoHttp: {
         transport:
           process.env.NODE_ENV !== 'production'
-            ? { target: 'pino-pretty' }
+            ? {
+                target: 'pino-pretty',
+                options: {
+                  colorize: true,
+                  singleLine: true,
+                  ignore: 'pid,hostname,req,res',
+                },
+              }
             : undefined,
+        autoLogging: false,
       },
     }),
     ThrottlerModule.forRoot([

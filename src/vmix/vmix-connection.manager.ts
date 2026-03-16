@@ -79,6 +79,11 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
     // Cleanup existing
     const existing = this.connections.get(productionId);
     if (existing) {
+      const isSameConfig = existing.url === url;
+      if (isSameConfig && (existing.isConnected || existing.pollInterval)) {
+        this.logger.debug(`vMix already polling with same config for ${productionId}. Skipping.`);
+        return;
+      }
       this.disconnectVmix(productionId, existing);
     }
 

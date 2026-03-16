@@ -618,6 +618,7 @@ export class EventsGateway
     this.server
       .to(`production_${payload.productionId}`)
       .emit('obs.scene.changed', {
+        productionId: payload.productionId,
         sceneName: payload.sceneName,
         cpuUsage: payload.cpuUsage,
         fps: payload.fps,
