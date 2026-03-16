@@ -328,6 +328,21 @@ export class ProductionsService {
           });
         }
 
+        // Keep a single active engine connection to avoid cross-engine flapping in realtime UI
+        if (dto.engineType === EngineType.VMIX) {
+          await tx.obsConnection.updateMany({
+            where: { productionId },
+            data: { isEnabled: false },
+          });
+        }
+
+        if (dto.engineType === EngineType.OBS) {
+          await tx.vmixConnection.updateMany({
+            where: { productionId },
+            data: { isEnabled: false },
+          });
+        }
+
         return production;
       })
       .then((prod) => {
