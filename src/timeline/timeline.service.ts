@@ -15,23 +15,21 @@ import { AiService } from '@/ai/ai.service';
 
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
- 
+
 @Injectable()
 export class TimelineService {
   private readonly logger = new Logger(TimelineService.name);
   private updateSubject = new Subject<string>();
- 
+
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
     private auditService: AuditService,
     private aiService: AiService,
   ) {
-    this.updateSubject
-      .pipe(debounceTime(500))
-      .subscribe((productionId) => {
-        this.eventEmitter.emit('timeline.updated', { productionId });
-      });
+    this.updateSubject.pipe(debounceTime(500)).subscribe((productionId) => {
+      this.eventEmitter.emit('timeline.updated', { productionId });
+    });
   }
 
   // --- CRUD Operations --- //

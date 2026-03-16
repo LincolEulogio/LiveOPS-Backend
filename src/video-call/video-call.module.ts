@@ -5,8 +5,8 @@ import { StreamingModule } from '@/streaming/streaming.module';
 import { PrismaModule } from '@/prisma/prisma.module';
 
 @Module({
-    imports: [StreamingModule, PrismaModule],
-    controllers: [VideoCallController],
-    providers: [VideoCallService],
+  imports: [StreamingModule, PrismaModule],
+  controllers: [VideoCallController],
+  providers: [VideoCallService],
 })
-export class VideoCallModule { }
+export class VideoCallModule {}

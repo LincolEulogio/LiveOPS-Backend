@@ -24,4 +24,4 @@ import { MailerService } from '@/common/services/mailer.service';
   providers: [AuthService, JwtStrategy, MailerService],
   exports: [AuthService],
 })
-export class AuthModule { }
+export class AuthModule {}

@@ -47,7 +47,7 @@ export class ProductionsController {
   constructor(
     private readonly productionsService: ProductionsService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-  ) { }
+  ) {}
 
   @Post()
   @Roles(Role.ADMIN, Role.SUPERADMIN)

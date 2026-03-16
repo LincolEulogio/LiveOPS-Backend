@@ -47,7 +47,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     this.logger.log('Initializing OBS Connection Manager...');
@@ -89,7 +89,11 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     }
 
     const obs = new OBSWebSocket();
-    const instance: ObsInstance = { obs, isConnected: false, reconnectAttempts: existing?.reconnectAttempts || 0 };
+    const instance: ObsInstance = {
+      obs,
+      isConnected: false,
+      reconnectAttempts: existing?.reconnectAttempts || 0,
+    };
     this.connections.set(productionId, instance);
 
     // Setup Event Listeners
@@ -150,9 +154,9 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       try {
         const sceneList = await obs.call('GetSceneList');
         if (instance.lastState) {
-          instance.lastState.scenes = (sceneList.scenes as unknown as ObsScene[]).map(
-            (s) => s.sceneName,
-          );
+          instance.lastState.scenes = (
+            sceneList.scenes as unknown as ObsScene[]
+          ).map((s) => s.sceneName);
           instance.lastState.currentScene = sceneList.currentProgramSceneName;
         }
         // We might want to emit a full state update here but usually scenes list is enough
@@ -193,35 +197,56 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
 
       // Best-effort metadata bootstrap.
       try {
-        const [sceneListRes, streamStatusRes, recordStatusRes, statsRes, videoSettingsRes] =
-          await Promise.allSettled([
-            obs.call('GetSceneList'),
-            obs.call('GetStreamStatus'),
-            obs.call('GetRecordStatus'),
-            obs.call('GetStats'),
-            obs.call('GetVideoSettings'),
-          ]);
+        const [
+          sceneListRes,
+          streamStatusRes,
+          recordStatusRes,
+          statsRes,
+          videoSettingsRes,
+        ] = await Promise.allSettled([
+          obs.call('GetSceneList'),
+          obs.call('GetStreamStatus'),
+          obs.call('GetRecordStatus'),
+          obs.call('GetStats'),
+          obs.call('GetVideoSettings'),
+        ]);
 
-        const sceneList = sceneListRes.status === 'fulfilled' ? sceneListRes.value : undefined;
-        const streamStatus = streamStatusRes.status === 'fulfilled' ? streamStatusRes.value : undefined;
-        const recordStatus = recordStatusRes.status === 'fulfilled' ? recordStatusRes.value : undefined;
-        const stats = statsRes.status === 'fulfilled' ? statsRes.value : undefined;
-        const videoSettings = videoSettingsRes.status === 'fulfilled' ? videoSettingsRes.value : undefined;
+        const sceneList =
+          sceneListRes.status === 'fulfilled' ? sceneListRes.value : undefined;
+        const streamStatus =
+          streamStatusRes.status === 'fulfilled'
+            ? streamStatusRes.value
+            : undefined;
+        const recordStatus =
+          recordStatusRes.status === 'fulfilled'
+            ? recordStatusRes.value
+            : undefined;
+        const stats =
+          statsRes.status === 'fulfilled' ? statsRes.value : undefined;
+        const videoSettings =
+          videoSettingsRes.status === 'fulfilled'
+            ? videoSettingsRes.value
+            : undefined;
 
         const fps = videoSettings
-          ? Math.round(videoSettings.fpsNumerator / videoSettings.fpsDenominator)
+          ? Math.round(
+              videoSettings.fpsNumerator / videoSettings.fpsDenominator,
+            )
           : 0;
 
         instance.lastState = {
           currentScene: sceneList?.currentProgramSceneName || 'Unknown',
           scenes: sceneList
-            ? (sceneList.scenes as unknown as ObsScene[]).map((s) => s.sceneName)
+            ? (sceneList.scenes as unknown as ObsScene[]).map(
+                (s) => s.sceneName,
+              )
             : [],
           isStreaming: !!streamStatus?.outputActive,
           isRecording: !!recordStatus?.outputActive,
           cpuUsage: stats?.cpuUsage ?? 0,
           fps,
-          bitrate: streamStatus?.outputSkippedFrames !== undefined ? 0 : undefined,
+          bitrate:
+            streamStatus?.outputSkippedFrames !== undefined ? 0 : undefined,
         };
 
         if (sceneList?.currentProgramSceneName) {
@@ -234,10 +259,14 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
         }
 
         if (sceneListRes.status === 'rejected') {
-          this.logger.warn(`OBS metadata warning (GetSceneList) for production ${productionId}: ${String(sceneListRes.reason)}`);
+          this.logger.warn(
+            `OBS metadata warning (GetSceneList) for production ${productionId}: ${String(sceneListRes.reason)}`,
+          );
         }
         if (videoSettingsRes.status === 'rejected') {
-          this.logger.warn(`OBS metadata warning (GetVideoSettings) for production ${productionId}: ${String(videoSettingsRes.reason)}`);
+          this.logger.warn(
+            `OBS metadata warning (GetVideoSettings) for production ${productionId}: ${String(videoSettingsRes.reason)}`,
+          );
         }
       } catch (metadataError) {
         this.logger.warn(
@@ -264,7 +293,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     this.stopHeartbeat(instance);
     // Remove listeners to prevent memory leaks or unwanted reconnects during manual disconnect
     instance.obs.removeAllListeners();
-    instance.obs.disconnect().catch(() => { });
+    instance.obs.disconnect().catch(() => {});
     this.connections.delete(productionId);
     this.eventEmitter.emit('obs.connection.state', {
       productionId,
@@ -309,7 +338,10 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     }
 
     // Exponential backoff: 2s, 4s, 8s, 16s, up to 30s max
-    const delay = Math.min(Math.pow(2, instance.reconnectAttempts) * 1000, 30000);
+    const delay = Math.min(
+      Math.pow(2, instance.reconnectAttempts) * 1000,
+      30000,
+    );
 
     this.logger.warn(
       `Scheduling reconnect attempt ${instance.reconnectAttempts}/${this.MAX_RECONNECT_ATTEMPTS} for OBS (Production: ${productionId}) in ${delay / 1000}s`,
@@ -329,10 +361,12 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
         // Simple call to check if connection is still alive
         await instance.obs.call('GetVersion');
       } catch (e) {
-        this.logger.warn(`Heartbeat failed for OBS (Production: ${productionId}), marking as disconnected.`);
+        this.logger.warn(
+          `Heartbeat failed for OBS (Production: ${productionId}), marking as disconnected.`,
+        );
         instance.isConnected = false;
         // The ConnectionClosed event might not fire immediately, so we force-close
-        instance.obs.disconnect().catch(() => { });
+        instance.obs.disconnect().catch(() => {});
         // ConnectionClosed listener will trigger scheduleReconnect
       }
     }, 10000); // 10s heartbeat

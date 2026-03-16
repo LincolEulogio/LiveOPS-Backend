@@ -7,7 +7,7 @@ import { Permissions } from '@/common/decorators/permissions.decorator';
 @Controller('chats')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ChatController {
-  constructor(private readonly chatService: ChatService) { }
+  constructor(private readonly chatService: ChatService) {}
 
   @Get(':productionId')
   @Permissions('production:view')

@@ -1,4 +1,12 @@
-import { Controller, Post, Get, Param, Body, UseGuards, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  UseGuards,
+  Patch,
+} from '@nestjs/common';
 import { GuestService } from './guest.service';
 import { CreateGuestInvitationDto } from './dto/create-guest-invitation.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
@@ -11,7 +19,7 @@ export class GuestController {
   constructor(
     private readonly guestService: GuestService,
     private readonly liveKitService: LiveKitService,
-  ) { }
+  ) {}
 
   @Get('guests/token/:token')
   async getGuestToken(@Param('token') token: string) {
@@ -47,7 +55,13 @@ export class GuestController {
   async updateGuestSlot(
     @Param('id') productionId: string,
     @Param('slotId') slotId: string,
-    @Body() body: { vmixInput?: number; obsScene?: string; status?: 'FREE' | 'PREVIEW' | 'PROGRAM'; returnFeed?: 'PROGRAM' | 'PREVIEW' | 'CONTROL' | 'NONE' },
+    @Body()
+    body: {
+      vmixInput?: number;
+      obsScene?: string;
+      status?: 'FREE' | 'PREVIEW' | 'PROGRAM';
+      returnFeed?: 'PROGRAM' | 'PREVIEW' | 'CONTROL' | 'NONE';
+    },
   ) {
     return this.guestService.updateGuestSlot(productionId, slotId, body);
   }
@@ -79,7 +93,10 @@ export class GuestController {
 
   @Post('guests/activate/:token')
   async activateGuest(@Param('token') token: string) {
-    console.log('[GuestController] POST activateGuest called with token:', token);
+    console.log(
+      '[GuestController] POST activateGuest called with token:',
+      token,
+    );
     return this.guestService.activateGuest(token);
   }
 

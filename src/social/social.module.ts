@@ -3,8 +3,8 @@ import { SocialService } from '@/social/social.service';
 import { SocialController } from '@/social/social.controller';
 
 @Module({
-    controllers: [SocialController],
-    providers: [SocialService],
-    exports: [SocialService],
+  controllers: [SocialController],
+  providers: [SocialService],
+  exports: [SocialService],
 })
-export class SocialModule { }
+export class SocialModule {}

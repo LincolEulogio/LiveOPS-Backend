@@ -16,7 +16,7 @@ import { Permissions } from '@/common/decorators/permissions.decorator';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions/:productionId/vmix')
 export class VmixController {
-  constructor(private readonly vmixService: VmixService) { }
+  constructor(private readonly vmixService: VmixService) {}
 
   @Put('connection')
   @Permissions('vmix:manage')

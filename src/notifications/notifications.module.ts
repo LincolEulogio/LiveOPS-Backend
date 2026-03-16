@@ -6,8 +6,12 @@ import { PushNotificationsService } from '@/notifications/push-notifications.ser
 
 @Global()
 @Module({
-    controllers: [WebhooksController],
-    providers: [NotificationsService, HealthAlertService, PushNotificationsService],
-    exports: [NotificationsService, PushNotificationsService],
+  controllers: [WebhooksController],
+  providers: [
+    NotificationsService,
+    HealthAlertService,
+    PushNotificationsService,
+  ],
+  exports: [NotificationsService, PushNotificationsService],
 })
-export class NotificationsModule { }
+export class NotificationsModule {}

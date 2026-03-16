@@ -4,7 +4,7 @@ import * as Y from 'yjs';
 
 @Injectable()
 export class ScriptService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async getScriptState(productionId: string) {
     return this.prisma.productionScript.findUnique({

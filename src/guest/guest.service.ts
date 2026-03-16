@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateGuestInvitationDto } from './dto/create-guest-invitation.dto';
 import { StreamingService } from '@/streaming/streaming.service';
@@ -21,11 +27,13 @@ interface GuestSlotConfigEnvelope {
 
 @Injectable()
 export class GuestService {
+  private readonly logger = new Logger(GuestService.name);
+
   constructor(
     private prisma: PrismaService,
     private streamingService: StreamingService,
     private eventEmitter: EventEmitter2,
-  ) { }
+  ) {}
 
   private readonly SLOT_CONFIG_EVENT = 'GUEST_SLOT_CONFIG';
 
@@ -69,7 +77,7 @@ export class GuestService {
   }
 
   async validateToken(token: string) {
-    console.log('[GuestService] validateToken called for:', token);
+    this.logger.debug(`validateToken called for: ${token.substring(0, 8)}...`);
     const invitation = await this.prisma.guestInvitation.findUnique({
       where: { token },
       include: {
@@ -84,29 +92,27 @@ export class GuestService {
     });
 
     if (!invitation) {
-      console.warn('[GuestService] Token not found:', token);
+      this.logger.warn(`Token not found: ${token.substring(0, 8)}...`);
       throw new UnauthorizedException('Token de invitado inválido');
     }
 
     if (invitation.expiresAt < new Date()) {
-      console.warn('[GuestService] Token expired:', token);
+      this.logger.warn(`Token expired: ${token.substring(0, 8)}...`);
       throw new UnauthorizedException('El token de invitado ha expirado');
     }
 
     // Permitimos reutilizar el mismo link mientras no haya expirado.
     // Esto habilita reingreso tras recarga o reconexión del invitado sin bloquear el acceso.
 
-    console.log('[GuestService] Token validated successfully:', token);
+    this.logger.log(`Token validated successfully for: ${invitation.guestName}`);
     return invitation;
   }
 
   async activateGuest(token: string) {
-    console.log('[GuestService] activateGuest called with token:', token);
     try {
-      console.log('[GuestService] Attempting to activate token:', token);
+      this.logger.debug(`Attempting to activate token: ${token.substring(0, 8)}...`);
       const invitation = await this.validateToken(token);
-      console.log('[GuestService] Validated invitation:', invitation.id);
-
+      
       const updated = await this.prisma.guestInvitation.update({
         where: { token: token },
         data: { status: 'ACTIVE' },
@@ -114,14 +120,10 @@ export class GuestService {
 
       await this.emitGuestSlotsUpdated(invitation.productionId);
 
-      console.log('[GuestService] Activation successful for token:', token);
+      this.logger.log(`Guest activation successful for: ${invitation.guestName}`);
       return updated;
     } catch (error: any) {
-      console.error('[GuestService] FAILED to activate guest');
-      console.error('Error Type:', error.name);
-      console.error('Error Code:', error.code);
-      console.error('Error Message:', error.message);
-      if (error.meta) console.error('Error Meta:', JSON.stringify(error.meta));
+      this.logger.error(`FAILED to activate guest: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -162,7 +164,9 @@ export class GuestService {
     return { success: true };
   }
 
-  private async getSlotConfigEnvelope(productionId: string): Promise<GuestSlotConfigEnvelope> {
+  private async getSlotConfigEnvelope(
+    productionId: string,
+  ): Promise<GuestSlotConfigEnvelope> {
     const latestConfig = await this.prisma.productionLog.findFirst({
       where: {
         productionId,
@@ -182,7 +186,10 @@ export class GuestService {
     };
   }
 
-  private async saveSlotConfigEnvelope(productionId: string, envelope: GuestSlotConfigEnvelope) {
+  private async saveSlotConfigEnvelope(
+    productionId: string,
+    envelope: GuestSlotConfigEnvelope,
+  ) {
     await this.prisma.productionLog.create({
       data: {
         productionId,
@@ -238,7 +245,12 @@ export class GuestService {
   async updateGuestSlot(
     productionId: string,
     slotId: string,
-    patch: { vmixInput?: number; obsScene?: string; status?: GuestSlotStatus; returnFeed?: GuestReturnFeed },
+    patch: {
+      vmixInput?: number;
+      obsScene?: string;
+      status?: GuestSlotStatus;
+      returnFeed?: GuestReturnFeed;
+    },
   ) {
     const invitation = await this.prisma.guestInvitation.findFirst({
       where: {
@@ -314,7 +326,9 @@ export class GuestService {
       });
     } else {
       if (!slot.obsScene) {
-        throw new BadRequestException('El slot no tiene escena OBS configurada');
+        throw new BadRequestException(
+          'El slot no tiene escena OBS configurada',
+        );
       }
 
       await this.streamingService.handleCommand(productionId, {
@@ -327,7 +341,12 @@ export class GuestService {
     Object.keys(envelope.slots).forEach((key) => {
       envelope.slots[key] = {
         ...envelope.slots[key],
-        status: key === slotId ? 'PROGRAM' : envelope.slots[key]?.status === 'PROGRAM' ? 'FREE' : envelope.slots[key]?.status,
+        status:
+          key === slotId
+            ? 'PROGRAM'
+            : envelope.slots[key]?.status === 'PROGRAM'
+              ? 'FREE'
+              : envelope.slots[key]?.status,
       };
     });
 

@@ -3,10 +3,10 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { StreamingService } from '@/streaming/streaming.service';
 
 @Injectable()
-export class AutomationService {
-  private readonly logger = new Logger(AutomationService.name);
+export class StreamingAutomationService {
+  private readonly logger = new Logger(StreamingAutomationService.name);
 
-  constructor(private streamingService: StreamingService) { }
+  constructor(private streamingService: StreamingService) {}
 
   @OnEvent('timeline.block.started')
   async handleBlockStarted(payload: {

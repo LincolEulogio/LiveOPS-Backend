@@ -22,4 +22,4 @@ import { AutomationEngineService } from '@/automation/automation-engine.service'
   controllers: [AutomationController],
   exports: [AutomationService, AutomationEngineService],
 })
-export class AutomationModule { }
+export class AutomationModule {}

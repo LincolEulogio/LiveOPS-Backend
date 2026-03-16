@@ -1,8 +1,20 @@
-import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { StreamingService } from '@/streaming/streaming.service';
 import { StreamingDestinationsService } from '@/streaming/streaming-destinations.service';
 import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
-import { CreateStreamingDestinationDto, UpdateStreamingDestinationDto } from '@/streaming/dto/streaming-destination.dto';
+import {
+  CreateStreamingDestinationDto,
+  UpdateStreamingDestinationDto,
+} from '@/streaming/dto/streaming-destination.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
@@ -16,7 +28,7 @@ export class StreamingController {
     private readonly streamingService: StreamingService,
     private readonly destinationsService: StreamingDestinationsService,
     private readonly liveKitService: LiveKitService,
-  ) { }
+  ) {}
 
   @Post(':id/token')
   @Permissions('streaming:control')
@@ -30,7 +42,7 @@ export class StreamingController {
       productionId,
       identity,
       name,
-      isOperator,
+      { isOperator },
     );
     return { token, url: this.liveKitService.getLiveKitUrl() };
   }

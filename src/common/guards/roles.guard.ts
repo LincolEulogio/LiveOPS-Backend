@@ -14,7 +14,7 @@ export class RolesGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private prisma: PrismaService,
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
@@ -44,10 +44,10 @@ export class RolesGuard implements CanActivate {
     }
 
     const globalRoleName = dbUser.globalRole?.name as Role;
-    
+
     // Superadmin bypasses everything, Admin bypasses most global checks
     if (globalRoleName === Role.SUPERADMIN) return true;
-    
+
     if (requiredRoles.includes(globalRoleName)) {
       return true;
     }
@@ -58,7 +58,8 @@ export class RolesGuard implements CanActivate {
       request.params.id ||
       request.body.productionId;
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
     if (
       productionId &&

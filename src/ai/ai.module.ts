@@ -8,14 +8,9 @@ import { NotificationsModule } from '@/notifications/notifications.module';
 
 @Global()
 @Module({
-    imports: [
-        ConfigModule,
-        ObsModule,
-        OverlaysModule,
-        NotificationsModule,
-    ],
-    controllers: [AiController],
-    providers: [AiService],
-    exports: [AiService],
+  imports: [ConfigModule, ObsModule, OverlaysModule, NotificationsModule],
+  controllers: [AiController],
+  providers: [AiService],
+  exports: [AiService],
 })
-export class AiModule { }
+export class AiModule {}

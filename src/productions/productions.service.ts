@@ -21,7 +21,7 @@ export class ProductionsService {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
-  ) { }
+  ) {}
 
   async create(userId: string, dto: CreateProductionDto) {
     // We assume the creator gets an 'ADMIN' role in this production
@@ -126,7 +126,8 @@ export class ProductionsService {
       where.users = {
         some: { userId },
       };
-    } if (query.status) {
+    }
+    if (query.status) {
       where.status = query.status as ProductionStatus;
     }
 
@@ -212,118 +213,123 @@ export class ProductionsService {
   async update(productionId: string, dto: UpdateProductionDto) {
     const { obsConfig, vmixConfig, ...basicData } = dto;
 
-    return this.prisma.$transaction(async (tx) => {
-      const production = await tx.production.update({
-        where: { id: productionId },
-        data: basicData,
-      });
-
-      if (obsConfig) {
-        let host = (obsConfig.host || '127.0.0.1').trim();
-        let port = (obsConfig.port || '4455').trim();
-        let protocol: 'ws' | 'wss' = 'ws';
-
-        // Detect full URL in host field (e.g. ws://127.0.0.1:4455)
-        if (host.includes('://')) {
-          try {
-            const parsed = new URL(host);
-            protocol = parsed.protocol === 'wss:' ? 'wss' : 'ws';
-            host = parsed.hostname;
-            if (parsed.port) port = parsed.port;
-          } catch (e) {
-            // Fallback cleanup if user pasted malformed URL-like string
-            host = host.replace(/^wss?:\/\//, '').split('/')[0].split(':')[0];
-          }
-        }
-
-        // Wrap IPv6 in brackets if it contains colons and isn't already wrapped
-        if (
-          host.includes(':') &&
-          !host.startsWith('[') &&
-          !host.endsWith(']')
-        ) {
-          host = `[${host}]`;
-        }
-        const url = `${protocol}://${host}:${port}`;
-
-        await tx.obsConnection.upsert({
-          where: { productionId },
-          create: {
-            productionId,
-            url,
-            password: obsConfig.password,
-            isEnabled: obsConfig.isEnabled ?? true,
-          },
-          update: {
-            url,
-            password: obsConfig.password,
-            isEnabled: obsConfig.isEnabled,
-          },
+    return this.prisma
+      .$transaction(async (tx) => {
+        const production = await tx.production.update({
+          where: { id: productionId },
+          data: basicData,
         });
 
-        // Notify Engine to reconnect
-        this.eventEmitter.emit('engine.connection.update', {
-          productionId,
-          type: EngineType.OBS,
-          url,
-          password: obsConfig.password,
-        });
-      }
+        if (obsConfig) {
+          let host = (obsConfig.host || '127.0.0.1').trim();
+          let port = (obsConfig.port || '4455').trim();
+          let protocol: 'ws' | 'wss' = 'ws';
 
-      if (vmixConfig) {
-        let host = vmixConfig.host || '127.0.0.1';
-        let port = vmixConfig.port || '8088';
-
-        // Detect if user entered a full URL in the host field
-        if (host.includes('://')) {
-          try {
-            const parsed = new URL(host);
-            host = parsed.hostname;
-            if (parsed.port) port = parsed.port;
-          } catch (e) {
-            // If URL is invalid, fallback to cleaning the string
-            host = host.split('://')[1].split(':')[0].split('/')[0];
+          // Detect full URL in host field (e.g. ws://127.0.0.1:4455)
+          if (host.includes('://')) {
+            try {
+              const parsed = new URL(host);
+              protocol = parsed.protocol === 'wss:' ? 'wss' : 'ws';
+              host = parsed.hostname;
+              if (parsed.port) port = parsed.port;
+            } catch (_e) {
+              // Fallback cleanup if user pasted malformed URL-like string
+              host = host
+                .replace(/^wss?:\/\//, '')
+                .split('/')[0]
+                .split(':')[0];
+            }
           }
-        }
 
-        if (
-          host.includes(':') &&
-          !host.startsWith('[') &&
-          !host.endsWith(']')
-        ) {
-          host = `[${host}]`;
-        }
-        const url = `http://${host}:${port}`;
+          // Wrap IPv6 in brackets if it contains colons and isn't already wrapped
+          if (
+            host.includes(':') &&
+            !host.startsWith('[') &&
+            !host.endsWith(']')
+          ) {
+            host = `[${host}]`;
+          }
+          const url = `${protocol}://${host}:${port}`;
 
-        await tx.vmixConnection.upsert({
-          where: { productionId },
-          create: {
+          await tx.obsConnection.upsert({
+            where: { productionId },
+            create: {
+              productionId,
+              url,
+              password: obsConfig.password,
+              isEnabled: obsConfig.isEnabled ?? true,
+            },
+            update: {
+              url,
+              password: obsConfig.password,
+              isEnabled: obsConfig.isEnabled,
+            },
+          });
+
+          // Notify Engine to reconnect
+          this.eventEmitter.emit('engine.connection.update', {
             productionId,
+            type: EngineType.OBS,
             url,
-            isEnabled: vmixConfig.isEnabled ?? true,
-            pollingInterval: vmixConfig.pollingInterval ?? 500,
-          },
-          update: {
+            password: obsConfig.password,
+          });
+        }
+
+        if (vmixConfig) {
+          let host = vmixConfig.host || '127.0.0.1';
+          let port = vmixConfig.port || '8088';
+
+          // Detect if user entered a full URL in the host field
+          if (host.includes('://')) {
+            try {
+              const parsed = new URL(host);
+              host = parsed.hostname;
+              if (parsed.port) port = parsed.port;
+            } catch (_e) {
+              // If URL is invalid, fallback to cleaning the string
+              host = host.split('://')[1].split(':')[0].split('/')[0];
+            }
+          }
+
+          if (
+            host.includes(':') &&
+            !host.startsWith('[') &&
+            !host.endsWith(']')
+          ) {
+            host = `[${host}]`;
+          }
+          const url = `http://${host}:${port}`;
+
+          await tx.vmixConnection.upsert({
+            where: { productionId },
+            create: {
+              productionId,
+              url,
+              isEnabled: vmixConfig.isEnabled ?? true,
+              pollingInterval: vmixConfig.pollingInterval ?? 500,
+            },
+            update: {
+              url,
+              isEnabled: vmixConfig.isEnabled,
+              pollingInterval: vmixConfig.pollingInterval,
+            },
+          });
+
+          // Notify Engine to reconnect
+          this.eventEmitter.emit('engine.connection.update', {
+            productionId,
+            type: EngineType.VMIX,
             url,
-            isEnabled: vmixConfig.isEnabled,
             pollingInterval: vmixConfig.pollingInterval,
-          },
-        });
+          });
+        }
 
-        // Notify Engine to reconnect
-        this.eventEmitter.emit('engine.connection.update', {
-          productionId,
-          type: EngineType.VMIX,
-          url,
-          pollingInterval: vmixConfig.pollingInterval,
-        });
-      }
-
-      return production;
-    }).then(prod => {
-      this.eventEmitter.emit('production.updated', { productionId });
-      return prod;
-    });
+        return production;
+      })
+      .then((prod) => {
+        this.eventEmitter.emit('production.updated', { productionId });
+        return prod;
+      });
   }
 
   async updateState(productionId: string, dto: UpdateProductionStateDto) {

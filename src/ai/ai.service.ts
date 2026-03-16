@@ -33,7 +33,7 @@ export class AiService implements OnModuleInit {
     private overlaysService: OverlaysService,
     private notificationsService: NotificationsService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     const rawApiKey = this.configService.get<string>('GEMINI_API_KEY');
@@ -237,9 +237,7 @@ export class AiService implements OnModuleInit {
       const messages = [
         { role: 'system' as const, content: systemContext },
         ...history.map((m) => ({
-          role: (m.role === 'assistant' ? 'assistant' : 'user') as
-            | 'assistant'
-            | 'user',
+          role: m.role === 'assistant' ? 'assistant' : 'user',
           content: m.content,
         })),
       ];
@@ -272,7 +270,7 @@ export class AiService implements OnModuleInit {
         messages: [
           { role: 'system', content: systemContext },
           ...history.map((m) => ({
-            role: m.role as 'assistant' | 'user',
+            role: m.role,
             content: m.content,
           })),
         ],
@@ -536,7 +534,10 @@ export class AiService implements OnModuleInit {
   /**
    * Procesa una instrucción del director usando herramientas de IA.
    */
-  async processDirection(productionId: string, userInput: string): Promise<any> {
+  async processDirection(
+    productionId: string,
+    userInput: string,
+  ): Promise<any> {
     if (!this.googleModel) {
       throw new ServiceUnavailableException('AI Node is offline.');
     }
@@ -552,11 +553,15 @@ export class AiService implements OnModuleInit {
         changeScene: {
           description: 'Cambia la escena activa en OBS.',
           inputSchema: z.object({
-            sceneName: z.string().describe('El nombre de la escena a la que cambiar.'),
+            sceneName: z
+              .string()
+              .describe('El nombre de la escena a la que cambiar.'),
           }),
           execute: async ({ sceneName }: { sceneName: string }) => {
             this.logger.log(`LIVIA executing scene change: ${sceneName}`);
-            return await this.obsService.changeScene(productionId, { sceneName });
+            return await this.obsService.changeScene(productionId, {
+              sceneName,
+            });
           },
         },
         toggleOverlay: {
@@ -565,8 +570,18 @@ export class AiService implements OnModuleInit {
             overlayId: z.string().describe('El ID del overlay.'),
             isActive: z.boolean().describe('Si debe estar activo o no.'),
           }),
-          execute: async ({ overlayId, isActive }: { overlayId: string; isActive: boolean }) => {
-            return await this.overlaysService.toggleActive(overlayId, productionId, isActive);
+          execute: async ({
+            overlayId,
+            isActive,
+          }: {
+            overlayId: string;
+            isActive: boolean;
+          }) => {
+            return await this.overlaysService.toggleActive(
+              overlayId,
+              productionId,
+              isActive,
+            );
           },
         },
         sendAlert: {
@@ -575,7 +590,10 @@ export class AiService implements OnModuleInit {
             message: z.string().describe('El contenido de la alerta.'),
           }),
           execute: async ({ message }: { message: string }) => {
-            await this.notificationsService.sendNotification(productionId, message);
+            await this.notificationsService.sendNotification(
+              productionId,
+              message,
+            );
             return { success: true };
           },
         },

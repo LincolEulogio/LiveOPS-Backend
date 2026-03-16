@@ -1,6 +1,12 @@
 import { Type } from 'class-transformer';
 // ...
-export type JsonValue = string | number | boolean | null | { [key: string]: JsonValue } | JsonValue[];
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: JsonValue }
+  | JsonValue[];
 import {
   IsArray,
   IsBoolean,

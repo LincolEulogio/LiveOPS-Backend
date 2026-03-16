@@ -13,7 +13,7 @@ interface RequestWithProduction extends Request {
 
 @Injectable()
 export class ProductionMiddleware implements NestMiddleware {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async use(req: RequestWithProduction, res: Response, next: NextFunction) {
     const productionId = req.headers['x-production-id'] as string;

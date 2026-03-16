@@ -7,4 +7,4 @@ import { RehearsalService } from '@/productions/rehearsal.service';
   providers: [ProductionsService, RehearsalService],
   controllers: [ProductionsController],
 })
-export class ProductionsModule { }
+export class ProductionsModule {}

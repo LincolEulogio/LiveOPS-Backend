@@ -85,7 +85,10 @@ export class AuthService {
 
     if (!user) {
       // For security reasons, don't reveal if the user exists
-      return { message: 'Si la cuenta existe, se ha enviado un enlace de recuperación.' };
+      return {
+        message:
+          'Si la cuenta existe, se ha enviado un enlace de recuperación.',
+      };
     }
 
     // Generate token
@@ -107,7 +110,9 @@ export class AuthService {
     // Send email
     await this.mailerService.sendPasswordResetEmail(user.email, token);
 
-    return { message: 'Si la cuenta existe, se ha enviado un enlace de recuperación.' };
+    return {
+      message: 'Si la cuenta existe, se ha enviado un enlace de recuperación.',
+    };
   }
 
   async resetPassword(dto: ResetPasswordDto) {
@@ -120,7 +125,9 @@ export class AuthService {
     });
 
     if (!resetRecord || resetRecord.expiresAt < new Date()) {
-      throw new BadRequestException('El token de recuperación es inválido o ha expirado');
+      throw new BadRequestException(
+        'El token de recuperación es inválido o ha expirado',
+      );
     }
 
     const user = await this.prisma.user.findUnique({
@@ -143,7 +150,10 @@ export class AuthService {
       where: { token: dto.token },
     });
 
-    return { success: true, message: 'La contraseña se ha restablecido correctamente' };
+    return {
+      success: true,
+      message: 'La contraseña se ha restablecido correctamente',
+    };
   }
 
   async register(dto: RegisterUserDto) {

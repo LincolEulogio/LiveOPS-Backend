@@ -4,9 +4,9 @@ import { MediaController } from '@/media/media.controller';
 import { PrismaModule } from '@/prisma/prisma.module';
 
 @Module({
-    imports: [PrismaModule],
-    providers: [MediaService],
-    controllers: [MediaController],
-    exports: [MediaService],
+  imports: [PrismaModule],
+  providers: [MediaService],
+  controllers: [MediaController],
+  exports: [MediaService],
 })
-export class MediaModule { }
+export class MediaModule {}

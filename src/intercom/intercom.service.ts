@@ -19,7 +19,7 @@ export class IntercomService {
     private pushService: PushNotificationsService,
     private auditService: AuditService,
     private aiService: AiService,
-  ) { }
+  ) {}
 
   async createTemplate(productionId: string, dto: CreateCommandTemplateDto) {
     return this.prisma.commandTemplate.create({

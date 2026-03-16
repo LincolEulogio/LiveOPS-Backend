@@ -18,7 +18,7 @@ export class CreateCommandTemplateDto {
   color?: string;
 }
 
-export class UpdateCommandTemplateDto extends CreateCommandTemplateDto { }
+export class UpdateCommandTemplateDto extends CreateCommandTemplateDto {}
 
 export class SendCommandDto {
   @IsString()

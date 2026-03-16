@@ -4,8 +4,8 @@ import { AuditController } from '@/audit/audit.controller';
 
 @Global()
 @Module({
-    controllers: [AuditController],
-    providers: [AuditService],
-    exports: [AuditService],
+  controllers: [AuditController],
+  providers: [AuditService],
+  exports: [AuditService],
 })
-export class AuditModule { }
+export class AuditModule {}

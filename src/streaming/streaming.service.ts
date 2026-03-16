@@ -7,6 +7,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { ObsService } from '@/obs/obs.service';
 import { VmixService } from '@/vmix/vmix.service';
 import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
+import { IVideoEngine, ISceneEngine, IInputEngine } from './interfaces/video-engine.interface';
 
 @Injectable()
 export class StreamingService {
@@ -14,7 +15,13 @@ export class StreamingService {
     private prisma: PrismaService,
     private obsService: ObsService,
     private vmixService: VmixService,
-  ) { }
+  ) {}
+
+  private getEngine(production: any): IVideoEngine {
+    if (production.engineType === 'OBS') return this.obsService;
+    if (production.engineType === 'VMIX') return this.vmixService;
+    throw new BadRequestException('Unsupported engine type');
+  }
 
   async getStreamingState(productionId: string) {
     const production = await this.prisma.production.findUnique({
@@ -23,25 +30,16 @@ export class StreamingService {
 
     if (!production) throw new NotFoundException('Production not found');
 
-    let isConnected = false;
-    let obsState = null;
-    let vmixState = null;
-
-    if (production.engineType === 'OBS') {
-      obsState = await this.obsService.getRealTimeState(productionId);
-      isConnected = obsState.isConnected;
-    } else if (production.engineType === 'VMIX') {
-      vmixState = await this.vmixService.getRealTimeState(productionId);
-      isConnected = vmixState.isConnected;
-    }
+    const engine = this.getEngine(production);
+    const state = await engine.getRealTimeState(productionId);
 
     return {
       productionId,
       engineType: production.engineType,
       status: production.status,
-      isConnected,
-      obs: obsState,
-      vmix: vmixState,
+      isConnected: state.isConnected,
+      obs: production.engineType === 'OBS' ? state : null,
+      vmix: production.engineType === 'VMIX' ? state : null,
       lastUpdate: new Date().toISOString(),
     };
   }
@@ -53,67 +51,46 @@ export class StreamingService {
 
     if (!production) throw new NotFoundException('Production not found');
 
-    if (production.engineType === 'OBS') {
-      return this.handleObsCommand(productionId, dto);
-    } else if (production.engineType === 'VMIX') {
-      return this.handleVmixCommand(productionId, dto);
-    } else {
-      throw new BadRequestException('Unsupported engine type');
-    }
-  }
+    const engine = this.getEngine(production);
 
-  private async handleObsCommand(
-    productionId: string,
-    dto: StreamingCommandDto,
-  ) {
     switch (dto.type) {
-      case 'CHANGE_SCENE':
-        if (!dto.sceneName)
-          throw new BadRequestException('sceneName is required');
-        return this.obsService.changeScene(productionId, {
-          sceneName: dto.sceneName,
-        });
-      case 'START_STREAM':
-        return this.obsService.startStream(productionId);
-      case 'STOP_STREAM':
-        return this.obsService.stopStream(productionId);
-      case 'START_RECORD':
-        return this.obsService.startRecord(productionId);
-      case 'STOP_RECORD':
-        return this.obsService.stopRecord(productionId);
-      case 'START_DESTINATION': {
-        const payload = dto.payload as Record<string, any>;
-        if (!payload?.destId) throw new BadRequestException('destId is required');
-        return { success: true, destId: payload.destId };
+      case 'CHANGE_SCENE': {
+        if (!dto.sceneName) throw new BadRequestException('sceneName is required');
+        if ('changeScene' in engine) {
+          return (engine as unknown as ISceneEngine).changeScene(productionId, dto.sceneName);
+        }
+        throw new BadRequestException('CHANGE_SCENE not supported by this engine');
       }
+      case 'START_STREAM':
+        return engine.startStream(productionId);
+      case 'STOP_STREAM':
+        return engine.stopStream(productionId);
+      case 'START_RECORD':
+        return engine.startRecord(productionId);
+      case 'STOP_RECORD':
+        return engine.stopRecord(productionId);
+      case 'VMIX_CUT':
+        if ('cut' in engine) return (engine as unknown as IInputEngine).cut(productionId);
+        throw new BadRequestException('CUT not supported by this engine');
+      case 'VMIX_FADE':
+        if ('fade' in engine) return (engine as unknown as IInputEngine).fade!(productionId);
+        throw new BadRequestException('FADE not supported by this engine');
+      case 'VMIX_SELECT_INPUT': {
+        const payload = dto.payload as Record<string, any>;
+        if (!payload?.input) throw new BadRequestException('input is required in payload');
+        if ('changeInput' in engine) {
+          return (engine as unknown as IInputEngine).changeInput(productionId, payload.input as number);
+        }
+        throw new BadRequestException('SELECT_INPUT not supported by this engine');
+      }
+      case 'START_DESTINATION':
       case 'STOP_DESTINATION': {
         const payload = dto.payload as Record<string, any>;
         if (!payload?.destId) throw new BadRequestException('destId is required');
         return { success: true, destId: payload.destId };
       }
       default:
-        throw new BadRequestException(`Unknown OBS command: ${dto.type}`);
-    }
-  }
-
-  private async handleVmixCommand(
-    productionId: string,
-    dto: StreamingCommandDto,
-  ) {
-    switch (dto.type) {
-      case 'VMIX_CUT':
-        return this.vmixService.cut(productionId);
-      case 'VMIX_FADE':
-        return this.vmixService.fade(productionId);
-      case 'VMIX_SELECT_INPUT':
-        const payload = dto.payload as Record<string, any>;
-        if (!payload?.input)
-          throw new BadRequestException('input is required in payload');
-        return this.vmixService.changeInput(productionId, {
-          input: payload.input,
-        });
-      default:
-        throw new BadRequestException(`Unknown vMix command: ${dto.type}`);
+        throw new BadRequestException(`Unknown command: ${dto.type}`);
     }
   }
 }

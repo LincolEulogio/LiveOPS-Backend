@@ -51,7 +51,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     this.logger.log('Initializing vMix Connection Manager...');
@@ -92,7 +92,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
       isRecording: false,
       isExternal: false,
       isMultiCorder: false,
-      inputs: []
+      inputs: [],
     };
     this.connections.set(productionId, instance);
 
@@ -201,7 +201,9 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
       const rawFps = parsed.vmix.fps || '0';
       const fps = parseFloat(String(rawFps).replace(',', '.'));
       const renderTime = parseInt(parsed.vmix.renderTime || '0', 10);
-      const vmixCpu = parsed.vmix.vmixCpuUsage ? parseFloat(parsed.vmix.vmixCpuUsage) : 0;
+      const vmixCpu = parsed.vmix.vmixCpuUsage
+        ? parseFloat(parsed.vmix.vmixCpuUsage)
+        : 0;
 
       // Snapshot previous values BEFORE overwrite (needed to detect actual changes).
       const prevActive = instance.activeInput;
@@ -243,13 +245,15 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
           edition: parsed.vmix.edition,
           fps: fps || 0,
           renderTime: renderTime || 0,
-          url: instance.url
+          url: instance.url,
         });
       }
 
       // Emit connection state ONLY on transition to prevent frontend "flashing"
       if (!instance.isConnected) {
-        this.logger.log(`vMix connected/restored for production ${productionId}`);
+        this.logger.log(
+          `vMix connected/restored for production ${productionId}`,
+        );
         instance.isConnected = true;
         this.eventEmitter.emit('vmix.connection.state', {
           productionId,
@@ -332,7 +336,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
       isMultiCorder: instance.isMultiCorder,
       inputs: instance.inputs,
       lastHeartbeat: instance.lastHeartbeat,
-      lastLatency: instance.lastLatency
+      lastLatency: instance.lastLatency,
     };
   }
 

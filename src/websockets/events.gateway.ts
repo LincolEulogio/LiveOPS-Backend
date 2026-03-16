@@ -16,10 +16,12 @@ import { IntercomService } from '@/intercom/intercom.service';
 import { ChatService } from '@/chat/chat.service';
 import { ScriptService } from '@/script/script.service';
 import { SocketEvents } from '@/common/socket-events';
-import type { WebRTCSignalPayload, PresenceMember } from '@/common/types/webrtc.types';
+import type {
+  WebRTCSignalPayload,
+  PresenceMember,
+} from '@/common/types/webrtc.types';
 
-
-interface UserPresence extends PresenceMember { }
+interface UserPresence extends PresenceMember {}
 
 // WebRTCSignalPayload is now imported from webrtc.types.ts
 
@@ -62,7 +64,8 @@ interface HealthStatsPayload {
   },
 })
 export class EventsGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -75,7 +78,7 @@ export class EventsGateway
     private intercomService: IntercomService,
     private chatService: ChatService,
     private scriptService: ScriptService,
-  ) { }
+  ) {}
 
   afterInit(server: Server) {
     this.logger.log('WebSocket Gateway initialized');
@@ -141,7 +144,9 @@ export class EventsGateway
     @MessageBody() data: { productionId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    this.logger.log(`Client ${client.id} joining room production_${data.productionId}`);
+    this.logger.log(
+      `Client ${client.id} joining room production_${data.productionId}`,
+    );
     client.join(`production_${data.productionId}`);
     client.data.productionId = data.productionId;
 
@@ -156,7 +161,9 @@ export class EventsGateway
     @MessageBody() data: { productionId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    this.logger.log(`Client ${client.id} leaving room production_${data.productionId}`);
+    this.logger.log(
+      `Client ${client.id} leaving room production_${data.productionId}`,
+    );
     client.leave(`production_${data.productionId}`);
 
     // Broadcast updated presence to the room they left
@@ -230,7 +237,9 @@ export class EventsGateway
   ) {
     const senderUserId = client.handshake.query.userId as string;
 
-    this.logger.debug(`WebRTC Signal from ${senderUserId} to ${data.targetUserId} in production ${data.productionId}`);
+    this.logger.debug(
+      `WebRTC Signal from ${senderUserId} to ${data.targetUserId} in production ${data.productionId}`,
+    );
 
     // Forward the signal to the specific target user within the production room
     // Note: We search among connected sockets in the room for the targetUserId
@@ -244,7 +253,7 @@ export class EventsGateway
           socket.emit('webrtc.signal_received', {
             senderUserId,
             signal: data.signal,
-            context: data.context
+            context: data.context,
           });
           break;
         }
@@ -271,7 +280,7 @@ export class EventsGateway
       senderUserId,
       isTalking: data.isTalking,
       targetUserId: data.targetUserId || null,
-      senderRoleName: senderRoleName || 'Viewer'
+      senderRoleName: senderRoleName || 'Viewer',
     });
   }
 
@@ -283,10 +292,12 @@ export class EventsGateway
   ) {
     const senderUserId = client.handshake.query.userId as string;
     // Broadcast to room so others can see VU meters
-    client.to(`production_${data.productionId}`).emit(SocketEvents.WEBRTC_AUDIO_LEVEL_RECEIVED, {
-      senderUserId,
-      level: data.level
-    });
+    client
+      .to(`production_${data.productionId}`)
+      .emit(SocketEvents.WEBRTC_AUDIO_LEVEL_RECEIVED, {
+        senderUserId,
+        level: data.level,
+      });
   }
 
   @SubscribeMessage('social.overlay')
@@ -384,7 +395,14 @@ export class EventsGateway
 
   @SubscribeMessage('user.identify')
   handleUserIdentify(
-    @MessageBody() data: { userId: string; userName: string; roleId: string; roleName: string; productionId: string },
+    @MessageBody()
+    data: {
+      userId: string;
+      userName: string;
+      roleId: string;
+      roleName: string;
+      productionId: string;
+    },
     @ConnectedSocket() client: Socket,
   ) {
     this.activeUsers.set(client.id, {
@@ -425,7 +443,9 @@ export class EventsGateway
         if (now - lastSeen > timeout && user.status !== 'OFFLINE') {
           user.status = 'OFFLINE';
           changed = true;
-          this.logger.warn(`User ${user.userId} (Client: ${clientId}) marked as OFFLINE due to inactivity.`);
+          this.logger.warn(
+            `User ${user.userId} (Client: ${clientId}) marked as OFFLINE due to inactivity.`,
+          );
         }
       }
 
@@ -433,10 +453,10 @@ export class EventsGateway
         // Broadcast presence update for each room involved or global
         // For simplicity and performance, we'll just broadcast to all active productions mentioned in clients
         const productions = new Set<string>();
-        this.server.sockets.sockets.forEach(s => {
+        this.server.sockets.sockets.forEach((s) => {
           if (s.data.productionId) productions.add(s.data.productionId);
         });
-        productions.forEach(pid => this.broadcastPresence(pid));
+        productions.forEach((pid) => this.broadcastPresence(pid));
       }
     }, 30000); // Check every 30s
   }
@@ -475,7 +495,10 @@ export class EventsGateway
     },
     @ConnectedSocket() client: Socket,
   ) {
-    console.log(`[Intercom] Sending command from ${data.senderId} to production ${data.productionId}`, data);
+    console.log(
+      `[Intercom] Sending command from ${data.senderId} to production ${data.productionId}`,
+      data,
+    );
     // Save to DB via service
     const command = await this.intercomService.sendCommand(data);
 
@@ -507,7 +530,9 @@ export class EventsGateway
     },
     @ConnectedSocket() client: Socket,
   ) {
-    console.log(`[Intercom] Direct Chat from ${data.senderId} to ${data.targetUserId}`);
+    console.log(
+      `[Intercom] Direct Chat from ${data.senderId} to ${data.targetUserId}`,
+    );
 
     const payload = {
       id: `chat-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
@@ -547,7 +572,9 @@ export class EventsGateway
     },
     @ConnectedSocket() client: Socket,
   ) {
-    console.log(`[Intercom] Received Ack from ${data.responderId} for command ${data.commandId}`);
+    console.log(
+      `[Intercom] Received Ack from ${data.responderId} for command ${data.commandId}`,
+    );
     // Save response to DB
     const response = await this.prisma.commandResponse.create({
       data: {
@@ -607,7 +634,11 @@ export class EventsGateway
       .emit('chat.received', msg);
 
     // Broadcast tally based on OBS Active Scene
-    this.broadcastTallyState(payload.productionId, payload.sceneName, 'PROGRAM');
+    this.broadcastTallyState(
+      payload.productionId,
+      payload.sceneName,
+      'PROGRAM',
+    );
   }
 
   @OnEvent('obs.stream.state')
@@ -687,8 +718,11 @@ export class EventsGateway
     this.broadcastTallyState(payload.productionId, activeName, 'PROGRAM');
   }
 
-
-  private broadcastTallyState(productionId: string, activeName: string, state: 'PROGRAM' | 'PREVIEW' | 'IDLE') {
+  private broadcastTallyState(
+    productionId: string,
+    activeName: string,
+    state: 'PROGRAM' | 'PREVIEW' | 'IDLE',
+  ) {
     if (!activeName) return;
     const room = `production_${productionId}`;
     const socketsInRoom = this.server.sockets.adapter.rooms.get(room);
@@ -697,18 +731,31 @@ export class EventsGateway
       for (const socketId of socketsInRoom) {
         const socket = this.server.sockets.sockets.get(socketId);
         if (socket) {
-          const roleName = ((socket.handshake.query.roleName as string) || '').toLowerCase();
-          const userName = ((socket.handshake.query.userName as string) || '').toLowerCase();
+          const roleName = (
+            (socket.handshake.query.roleName as string) || ''
+          ).toLowerCase();
+          const userName = (
+            (socket.handshake.query.userName as string) || ''
+          ).toLowerCase();
 
           // Very naive logic: if the scene/input name contains the role name (e.g., "CAMAROGRAFO") or user name, they are ON AIR
           if (roleName && activeName.toLowerCase().includes(roleName)) {
-            socket.emit('tally_state_changed', { targetUserId: socket.handshake.query.userId, state });
+            socket.emit('tally_state_changed', {
+              targetUserId: socket.handshake.query.userId,
+              state,
+            });
           } else if (userName && activeName.toLowerCase().includes(userName)) {
-            socket.emit('tally_state_changed', { targetUserId: socket.handshake.query.userId, state });
+            socket.emit('tally_state_changed', {
+              targetUserId: socket.handshake.query.userId,
+              state,
+            });
           } else {
-            // Reset to IDLE if not matched 
+            // Reset to IDLE if not matched
             // (In a real pro-grade system we check if they are in PREVIEW here)
-            socket.emit('tally_state_changed', { targetUserId: socket.handshake.query.userId, state: 'IDLE' });
+            socket.emit('tally_state_changed', {
+              targetUserId: socket.handshake.query.userId,
+              state: 'IDLE',
+            });
           }
         }
       }
@@ -733,7 +780,10 @@ export class EventsGateway
   }
 
   @OnEvent('command.created')
-  handleCommandCreated(payload: { productionId: string; command: IntercomCommand }) {
+  handleCommandCreated(payload: {
+    productionId: string;
+    command: IntercomCommand;
+  }) {
     this.logger.log(
       `Broadcasting new command for production ${payload.productionId}`,
     );
@@ -771,35 +821,49 @@ export class EventsGateway
   }
 
   @OnEvent('social.message.updated')
-  handleSocialMessageUpdated(payload: SocialComment & { productionId: string }) {
+  handleSocialMessageUpdated(
+    payload: SocialComment & { productionId: string },
+  ) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('social.message.updated', payload);
   }
 
   @OnEvent('social.poll.created')
-  handleSocialPollCreated(payload: { productionId: string;[key: string]: unknown }) {
+  handleSocialPollCreated(payload: {
+    productionId: string;
+    [key: string]: unknown;
+  }) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('social.poll.created', payload);
   }
 
   @OnEvent('social.poll.updated')
-  handleSocialPollUpdated(payload: { productionId: string;[key: string]: unknown }) {
+  handleSocialPollUpdated(payload: {
+    productionId: string;
+    [key: string]: unknown;
+  }) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('social.poll.updated', payload);
   }
 
   @OnEvent('social.poll.closed')
-  handleSocialPollClosed(payload: { productionId: string;[key: string]: unknown }) {
+  handleSocialPollClosed(payload: {
+    productionId: string;
+    [key: string]: unknown;
+  }) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('social.poll.closed', payload);
   }
 
   @OnEvent('graphics.social.show')
-  handleGraphicsSocialShow(payload: { productionId: string; comment: SocialComment }) {
+  handleGraphicsSocialShow(payload: {
+    productionId: string;
+    comment: SocialComment;
+  }) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('graphics.social.show', payload);
@@ -813,14 +877,20 @@ export class EventsGateway
   }
 
   @OnEvent('overlay.broadcast_data')
-  handleOverlayBroadcastData(payload: { productionId: string; data: Record<string, any> }) {
+  handleOverlayBroadcastData(payload: {
+    productionId: string;
+    data: Record<string, any>;
+  }) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('overlay.update_data', payload.data);
   }
 
   @OnEvent('overlay.template_updated')
-  handleOverlayTemplateUpdated(payload: { productionId: string; template: any }) {
+  handleOverlayTemplateUpdated(payload: {
+    productionId: string;
+    template: any;
+  }) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit(`overlay.template_update:${payload.template.id}`, payload.template);
@@ -841,7 +911,11 @@ export class EventsGateway
   }
 
   @OnEvent('guest.slots.updated')
-  handleGuestSlotsUpdated(payload: { productionId: string; slots: any[]; updatedAt?: string }) {
+  handleGuestSlotsUpdated(payload: {
+    productionId: string;
+    slots: any[];
+    updatedAt?: string;
+  }) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('guest.slots.updated', payload);

@@ -9,15 +9,17 @@ import { ObsConnectionManager } from '@/obs/obs-connection.manager';
 import { SaveObsConnectionDto, ChangeSceneDto } from '@/obs/dto/obs.dto';
 import { AuditService, AuditAction } from '@/common/services/audit.service';
 
+import { ISceneEngine } from '@/streaming/interfaces/video-engine.interface';
+
 @Injectable()
-export class ObsService {
+export class ObsService implements ISceneEngine {
   private readonly logger = new Logger(ObsService.name);
 
   constructor(
     private prisma: PrismaService,
     private obsManager: ObsConnectionManager,
     private auditService: AuditService,
-  ) { }
+  ) {}
 
   async saveConnection(productionId: string, dto: SaveObsConnectionDto) {
     const connection = await this.prisma.obsConnection.upsert({
@@ -79,19 +81,19 @@ export class ObsService {
     return obs;
   }
 
-  async changeScene(productionId: string, dto: ChangeSceneDto) {
+  async changeScene(productionId: string, sceneName: string) {
     const obs = this.getObs(productionId);
     try {
-      await obs.call('SetCurrentProgramScene', { sceneName: dto.sceneName });
+      await obs.call('SetCurrentProgramScene', { sceneName });
 
       // Audit Log
       this.auditService.log({
         productionId,
         action: AuditAction.SCENE_CHANGE,
-        details: { sceneName: dto.sceneName },
+        details: { sceneName },
       });
 
-      return { success: true, sceneName: dto.sceneName };
+      return { success: true, sceneName };
     } catch (e: unknown) {
       const error = e as Error;
       this.logger.error(`Failed to change scene: ${error.message}`);

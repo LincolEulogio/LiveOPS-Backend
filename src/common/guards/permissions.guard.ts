@@ -13,7 +13,7 @@ export class PermissionsGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private prisma: PrismaService,
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
@@ -74,7 +74,8 @@ export class PermissionsGuard implements CanActivate {
         request.body.productionId;
 
       // Robust UUID validation
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
       if (
         productionId &&
@@ -99,10 +100,7 @@ export class PermissionsGuard implements CanActivate {
 
         if (productionUser) {
           const prodRoleName = productionUser.role.name.toUpperCase();
-          if (
-            prodRoleName === 'SUPERADMIN' ||
-            prodRoleName === 'ADMIN'
-          ) {
+          if (prodRoleName === 'SUPERADMIN' || prodRoleName === 'ADMIN') {
             return true;
           }
 

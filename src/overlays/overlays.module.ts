@@ -4,9 +4,9 @@ import { OverlaysController } from '@/overlays/overlays.controller';
 import { PrismaModule } from '@/prisma/prisma.module';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [OverlaysController],
-    providers: [OverlaysService],
-    exports: [OverlaysService],
+  imports: [PrismaModule],
+  controllers: [OverlaysController],
+  providers: [OverlaysService],
+  exports: [OverlaysService],
 })
-export class OverlaysModule { }
+export class OverlaysModule {}

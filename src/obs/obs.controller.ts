@@ -16,7 +16,7 @@ import { Permissions } from '@/common/decorators/permissions.decorator';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('productions/:productionId/obs')
 export class ObsController {
-  constructor(private readonly obsService: ObsService) { }
+  constructor(private readonly obsService: ObsService) {}
 
   @Put('connection')
   @Permissions('obs:manage')

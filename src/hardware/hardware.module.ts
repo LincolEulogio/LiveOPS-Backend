@@ -4,9 +4,9 @@ import { HardwareController } from '@/hardware/hardware.controller';
 import { PrismaModule } from '@/prisma/prisma.module';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [HardwareController],
-    providers: [HardwareService],
-    exports: [HardwareService],
+  imports: [PrismaModule],
+  controllers: [HardwareController],
+  providers: [HardwareService],
+  exports: [HardwareService],
 })
-export class HardwareModule { }
+export class HardwareModule {}
