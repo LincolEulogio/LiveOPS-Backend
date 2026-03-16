@@ -254,10 +254,10 @@ export class EventsGateway
   // --- NDI Simulation Handlers ---
   @SubscribeMessage('ndi.bridge_status')
   handleNdiBridgeStatus(
-    @MessageBody() data: { bridgeName: string; status: 'ONLINE' | 'OFFLINE' },
+    @MessageBody() data: { productionId: string; bridgeName: string; status: 'ONLINE' | 'OFFLINE' },
   ) {
-    this.logger.log(`NDI Bridge Status: ${data.bridgeName} is ${data.status}`);
-    this.server.emit('ndi.bridge_status', data);
+    this.logger.log(`NDI Bridge Status for production ${data.productionId}: ${data.bridgeName} is ${data.status}`);
+    this.server.to(`production_${data.productionId}`).emit('ndi.bridge_status', data);
   }
 
   @SubscribeMessage('ndi.sources_received')
@@ -272,17 +272,17 @@ export class EventsGateway
   handleNdiTally(
     @MessageBody() data: { productionId: string; sourceName: string; tallyState: string },
   ) {
-    this.logger.log(`NDI Tally: ${data.sourceName} -> ${data.tallyState}`);
-    // Emit specifically to the simulator if we had a separate room for them
-    this.server.emit('ndi.tally_control', data);
+    this.logger.log(`NDI Tally for production ${data.productionId}: ${data.sourceName} -> ${data.tallyState}`);
+    // Emit to the production room
+    this.server.to(`production_${data.productionId}`).emit('ndi.tally_control', data);
   }
 
   @SubscribeMessage('ndi.ptz_command')
   handleNdiPtz(
     @MessageBody() data: { productionId: string; sourceName: string; action: string; speed: number },
   ) {
-    this.logger.log(`NDI PTZ: ${data.sourceName} -> ${data.action}`);
-    this.server.emit('ndi.ptz_command', data);
+    this.logger.log(`NDI PTZ for production ${data.productionId}: ${data.sourceName} -> ${data.action}`);
+    this.server.to(`production_${data.productionId}`).emit('ndi.ptz_command', data);
   }
 
   @SubscribeMessage('ndi.request_sync')

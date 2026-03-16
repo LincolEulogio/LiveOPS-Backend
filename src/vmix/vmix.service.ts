@@ -27,13 +27,13 @@ export class VmixService implements IInputEngine {
       update: {
         url: dto.url,
         isEnabled: dto.isEnabled ?? true,
-        pollingInterval: dto.pollingInterval ?? 500,
+        pollingInterval: dto.pollingInterval ?? 1500, // Defecto más conservador para vMix
       },
       create: {
         productionId,
         url: dto.url,
         isEnabled: dto.isEnabled ?? true,
-        pollingInterval: dto.pollingInterval ?? 500,
+        pollingInterval: dto.pollingInterval ?? 1500,
       },
     });
 

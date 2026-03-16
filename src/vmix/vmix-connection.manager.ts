@@ -42,11 +42,11 @@ interface VmixInstance {
 export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(VmixConnectionManager.name);
   private connections = new Map<string, VmixInstance>();
-  private readonly POLLING_RATE_MS = 1000; // Poll vMix API every second
-  private readonly MIN_POLLING_RATE_MS = 500;
-  private readonly VMIX_API_TIMEOUT_MS = 3000;
-  private readonly DISCONNECT_AFTER_FAILURES = 12;
-  private readonly DISCONNECT_AFTER_MS = 15000;
+  private readonly POLLING_RATE_MS = 1500; // Un poco más rápido pero seguro
+  private readonly MIN_POLLING_RATE_MS = 1000;
+  private readonly VMIX_API_TIMEOUT_MS = 4000;
+  private readonly DISCONNECT_AFTER_FAILURES = 3; // Detectar desconexión más rápido
+  private readonly DISCONNECT_AFTER_MS = 5000;
 
   constructor(
     private prisma: PrismaService,
