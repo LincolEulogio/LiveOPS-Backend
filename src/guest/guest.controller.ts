@@ -28,7 +28,7 @@ export class GuestController {
       invitation.productionId,
       `guest-${invitation.id}`,
       invitation.guestName || 'Invitado',
-      false,
+      { isOperator: false },
     );
     return { token: lkToken, url: this.liveKitService.getLiveKitUrl() };
   }
@@ -103,5 +103,15 @@ export class GuestController {
   @Post('guests/finalize/:token')
   async finalizeGuest(@Param('token') token: string) {
     return this.guestService.finalizeGuest(token);
+  }
+
+  @Post('productions/:id/guests/:invitationId/finalize')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('streaming:control')
+  async finalizeGuestById(
+    @Param('id') productionId: string,
+    @Param('invitationId') invitationId: string,
+  ) {
+    return this.guestService.finalizeGuestById(productionId, invitationId);
   }
 }

@@ -142,12 +142,9 @@ export class GuestService {
       throw new UnauthorizedException('Token de invitado inválido');
     }
 
-    if (invitation.status !== 'USED') {
-      await this.prisma.guestInvitation.update({
-        where: { token },
-        data: { status: 'USED' },
-      });
-    }
+    await this.prisma.guestInvitation.delete({
+      where: { token },
+    });
 
     // Libera estado de slot persistido para evitar que quede en PROGRAM/PREVIEW.
     const envelope = await this.getSlotConfigEnvelope(invitation.productionId);
@@ -160,6 +157,42 @@ export class GuestService {
     }
 
     await this.emitGuestSlotsUpdated(invitation.productionId);
+
+    return { success: true };
+  }
+
+  async finalizeGuestById(productionId: string, invitationId: string) {
+    const invitation = await this.prisma.guestInvitation.findFirst({
+      where: {
+        id: invitationId,
+        productionId: productionId,
+      },
+      select: {
+        id: true,
+        productionId: true,
+        status: true,
+      },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException('Invitación no encontrada');
+    }
+
+    await this.prisma.guestInvitation.delete({
+      where: { id: invitationId },
+    });
+
+    // Libera estado de slot persistido
+    const envelope = await this.getSlotConfigEnvelope(productionId);
+    if (envelope.slots[invitationId]) {
+      envelope.slots[invitationId] = {
+        ...envelope.slots[invitationId],
+        status: 'FREE',
+      };
+      await this.saveSlotConfigEnvelope(productionId, envelope);
+    }
+
+    await this.emitGuestSlotsUpdated(productionId);
 
     return { success: true };
   }
