@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AccessToken, EgressClient, EncodedFileOutput, EncodedFileType, StreamOutput, StreamProtocol } from 'livekit-server-sdk';
+import {
+  AccessToken,
+  EgressClient,
+  StreamOutput,
+  StreamProtocol,
+} from 'livekit-server-sdk';
 
 @Injectable()
 export class LiveKitService {
@@ -16,9 +21,13 @@ export class LiveKitService {
       this.configService.get<string>('LIVEKIT_API_SECRET') || 'secret';
     this.livekitUrl =
       this.configService.get<string>('LIVEKIT_URL') || 'ws://localhost:7880';
-    
+
     // Initialize EgressClient
-    this.egressClient = new EgressClient(this.livekitUrl, this.apiKey, this.apiSecret);
+    this.egressClient = new EgressClient(
+      this.livekitUrl,
+      this.apiKey,
+      this.apiSecret,
+    );
   }
 
   async generateToken(
@@ -54,9 +63,15 @@ export class LiveKitService {
   /**
    * Starts a room composite egress to multiple RTMP destinations.
    */
-  async startRoomCompositeEgress(roomId: string, rtmpUrls: string[]) {
-    this.logger.log(`Starting Room Composite Egress for room ${roomId} to ${rtmpUrls.length} destinations`);
-    
+  async startRoomCompositeEgress(
+    roomId: string,
+    rtmpUrls: string[],
+    layout?: string,
+  ) {
+    this.logger.log(
+      `Starting Room Composite Egress for room ${roomId} to ${rtmpUrls.length} destinations with layout: ${layout || 'default'}`,
+    );
+
     const output = new StreamOutput({
       protocol: StreamProtocol.RTMP,
       urls: rtmpUrls,
@@ -64,9 +79,11 @@ export class LiveKitService {
 
     // We use a predefined template for the mixer or a simple room composite
     // Note: In a real environment, you might want to specify a custom layout URL
-    const info = await this.egressClient.startRoomCompositeEgress(roomId, {
-      stream: output,
-    });
+    const info = await this.egressClient.startRoomCompositeEgress(
+      roomId,
+      output,
+      layout || 'speaker-dark', // Default layout for the cloud mixer
+    );
 
     return info;
   }

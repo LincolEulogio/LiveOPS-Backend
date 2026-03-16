@@ -1,15 +1,10 @@
 import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
-import { PrismaService } from '@/prisma/prisma.service';
-import { ObsService } from '@/obs/obs.service';
-import { VmixService } from '@/vmix/vmix.service';
-import { LiveKitService } from './livekit.service';
-import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
-import { IVideoEngine, ISceneEngine, IInputEngine } from './interfaces/video-engine.interface';
+  AccessToken,
+  EgressClient,
+  StreamOutput,
+  StreamProtocol,
+} from 'livekit-server-sdk';
+import { Production, StreamingDestination } from '@prisma/client';
 
 @Injectable()
 export class StreamingService {
@@ -50,7 +45,7 @@ export class StreamingService {
     };
   }
 
-  async startCloudStream(productionId: string) {
+  async startCloudStream(productionId: string, layout?: string) {
     const production = await this.prisma.production.findUnique({
       where: { id: productionId },
       include: { streamingDestinations: true },
@@ -67,7 +62,11 @@ export class StreamingService {
     const rtmpUrls = enabledDestinations.map(d => `${d.rtmpUrl}${d.streamKey}`);
 
     try {
-      const egressInfo = await this.liveKitService.startRoomCompositeEgress(productionId, rtmpUrls);
+      const egressInfo = await this.liveKitService.startRoomCompositeEgress(
+        productionId,
+        rtmpUrls,
+        layout,
+      );
 
       await this.prisma.production.update({
         where: { id: productionId },
@@ -132,8 +131,10 @@ export class StreamingService {
         return engine.startStream(productionId);
       case 'STOP_STREAM':
         return engine.stopStream(productionId);
-      case 'START_CLOUD_STREAM':
-        return this.startCloudStream(productionId);
+      case 'START_CLOUD_STREAM': {
+        const payload = dto.payload as Record<string, any>;
+        return this.startCloudStream(productionId, payload?.layout);
+      }
       case 'STOP_CLOUD_STREAM':
         return this.stopCloudStream(productionId);
       case 'START_RECORD':

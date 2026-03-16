@@ -9,6 +9,15 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+
+interface CustomSocket extends Socket {
+  data: {
+    productionId?: string;
+    isNdiBridge?: boolean;
+    [key: string]: any;
+  };
+}
+
 import { Logger } from '@nestjs/common';
 import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -21,7 +30,10 @@ import type {
   PresenceMember,
 } from '@/common/types/webrtc.types';
 
-interface UserPresence extends PresenceMember {}
+interface UserPresence extends PresenceMember {
+  lastSeen: string;
+  status: string;
+}
 
 // WebRTCSignalPayload is now imported from webrtc.types.ts
 
@@ -64,8 +76,7 @@ interface HealthStatsPayload {
   },
 })
 export class EventsGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
@@ -78,9 +89,9 @@ export class EventsGateway
     private intercomService: IntercomService,
     private chatService: ChatService,
     private scriptService: ScriptService,
-  ) {}
+  ) { }
 
-  afterInit(server: Server) {
+  afterInit() {
     this.logger.log('WebSocket Gateway initialized');
     this.startPresenceCleanup();
   }
@@ -89,7 +100,7 @@ export class EventsGateway
   async handleChatSend(
     @MessageBody()
     data: { productionId: string; userId: string; message: string },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: CustomSocket,
   ) {
     // 1. Check for slash commands
     if (data.message.startsWith('/')) {
@@ -142,12 +153,12 @@ export class EventsGateway
   @SubscribeMessage(SocketEvents.PRODUCTION_JOIN)
   async handleProductionJoin(
     @MessageBody() data: { productionId: string },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: CustomSocket,
   ) {
     this.logger.log(
       `Client ${client.id} joining room production_${data.productionId}`,
     );
-    client.join(`production_${data.productionId}`);
+    await client.join(`production_${data.productionId}`);
     client.data.productionId = data.productionId;
 
     // Broadcast presence immediately to everyone in the room
@@ -159,12 +170,12 @@ export class EventsGateway
   @SubscribeMessage('production.leave')
   async handleProductionLeave(
     @MessageBody() data: { productionId: string },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: CustomSocket,
   ) {
     this.logger.log(
       `Client ${client.id} leaving room production_${data.productionId}`,
     );
-    client.leave(`production_${data.productionId}`);
+    await client.leave(`production_${data.productionId}`);
 
     // Broadcast updated presence to the room they left
     this.broadcastPresence(data.productionId);
@@ -181,7 +192,7 @@ export class EventsGateway
       userName: string;
       isTyping: boolean;
     },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: CustomSocket,
   ) {
     client.to(`production_${data.productionId}`).emit('chat.typing', data);
   }
@@ -189,7 +200,7 @@ export class EventsGateway
   @SubscribeMessage('script.sync')
   async handleScriptSync(
     @MessageBody() data: { productionId: string },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: CustomSocket,
   ) {
     const script = await this.scriptService.getScriptState(data.productionId);
     client.emit('script.sync_response', { content: script?.content || null });
@@ -198,7 +209,7 @@ export class EventsGateway
   @SubscribeMessage('script.update')
   async handleScriptUpdate(
     @MessageBody() data: { productionId: string; update: number[] },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: CustomSocket,
   ) {
     const updateArray = new Uint8Array(data.update);
 
@@ -219,7 +230,7 @@ export class EventsGateway
   @SubscribeMessage('script.awareness_update')
   handleAwarenessUpdate(
     @MessageBody() data: { productionId: string; update: number[] },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: CustomSocket,
   ) {
     // Broadcast awareness state (cursors, selections) to others
     client
@@ -233,7 +244,7 @@ export class EventsGateway
   handleWebRTCSignal(
     @MessageBody()
     data: WebRTCSignalPayload,
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: CustomSocket,
   ) {
     const senderUserId = client.handshake.query.userId as string;
 
@@ -252,7 +263,7 @@ export class EventsGateway
         if (socket && socket.handshake.query.userId === data.targetUserId) {
           socket.emit('webrtc.signal_received', {
             senderUserId,
-            signal: data.signal,
+            signal: data.signal as any,
             context: data.context,
           });
           break;
@@ -269,18 +280,15 @@ export class EventsGateway
       isTalking: boolean;
       targetUserId?: string | null;
     },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() _client: CustomSocket,
   ) {
-    const senderUserId = client.handshake.query.userId as string;
-    const senderRoleName = client.handshake.query.roleName as string;
     const room = `production_${data.productionId}`;
 
     // Broadcast to the whole room so dashboard and other clients can update state instantly
     this.server.to(room).emit('webrtc.talking', {
-      senderUserId,
+      senderUserId: data.targetUserId,
       isTalking: data.isTalking,
       targetUserId: data.targetUserId || null,
-      senderRoleName: senderRoleName || 'Viewer',
     });
   }
 
@@ -288,7 +296,7 @@ export class EventsGateway
   handleWebRTCAudioLevel(
     @MessageBody()
     data: { productionId: string; level: number },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: CustomSocket,
   ) {
     const senderUserId = client.handshake.query.userId as string;
     // Broadcast to room so others can see VU meters
@@ -307,7 +315,7 @@ export class EventsGateway
       productionId: string;
       comment: SocialComment | null;
     },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() _client: CustomSocket,
   ) {
     this.server
       .to(`production_${data.productionId}`)
@@ -317,7 +325,7 @@ export class EventsGateway
   @SubscribeMessage('script.scroll_sync')
   handleScriptScrollSync(
     @MessageBody() data: { productionId: string; scrollPercentage: number },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: CustomSocket,
   ) {
     // Broadcast scroll position to others (talent/prompter)
     client
@@ -335,7 +343,7 @@ export class EventsGateway
     this.eventEmitter.emit('hardware.trigger', data);
   }
 
-  async handleConnection(client: Socket) {
+  async handleConnection(client: CustomSocket) {
     const productionId = client.handshake.query.productionId as string;
     const userId = client.handshake.query.userId as string;
     const userName = client.handshake.query.userName as string;
@@ -343,7 +351,7 @@ export class EventsGateway
     const roleName = client.handshake.query.roleName as string;
 
     if (productionId && userId) {
-      client.join(`production_${productionId}`);
+      await client.join(`production_${productionId}`);
 
       this.activeUsers.set(client.id, {
         userId,
@@ -382,7 +390,7 @@ export class EventsGateway
     this.server.to(room).emit('presence.update', { members });
   }
 
-  handleDisconnect(client: Socket) {
+  handleDisconnect(client: CustomSocket) {
     this.logger.log(`Client disconnected: ${client.id}`);
     const productionId = client.data.productionId;
 
@@ -394,7 +402,7 @@ export class EventsGateway
   }
 
   @SubscribeMessage('user.identify')
-  handleUserIdentify(
+  async handleUserIdentify(
     @MessageBody()
     data: {
       userId: string;
@@ -403,7 +411,7 @@ export class EventsGateway
       roleName: string;
       productionId: string;
     },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: CustomSocket,
   ) {
     this.activeUsers.set(client.id, {
       userId: data.userId,
@@ -415,7 +423,7 @@ export class EventsGateway
     });
 
     if (data.productionId) {
-      client.join(`production_${data.productionId}`);
+      await client.join(`production_${data.productionId}`);
       client.data.productionId = data.productionId;
       this.broadcastPresence(data.productionId);
     }
@@ -424,13 +432,59 @@ export class EventsGateway
   }
 
   @SubscribeMessage('user.heartbeat')
-  handleHeartbeat(@ConnectedSocket() client: Socket) {
+  handleHeartbeat(@ConnectedSocket() client: CustomSocket) {
     const user = this.activeUsers.get(client.id);
     if (user) {
       user.lastSeen = new Date().toISOString();
       user.status = user.status === 'OFFLINE' ? 'IDLE' : user.status;
     }
   }
+
+  // --- NDI Bridge Integration ---
+
+  @SubscribeMessage('ndi.identify_bridge')
+  handleIdentifyBridge(
+    @MessageBody() data: { bridgeName: string; productionId: string },
+    @ConnectedSocket() client: CustomSocket,
+  ) {
+    client.data.isNdiBridge = true;
+    client.data.bridgeName = data.bridgeName;
+    client.data.productionId = data.productionId;
+    client.join(`production_${data.productionId}`);
+
+    this.logger.log(`NDI Bridge "${data.bridgeName}" identified for production ${data.productionId}`);
+
+    // Notify frontend that bridge is online
+    this.server.to(`production_${data.productionId}`).emit('ndi.bridge_status', {
+      bridgeName: data.bridgeName,
+      status: 'ONLINE',
+    });
+  }
+
+  @SubscribeMessage('ndi.sources_update')
+  handleSourcesUpdate(
+    @MessageBody() data: { productionId: string; sources: any[] },
+    @ConnectedSocket() _client: CustomSocket,
+  ) {
+    // Broadcast sources to all clients in the production
+    this.server.to(`production_${data.productionId}`).emit('ndi.sources_received', {
+      productionId: data.productionId,
+      sources: data.sources,
+    });
+  }
+
+  @SubscribeMessage('ndi.request_sync')
+  handleRequestSync(
+    @MessageBody() data: { productionId: string },
+    @ConnectedSocket() client: CustomSocket,
+  ) {
+    // Forward request to all bridges in this production room
+    this.server.to(`production_${data.productionId}`).emit('ndi.sync_request', {
+      requesterId: client.id,
+    });
+  }
+
+  // ------------------------------
 
   private startPresenceCleanup() {
     setInterval(() => {
@@ -453,8 +507,8 @@ export class EventsGateway
         // Broadcast presence update for each room involved or global
         // For simplicity and performance, we'll just broadcast to all active productions mentioned in clients
         const productions = new Set<string>();
-        this.server.sockets.sockets.forEach((s) => {
-          if (s.data.productionId) productions.add(s.data.productionId);
+        this.server.sockets.sockets.forEach((s: any) => {
+          if (s.data && s.data.productionId) productions.add(s.data.productionId);
         });
         productions.forEach((pid) => this.broadcastPresence(pid));
       }
@@ -464,7 +518,7 @@ export class EventsGateway
   @SubscribeMessage('role.identify')
   handleRoleIdentify(
     @MessageBody() data: { roleId: string; roleName: string },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: CustomSocket,
   ) {
     const currentUser = this.activeUsers.get(client.id);
     if (currentUser) {
@@ -493,7 +547,7 @@ export class EventsGateway
       message: string;
       requiresAck?: boolean;
     },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() _client: CustomSocket,
   ) {
     console.log(
       `[Intercom] Sending command from ${data.senderId} to production ${data.productionId}`,
@@ -528,7 +582,7 @@ export class EventsGateway
       message: string;
       senderName?: string;
     },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() _client: CustomSocket,
   ) {
     console.log(
       `[Intercom] Direct Chat from ${data.senderId} to ${data.targetUserId}`,
@@ -570,7 +624,7 @@ export class EventsGateway
       productionId: string;
       responseType?: string;
     },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: CustomSocket,
   ) {
     console.log(
       `[Intercom] Received Ack from ${data.responderId} for command ${data.commandId}`,
@@ -719,7 +773,11 @@ export class EventsGateway
   }
 
   @OnEvent('vmix.input.changed')
-  handleVmixInputChanged(payload: any) {
+  handleVmixInputChanged(payload: {
+    productionId: string;
+    inputName?: string;
+    inputTitle?: string;
+  }) {
     this.server
       .to(`production_${payload.productionId}`)
       .emit('vmix.input.changed', payload);
@@ -900,7 +958,7 @@ export class EventsGateway
   @OnEvent('overlay.template_updated')
   handleOverlayTemplateUpdated(payload: {
     productionId: string;
-    template: any;
+    template: { id: string;[key: string]: any };
   }) {
     this.server
       .to(`production_${payload.productionId}`)
@@ -950,72 +1008,65 @@ export class EventsGateway
   @SubscribeMessage('ndi.bridge_register')
   async handleNdiBridgeRegister(
     @MessageBody() data: { productionId: string; bridgeName: string },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: CustomSocket,
   ) {
-    this.logger.log(`NDI Bridge ${data.bridgeName} registered for production ${data.productionId}`);
-    client.join(`production_${data.productionId}`);
+    this.logger.log(
+      `NDI Bridge ${data.bridgeName} registered for production ${data.productionId}`,
+    );
+    await client.join(`production_${data.productionId}`);
     client.data.isNdiBridge = true;
-    
+
     // Notify others in the room
-    this.server.to(`production_${data.productionId}`).emit('ndi.bridge_status', {
-      bridgeName: data.bridgeName,
-      status: 'ONLINE',
-    });
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('ndi.bridge_status', {
+        bridgeName: data.bridgeName,
+        status: 'ONLINE',
+      });
   }
 
   @SubscribeMessage('ndi.source_update')
-  async handleNdiSourceUpdate(
-    @MessageBody() data: { 
-      productionId: string; 
-      sources: Array<{ name: string; ipAddress?: string; port?: number; status: string }> 
+  handleNdiSourceUpdate(
+    @MessageBody()
+    data: {
+      productionId: string;
+      sources: Array<{
+        name: string;
+        ipAddress?: string;
+        port?: number;
+        status: string;
+      }>;
     },
   ) {
-    this.logger.debug(`Received NDI sources update for production ${data.productionId}`);
-    
-    // Update DB
-    for (const source of data.sources) {
-      await this.prisma.ndiSource.upsert({
-        where: {
-          productionId_name: {
-            productionId: data.productionId,
-            name: source.name,
-          },
-        },
-        update: {
-          ipAddress: source.ipAddress,
-          port: source.port,
-          status: source.status,
-          lastSeen: new Date(),
-        },
-        create: {
-          productionId: data.productionId,
-          name: source.name,
-          ipAddress: source.ipAddress,
-          port: source.port,
-          status: source.status,
-          lastSeen: new Date(),
-        },
-      });
-    }
+    this.logger.debug(
+      `Received NDI sources update for production ${data.productionId}`,
+    );
 
     // Broadcast update to the room (dashboard)
-    this.server.to(`production_${data.productionId}`).emit('ndi.sources_received', {
-      productionId: data.productionId,
-      sources: data.sources,
-    });
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('ndi.sources_received', {
+        productionId: data.productionId,
+        sources: data.sources,
+      });
   }
 
   @SubscribeMessage('ndi.tally_control')
-  async handleNdiTallyControl(
-    @MessageBody() data: { 
-      productionId: string; 
-      sourceName: string; 
-      tallyState: 'PROGRAM' | 'PREVIEW' | 'IDLE' 
+  handleNdiTallyControl(
+    @MessageBody()
+    data: {
+      productionId: string;
+      sourceName: string;
+      tallyState: 'PROGRAM' | 'PREVIEW' | 'IDLE';
     },
   ) {
-    this.logger.log(`Tally Control for ${data.sourceName} -> ${data.tallyState}`);
-    
+    this.logger.log(
+      `Tally Control for ${data.sourceName} -> ${data.tallyState}`,
+    );
+
     // Broadcast to the room so the Bridge (and dashboard) receives it
-    this.server.to(`production_${data.productionId}`).emit('ndi.tally_update', data);
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('ndi.tally_update', data);
   }
 }

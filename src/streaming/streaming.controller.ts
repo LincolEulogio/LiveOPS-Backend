@@ -98,8 +98,11 @@ export class StreamingController {
 
   @Post(':id/start-cloud')
   @Permissions('streaming:control')
-  startCloudStream(@Param('id') productionId: string) {
-    return this.streamingService.startCloudStream(productionId);
+  startCloudStream(
+    @Param('id') productionId: string,
+    @Body('layout') layout?: string,
+  ) {
+    return this.streamingService.startCloudStream(productionId, layout);
   }
 
   @Post(':id/stop-cloud')
