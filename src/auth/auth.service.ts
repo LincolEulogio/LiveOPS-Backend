@@ -25,7 +25,7 @@ export class AuthService {
     private jwtService: JwtService,
     private usersService: UsersService,
     private mailerService: MailerService,
-  ) {}
+  ) { }
 
   async getProfile(userId: string) {
     return this.prisma.user.findUnique({
@@ -279,6 +279,9 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string) {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token missing');
+    }
     const session = await this.prisma.session.findUnique({
       where: { refreshToken },
     });

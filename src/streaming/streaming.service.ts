@@ -52,9 +52,7 @@ export class StreamingService {
       engineType: production.engineType,
       status: production.status,
       isConnected: state.isConnected,
-      activeEgressId:
-        (production as unknown as { activeEgressId: string }).activeEgressId ||
-        null,
+      activeEgressId: production.activeEgressId || null,
       obs: production.engineType === 'OBS' ? state : null,
       vmix: production.engineType === 'VMIX' ? state : null,
       lastUpdate: new Date().toISOString(),
@@ -71,8 +69,7 @@ export class StreamingService {
       throw new NotFoundException('Production not found');
     }
 
-    const prodWithEgress = production as unknown as { activeEgressId?: string };
-    if (prodWithEgress.activeEgressId) {
+    if (production.activeEgressId) {
       throw new BadRequestException('Cloud stream already active');
     }
 
@@ -88,15 +85,20 @@ export class StreamingService {
     );
 
     try {
+      const roomName = `production_${productionId}`;
+
+      // Ensure that the room exists before trying to start an egress
+      await this.liveKitService.ensureRoomExists(roomName);
+
       const egressInfo = await this.liveKitService.startRoomCompositeEgress(
-        productionId,
+        roomName,
         rtmpUrls,
         layout,
       );
 
       await this.prisma.production.update({
         where: { id: productionId },
-        data: { activeEgressId: egressInfo.egressId } as unknown as Production,
+        data: { activeEgressId: egressInfo.egressId },
       });
 
       this.logger.log(
@@ -119,19 +121,18 @@ export class StreamingService {
       throw new NotFoundException('Production not found');
     }
 
-    const prodWithEgress = production as unknown as { activeEgressId?: string };
-    if (!prodWithEgress.activeEgressId) {
+    if (!production.activeEgressId) {
       throw new BadRequestException('No active cloud stream found');
     }
 
     try {
-      if (prodWithEgress.activeEgressId) {
-        await this.liveKitService.stopEgress(prodWithEgress.activeEgressId);
+      if (production.activeEgressId) {
+        await this.liveKitService.stopEgress(production.activeEgressId);
       }
 
       await this.prisma.production.update({
         where: { id: productionId },
-        data: { activeEgressId: null } as unknown as Production,
+        data: { activeEgressId: null },
       });
 
       this.logger.log(`Cloud stream stopped for production ${productionId}`);
@@ -142,7 +143,7 @@ export class StreamingService {
       // Even if LiveKit fails to stop it (e.g. already stopped), we reset our local state
       await this.prisma.production.update({
         where: { id: productionId },
-        data: { activeEgressId: null } as unknown as Production,
+        data: { activeEgressId: null },
       });
       return {
         success: true,

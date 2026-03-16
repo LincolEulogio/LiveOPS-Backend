@@ -185,6 +185,7 @@ model Production {
   timelineBlocks        TimelineBlock[]
   vmixConnection        VmixConnection?
   webhooks              Webhook[]
+  activeEgressId        String?
 
   @@index([deletedAt])
   @@index([status])

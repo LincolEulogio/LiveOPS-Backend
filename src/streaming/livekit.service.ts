@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   AccessToken,
   EgressClient,
+  RoomServiceClient,
   StreamOutput,
   StreamProtocol,
 } from 'livekit-server-sdk';
@@ -14,6 +15,7 @@ export class LiveKitService {
   private readonly apiSecret: string;
   private readonly livekitUrl: string;
   private readonly egressClient: EgressClient;
+  private readonly roomClient: RoomServiceClient;
 
   constructor(private configService: ConfigService) {
     this.apiKey = this.configService.get<string>('LIVEKIT_API_KEY') || 'devkey';
@@ -22,12 +24,38 @@ export class LiveKitService {
     this.livekitUrl =
       this.configService.get<string>('LIVEKIT_URL') || 'ws://localhost:7880';
 
+    // LiveKit expects http/https for Egress/RoomServiceClient
+    const httpUrl = this.livekitUrl.replace(/^ws/, 'http');
+
     // Initialize EgressClient
     this.egressClient = new EgressClient(
-      this.livekitUrl,
+      httpUrl,
       this.apiKey,
       this.apiSecret,
     );
+
+    // Initialize RoomServiceClient
+    this.roomClient = new RoomServiceClient(
+      httpUrl,
+      this.apiKey,
+      this.apiSecret,
+    );
+  }
+
+  /**
+   * Ensures a room exists by creating it if it doesn't.
+   */
+  async ensureRoomExists(roomId: string) {
+    try {
+      await this.roomClient.createRoom({
+        name: roomId,
+        emptyTimeout: 10 * 60, // 10 minutes
+        maxParticipants: 50,
+      });
+      this.logger.log(`Room ${roomId} created or verified.`);
+    } catch (error) {
+      this.logger.error(`Error ensuring room exists: ${error}`);
+    }
   }
 
   async generateToken(

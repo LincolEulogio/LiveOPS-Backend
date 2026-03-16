@@ -33,11 +33,13 @@ import { AiModule } from '@/ai/ai.module';
 import { HealthModule } from '@/health/health.module';
 import { VideoCallModule } from '@/video-call/video-call.module';
 import { GuestModule } from '@/guest/guest.module';
+import { NdiModule } from '@/ndi/ndi.module';
 
 @Module({
   imports: [
     AiModule,
     GuestModule,
+    NdiModule,
     HealthModule,
     CacheModule.register({
       isGlobal: true,
@@ -51,13 +53,13 @@ import { GuestModule } from '@/guest/guest.module';
         transport:
           process.env.NODE_ENV !== 'production'
             ? {
-                target: 'pino-pretty',
-                options: {
-                  colorize: true,
-                  singleLine: true,
-                  ignore: 'pid,hostname,req,res',
-                },
-              }
+              target: 'pino-pretty',
+              options: {
+                colorize: true,
+                singleLine: true,
+                ignore: 'pid,hostname,req,res',
+              },
+            }
             : undefined,
         autoLogging: false,
       },

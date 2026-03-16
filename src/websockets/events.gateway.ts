@@ -98,10 +98,11 @@ export class EventsGateway
 
   @SubscribeMessage('chat.send')
   async handleChatSend(
-    @MessageBody()
-    data: { productionId: string; userId: string; message: string },
+    @MessageBody() data: { productionId: string; userId: string; message: string },
     @ConnectedSocket() client: CustomSocket,
   ) {
+    this.logger.log(`Chat sent in production: ${data.productionId} by user: ${data.userId}`);
+
     // 1. Check for slash commands
     if (data.message.startsWith('/')) {
       const parts = data.message.split(' ');
@@ -1068,5 +1069,60 @@ export class EventsGateway
     this.server
       .to(`production_${data.productionId}`)
       .emit('ndi.tally_update', data);
+  }
+
+  // --- NDI Professional Control Handlers ---
+
+  @SubscribeMessage('ndi.ptz_command')
+  handleNdiPtzCommand(
+    @MessageBody()
+    data: {
+      productionId: string;
+      sourceName: string;
+      action: 'move_up' | 'move_down' | 'move_left' | 'move_right' | 'zoom_in' | 'zoom_out' | 'stop';
+      value?: number;
+      speed?: number;
+    },
+  ) {
+    this.logger.log(`PTZ Command: ${data.sourceName} -> ${data.action} (speed: ${data.speed})`);
+
+    // Reenviar el comando al NDI Bridge que está escuchando en la misma sala de producción
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('ndi.bridge.ptz_command', data);
+  }
+
+  @SubscribeMessage('ndi.route_source')
+  handleNdiRouteSource(
+    @MessageBody()
+    data: {
+      productionId: string;
+      sourceName: string;
+      destinationName: string;
+    },
+  ) {
+    this.logger.log(`NDI Route: ${data.sourceName} -> ${data.destinationName}`);
+
+    // Reenviar a la sala de producción para que el Bridge ejecute el ruteo
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('ndi.bridge.route_source', data);
+  }
+
+  @SubscribeMessage('ndi.set_preset')
+  handleNdiSetPreset(
+    @MessageBody()
+    data: {
+      productionId: string;
+      sourceName: string;
+      presetIndex: number;
+      action: 'recall' | 'save';
+    },
+  ) {
+    this.logger.log(`NDI Preset: ${data.sourceName} index ${data.presetIndex} action ${data.action}`);
+
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('ndi.bridge.preset_command', data);
   }
 }

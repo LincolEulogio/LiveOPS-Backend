@@ -28,7 +28,7 @@ export class StreamingController {
     private readonly streamingService: StreamingService,
     private readonly destinationsService: StreamingDestinationsService,
     private readonly liveKitService: LiveKitService,
-  ) {}
+  ) { }
 
   @Post(':id/token')
   @Permissions('streaming:control')
@@ -38,8 +38,9 @@ export class StreamingController {
     @Body('name') name: string,
     @Body('isOperator') isOperator?: boolean,
   ) {
+    const roomName = `production_${productionId}`;
     const token = await this.liveKitService.generateToken(
-      productionId,
+      roomName,
       identity,
       name,
       { isOperator },

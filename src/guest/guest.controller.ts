@@ -19,13 +19,14 @@ export class GuestController {
   constructor(
     private readonly guestService: GuestService,
     private readonly liveKitService: LiveKitService,
-  ) {}
+  ) { }
 
   @Get('guests/token/:token')
   async getGuestToken(@Param('token') token: string) {
     const invitation = await this.guestService.validateToken(token);
+    const roomName = `production_${invitation.productionId}`;
     const lkToken = await this.liveKitService.generateToken(
-      invitation.productionId,
+      roomName,
       `guest-${invitation.id}`,
       invitation.guestName || 'Invitado',
       { isOperator: false },
