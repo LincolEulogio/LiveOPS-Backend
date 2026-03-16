@@ -17,11 +17,11 @@ export class CreateStreamingDestinationDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsUrl()
   rtmpUrl: string;
 
   @IsString()
   @IsNotEmpty()
+  /*   @IsUrl() */
   streamKey: string;
 
   @IsBoolean()
