@@ -13,6 +13,8 @@ import {
   GetProductionsQueryDto,
 } from '@/productions/dto/production.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ObsService } from '@/obs/obs.service';
+import { VmixService } from '@/vmix/vmix.service';
 import { Prisma, ProductionStatus } from '@prisma/client';
 import { Role } from '@/common/constants/roles.enum';
 
@@ -21,6 +23,8 @@ export class ProductionsService {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
+    private obsService: ObsService,
+    private vmixService: VmixService,
   ) { }
 
   async create(userId: string, dto: CreateProductionDto) {
@@ -225,107 +229,11 @@ export class ProductionsService {
         });
 
         if (obsConfig) {
-          let host = (obsConfig.host || '127.0.0.1').trim();
-          let port = (obsConfig.port || '4455').trim();
-          let protocol: 'ws' | 'wss' = 'ws';
-
-          // Detect full URL in host field (e.g. ws://127.0.0.1:4455)
-          if (host.includes('://')) {
-            try {
-              const parsed = new URL(host);
-              protocol = parsed.protocol === 'wss:' ? 'wss' : 'ws';
-              host = parsed.hostname;
-              if (parsed.port) port = parsed.port;
-            } catch (_e) {
-              // Fallback cleanup if user pasted malformed URL-like string
-              host = host
-                .replace(/^wss?:\/\//, '')
-                .split('/')[0]
-                .split(':')[0];
-            }
-          }
-
-          // Wrap IPv6 in brackets if it contains colons and isn't already wrapped
-          if (
-            host.includes(':') &&
-            !host.startsWith('[') &&
-            !host.endsWith(']')
-          ) {
-            host = `[${host}]`;
-          }
-          const url = `${protocol}://${host}:${port}`;
-
-          await tx.obsConnection.upsert({
-            where: { productionId },
-            create: {
-              productionId,
-              url,
-              password: obsConfig.password,
-              isEnabled: obsConfig.isEnabled ?? true,
-            },
-            update: {
-              url,
-              password: obsConfig.password,
-              isEnabled: obsConfig.isEnabled,
-            },
-          });
-
-          // Notify Engine to reconnect
-          this.eventEmitter.emit('engine.connection.update', {
-            productionId,
-            type: EngineType.OBS,
-            url,
-            password: obsConfig.password,
-          });
+          await this.obsService.saveConnection(productionId, obsConfig);
         }
 
         if (vmixConfig) {
-          let host = vmixConfig.host || '127.0.0.1';
-          let port = vmixConfig.port || '8088';
-
-          // Detect if user entered a full URL in the host field
-          if (host.includes('://')) {
-            try {
-              const parsed = new URL(host);
-              host = parsed.hostname;
-              if (parsed.port) port = parsed.port;
-            } catch (_e) {
-              // If URL is invalid, fallback to cleaning the string
-              host = host.split('://')[1].split(':')[0].split('/')[0];
-            }
-          }
-
-          if (
-            host.includes(':') &&
-            !host.startsWith('[') &&
-            !host.endsWith(']')
-          ) {
-            host = `[${host}]`;
-          }
-          const url = `http://${host}:${port}`;
-
-          await tx.vmixConnection.upsert({
-            where: { productionId },
-            create: {
-              productionId,
-              url,
-              isEnabled: vmixConfig.isEnabled ?? true,
-              pollingInterval: vmixConfig.pollingInterval ?? 500,
-            },
-            update: {
-              url,
-              isEnabled: vmixConfig.isEnabled,
-              pollingInterval: vmixConfig.pollingInterval,
-            },
-          });
-
-          // Notify Engine to reconnect
-          this.eventEmitter.emit('engine.connection.update', {
-            productionId,
-            type: EngineType.VMIX,
-            url,
-            pollingInterval: vmixConfig.pollingInterval,
-          });
+          await this.vmixService.saveConnection(productionId, vmixConfig);
         }
 
         // Keep a single active engine connection to avoid cross-engine flapping in realtime UI
@@ -334,12 +242,23 @@ export class ProductionsService {
             where: { productionId },
             data: { isEnabled: false },
           });
+          // Also stop the actual connection in the manager via service if it was active
+          this.eventEmitter.emit('engine.connection.update', {
+            productionId,
+            type: EngineType.OBS,
+            isEnabled: false
+          });
         }
 
         if (dto.engineType === EngineType.OBS) {
           await tx.vmixConnection.updateMany({
             where: { productionId },
             data: { isEnabled: false },
+          });
+          this.eventEmitter.emit('engine.connection.update', {
+            productionId,
+            type: EngineType.VMIX,
+            isEnabled: false
           });
         }
 

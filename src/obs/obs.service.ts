@@ -8,6 +8,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { ObsConnectionManager } from '@/obs/obs-connection.manager';
 import { SaveObsConnectionDto, ChangeSceneDto } from '@/obs/dto/obs.dto';
 import { AuditService, AuditAction } from '@/common/services/audit.service';
+import { formatEngineUrl } from '@/common/utils/engine-url.util';
 
 import { ISceneEngine } from '@/streaming/interfaces/video-engine.interface';
 
@@ -22,16 +23,18 @@ export class ObsService implements ISceneEngine {
   ) {}
 
   async saveConnection(productionId: string, dto: SaveObsConnectionDto) {
+    const url = formatEngineUrl(dto, 'ws', '4455');
+    
     const connection = await this.prisma.obsConnection.upsert({
       where: { productionId },
       update: {
-        url: dto.url,
+        url,
         password: dto.password,
         isEnabled: dto.isEnabled ?? true,
       },
       create: {
         productionId,
-        url: dto.url,
+        url,
         password: dto.password,
         isEnabled: dto.isEnabled ?? true,
       },

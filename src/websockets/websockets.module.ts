@@ -4,10 +4,11 @@ import { IntercomModule } from '@/intercom/intercom.module';
 import { ChatModule } from '@/chat/chat.module';
 import { ScriptModule } from '@/script/script.module';
 import { EventsGateway } from '@/websockets/events.gateway';
+import { PresenceService } from '@/websockets/presence.service';
 
 @Module({
   imports: [PrismaModule, IntercomModule, ChatModule, ScriptModule],
-  providers: [EventsGateway],
-  exports: [EventsGateway],
+  providers: [EventsGateway, PresenceService],
+  exports: [EventsGateway, PresenceService],
 })
 export class WebsocketsModule {}

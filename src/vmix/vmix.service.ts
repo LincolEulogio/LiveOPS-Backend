@@ -8,6 +8,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { VmixConnectionManager } from '@/vmix/vmix-connection.manager';
 import { SaveVmixConnectionDto, ChangeInputDto } from '@/vmix/dto/vmix.dto';
 import { AuditService, AuditAction } from '@/common/services/audit.service';
+import { formatEngineUrl } from '@/common/utils/engine-url.util';
 
 import { IInputEngine } from '@/streaming/interfaces/video-engine.interface';
 
@@ -22,16 +23,18 @@ export class VmixService implements IInputEngine {
   ) {}
 
   async saveConnection(productionId: string, dto: SaveVmixConnectionDto) {
+    const url = formatEngineUrl(dto, 'http', '8088');
+
     const connection = await this.prisma.vmixConnection.upsert({
       where: { productionId },
       update: {
-        url: dto.url,
+        url,
         isEnabled: dto.isEnabled ?? true,
-        pollingInterval: dto.pollingInterval ?? 1500, // Defecto más conservador para vMix
+        pollingInterval: dto.pollingInterval ?? 1500,
       },
       create: {
         productionId,
-        url: dto.url,
+        url,
         isEnabled: dto.isEnabled ?? true,
         pollingInterval: dto.pollingInterval ?? 1500,
       },

@@ -8,6 +8,7 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
+import { UsePipes, ValidationPipe } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 
 interface CustomSocket extends Socket {
@@ -24,16 +25,14 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { IntercomService } from '@/intercom/intercom.service';
 import { ChatService } from '@/chat/chat.service';
 import { ScriptService } from '@/script/script.service';
+import { PresenceService, UserPresence } from '@/websockets/presence.service';
 import { SocketEvents } from '@/common/socket-events';
 import type {
   WebRTCSignalPayload,
   PresenceMember,
 } from '@/common/types/webrtc.types';
 
-interface UserPresence extends PresenceMember {
-  lastSeen: string;
-  status: string;
-}
+
 
 // WebRTCSignalPayload is now imported from webrtc.types.ts
 
@@ -75,13 +74,14 @@ interface HealthStatsPayload {
     origin: '*',
   },
 })
+@UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class EventsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
   private logger: Logger = new Logger('EventsGateway');
-  private activeUsers: Map<string, UserPresence> = new Map();
+  private scriptUpdateTimers: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(
     private prisma: PrismaService,
@@ -89,6 +89,7 @@ export class EventsGateway
     private intercomService: IntercomService,
     private chatService: ChatService,
     private scriptService: ScriptService,
+    private presenceService: PresenceService,
   ) { }
 
   afterInit() {
@@ -162,6 +163,8 @@ export class EventsGateway
     await client.join(`production_${data.productionId}`);
     client.data.productionId = data.productionId;
 
+    this.presenceService.associateWithProduction(client.id, data.productionId);
+
     // Broadcast presence immediately to everyone in the room
     this.broadcastPresence(data.productionId);
 
@@ -219,13 +222,20 @@ export class EventsGateway
       .to(`production_${data.productionId}`)
       .emit('script.update_received', { update: updateArray });
 
-    // Persist to DB
-    // In a high-traffic production, we'd throttle this or use a Yjs provider on the server
-    // For now, we'll save it to ensure consistency on refresh
-    await this.scriptService.updateScriptState(
-      data.productionId,
-      Buffer.from(updateArray),
-    );
+    // Persist to DB with throttling
+    if (this.scriptUpdateTimers.has(data.productionId)) {
+      clearTimeout(this.scriptUpdateTimers.get(data.productionId));
+    }
+
+    const timer = setTimeout(async () => {
+      this.scriptUpdateTimers.delete(data.productionId);
+      await this.scriptService.updateScriptState(
+        data.productionId,
+        Buffer.from(updateArray),
+      );
+    }, 1000); // 1s throttle for DB writes
+
+    this.scriptUpdateTimers.set(data.productionId, timer);
   }
 
   @SubscribeMessage('script.awareness_update')
@@ -252,22 +262,17 @@ export class EventsGateway
       `WebRTC Signal from ${senderUserId} to ${data.targetUserId} in production ${data.productionId}`,
     );
 
-    // Forward the signal to the specific target user within the production room
-    // Note: We search among connected sockets in the room for the targetUserId
-    const room = `production_${data.productionId}`;
-    const socketsInRoom = this.server.sockets.adapter.rooms.get(room);
+    // Forward the signal to EVERY socket of the target user
+    const targetSocketIds = this.presenceService.getSocketIdsForUser(data.targetUserId);
 
-    if (socketsInRoom) {
-      for (const socketId of socketsInRoom) {
-        const socket = this.server.sockets.sockets.get(socketId);
-        if (socket && socket.handshake.query.userId === data.targetUserId) {
-          socket.emit('webrtc.signal_received', {
-            senderUserId,
-            signal: data.signal as any,
-            context: data.context,
-          });
-          break;
-        }
+    for (const socketId of targetSocketIds) {
+      const socket = this.server.sockets.sockets.get(socketId);
+      if (socket) {
+        socket.emit('webrtc.signal_received', {
+          senderUserId,
+          signal: data.signal as any,
+          context: data.context,
+        });
       }
     }
   }
@@ -353,14 +358,14 @@ export class EventsGateway
     if (productionId && userId) {
       await client.join(`production_${productionId}`);
 
-      this.activeUsers.set(client.id, {
+      this.presenceService.upsertPresence(client.id, {
         userId,
         userName: userName || 'User',
         roleId: roleId || '',
         roleName: roleName || 'Viewer',
         lastSeen: new Date().toISOString(),
         status: 'IDLE',
-      });
+      }, productionId);
 
       client.data.productionId = productionId;
       this.logger.log(
@@ -372,29 +377,15 @@ export class EventsGateway
   }
 
   private broadcastPresence(productionId: string) {
-    const room = `production_${productionId}`;
-    const socketIds = this.server.sockets.adapter.rooms.get(room);
-    const uniqueMembers = new Map<string, UserPresence>();
-
-    if (socketIds) {
-      for (const socketId of socketIds) {
-        const data = this.activeUsers.get(socketId);
-        if (data && data.userId) {
-          // Use userId as key to ensure uniqueness
-          uniqueMembers.set(data.userId, data);
-        }
-      }
-    }
-
-    const members = Array.from(uniqueMembers.values());
-    this.server.to(room).emit('presence.update', { members });
+    const members = this.presenceService.getPresenceForProduction(productionId);
+    this.server.to(`production_${productionId}`).emit('presence.update', { members });
   }
 
   handleDisconnect(client: CustomSocket) {
     this.logger.log(`Client disconnected: ${client.id}`);
     const productionId = client.data.productionId;
 
-    this.activeUsers.delete(client.id);
+    this.presenceService.removePresence(client.id);
 
     if (productionId) {
       this.broadcastPresence(productionId);
@@ -413,14 +404,14 @@ export class EventsGateway
     },
     @ConnectedSocket() client: CustomSocket,
   ) {
-    this.activeUsers.set(client.id, {
+    this.presenceService.upsertPresence(client.id, {
       userId: data.userId,
       userName: data.userName || 'User',
       roleId: data.roleId || '',
       roleName: data.roleName || 'Viewer',
       lastSeen: new Date().toISOString(),
       status: 'IDLE',
-    });
+    }, data.productionId);
 
     if (data.productionId) {
       await client.join(`production_${data.productionId}`);
@@ -433,11 +424,7 @@ export class EventsGateway
 
   @SubscribeMessage('user.heartbeat')
   handleHeartbeat(@ConnectedSocket() client: CustomSocket) {
-    const user = this.activeUsers.get(client.id);
-    if (user) {
-      user.lastSeen = new Date().toISOString();
-      user.status = user.status === 'OFFLINE' ? 'IDLE' : user.status;
-    }
+    this.presenceService.heartbeat(client.id);
   }
 
   // --- NDI Bridge Integration ---
@@ -488,49 +475,38 @@ export class EventsGateway
 
   private startPresenceCleanup() {
     setInterval(() => {
-      const now = Date.now();
       const timeout = 60000; // 1 minute
-      let changed = false;
+      const inactiveSocketIds = this.presenceService.getInactiveSockets(timeout);
 
-      for (const [clientId, user] of this.activeUsers.entries()) {
-        const lastSeen = new Date(user.lastSeen).getTime();
-        if (now - lastSeen > timeout && user.status !== 'OFFLINE') {
-          user.status = 'OFFLINE';
-          changed = true;
-          this.logger.warn(
-            `User ${user.userId} (Client: ${clientId}) marked as OFFLINE due to inactivity.`,
-          );
-        }
-      }
-
-      if (changed) {
-        // Broadcast presence update for each room involved or global
-        // For simplicity and performance, we'll just broadcast to all active productions mentioned in clients
-        const productions = new Set<string>();
-        this.server.sockets.sockets.forEach((s: any) => {
-          if (s.data && s.data.productionId) productions.add(s.data.productionId);
+      if (inactiveSocketIds.length > 0) {
+        inactiveSocketIds.forEach(sid => {
+          this.presenceService.updateStatus(sid, 'OFFLINE');
+          this.logger.warn(`Client ${sid} marked as OFFLINE due to inactivity.`);
         });
+
+        // Broadcast presence update for each active production
+        const productions = this.presenceService.getProductionsWithActiveUsers();
         productions.forEach((pid) => this.broadcastPresence(pid));
       }
     }, 30000); // Check every 30s
   }
 
-  @SubscribeMessage('role.identify')
   handleRoleIdentify(
     @MessageBody() data: { roleId: string; roleName: string },
     @ConnectedSocket() client: CustomSocket,
   ) {
-    const currentUser = this.activeUsers.get(client.id);
-    if (currentUser) {
-      this.activeUsers.set(client.id, {
-        ...currentUser,
-        roleId: data.roleId,
-        roleName: data.roleName,
-      });
-      const productionId = client.data.productionId;
-      if (productionId) {
-        this.broadcastPresence(productionId);
-      }
+    this.presenceService.upsertPresence(client.id, {
+      userId: client.handshake.query.userId as string,
+      roleId: data.roleId,
+      roleName: data.roleName,
+      userName: (client.handshake.query.userName as string) || 'User',
+      lastSeen: new Date().toISOString(),
+      status: 'IDLE'
+    });
+
+    const productionId = client.data.productionId;
+    if (productionId) {
+      this.broadcastPresence(productionId);
     }
     return { status: 'ok', role: data.roleName };
   }
@@ -556,17 +532,30 @@ export class EventsGateway
     // Save to DB via service
     const command = await this.intercomService.sendCommand(data);
 
-    // Update presence status for relevant users
-    for (const [sid, user] of this.activeUsers.entries()) {
-      const isTargeted =
-        (data.targetUserId && user.userId === data.targetUserId) ||
-        (!data.targetUserId &&
-          (user.roleId === data.targetRoleId || !data.targetRoleId));
+    // Update presence status for relevant users via PresenceService
+    // Note: We use the server to find specific users or roles more efficiently if needed,
+    // but here we just update our presence map for those online.
+    const room = `production_${data.productionId}`;
+    const socketsInRoom = this.server.sockets.adapter.rooms.get(room);
 
-      if (isTargeted) {
-        this.activeUsers.set(sid, { ...user, status: data.message });
+    if (socketsInRoom) {
+      for (const sid of socketsInRoom) {
+        const socket = this.server.sockets.sockets.get(sid);
+        if (socket) {
+          const uId = socket.handshake.query.userId as string;
+          const rId = socket.handshake.query.roleId as string;
+
+          const isTargeted =
+            (data.targetUserId && uId === data.targetUserId) ||
+            (!data.targetUserId && (rId === data.targetRoleId || !data.targetRoleId));
+
+          if (isTargeted) {
+            this.presenceService.updateStatus(sid, data.message);
+          }
+        }
       }
     }
+
     this.broadcastPresence(data.productionId);
 
     return { status: 'ok', commandId: command.id };
@@ -645,15 +634,9 @@ export class EventsGateway
     // Broadcast ACK back to sender / room
     const room = `production_${data.productionId}`;
     // Update status to ACKNOWLEDGED for the specific responder
-    const user = this.activeUsers.get(client.id);
-    if (user) {
-      this.activeUsers.set(client.id, {
-        ...user,
-        status: `ACK:${data.responseType}`,
-      });
-      const productionId = client.data.productionId;
-      if (productionId) this.broadcastPresence(productionId);
-    }
+    this.presenceService.updateStatus(client.id, `ACK:${data.responseType}`);
+    
+    if (data.productionId) this.broadcastPresence(data.productionId);
 
     this.server.to(room).emit('command.ack_received', response);
 

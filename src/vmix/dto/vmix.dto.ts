@@ -9,11 +9,19 @@ import {
 
 export class SaveVmixConnectionDto {
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @Matches(/^https?:\/\//, {
     message: 'URL must start with http:// or https://',
   })
-  url: string;
+  url?: string;
+
+  @IsString()
+  @IsOptional()
+  host?: string;
+
+  @IsString()
+  @IsOptional()
+  port?: string;
 
   @IsBoolean()
   @IsOptional()

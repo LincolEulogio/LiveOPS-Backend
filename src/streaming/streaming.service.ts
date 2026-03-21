@@ -162,30 +162,17 @@ export class StreamingService {
     }
 
     const engine = this.getEngine(production);
+    const payload = dto.payload as Record<string, any>;
 
     switch (dto.type) {
-      case 'CHANGE_SCENE': {
-        if (!dto.sceneName) {
-          throw new BadRequestException('sceneName is required');
-        }
-        if ('changeScene' in engine) {
-          return (engine as unknown as ISceneEngine).changeScene(
-            productionId,
-            dto.sceneName,
-          );
-        }
-        throw new BadRequestException(
-          'CHANGE_SCENE not supported by this engine',
-        );
-      }
+      case 'CHANGE_SCENE':
+        return this.handleChangeScene(engine, productionId, dto.sceneName);
       case 'START_STREAM':
         return engine.startStream(productionId);
       case 'STOP_STREAM':
         return engine.stopStream(productionId);
-      case 'START_CLOUD_STREAM': {
-        const payload = dto.payload as Record<string, any>;
+      case 'START_CLOUD_STREAM':
         return this.startCloudStream(productionId, payload?.layout as string);
-      }
       case 'STOP_CLOUD_STREAM':
         return this.stopCloudStream(productionId);
       case 'START_RECORD':
@@ -193,40 +180,33 @@ export class StreamingService {
       case 'STOP_RECORD':
         return engine.stopRecord(productionId);
       case 'VMIX_CUT':
-        if ('cut' in engine) {
-          return (engine as unknown as IInputEngine).cut(productionId);
-        }
-        throw new BadRequestException('CUT not supported by this engine');
+        return this.executeEngineMethod(engine, 'cut', productionId);
       case 'VMIX_FADE':
-        if ('fade' in engine) {
-          return (engine as unknown as IInputEngine).fade!(productionId);
-        }
-        throw new BadRequestException('FADE not supported by this engine');
-      case 'VMIX_SELECT_INPUT': {
-        const payload = dto.payload as Record<string, any>;
-        if (!payload?.input) {
-          throw new BadRequestException('input is required in payload');
-        }
-        if ('changeInput' in engine) {
-          return (engine as unknown as IInputEngine).changeInput(
-            productionId,
-            payload.input as number,
-          );
-        }
-        throw new BadRequestException(
-          'SELECT_INPUT not supported by this engine',
-        );
-      }
+        return this.executeEngineMethod(engine, 'fade', productionId);
+      case 'VMIX_SELECT_INPUT':
+        return this.executeEngineMethod(engine, 'changeInput', productionId, payload?.input as number);
       case 'START_DESTINATION':
-      case 'STOP_DESTINATION': {
-        const payload = dto.payload as Record<string, any>;
-        if (!payload?.destId) {
-          throw new BadRequestException('destId is required');
-        }
-        return { success: true, destId: payload.destId as string };
-      }
+      case 'STOP_DESTINATION':
+        return { success: true, destId: payload?.destId as string };
       default:
         throw new BadRequestException(`Unknown command: ${dto.type}`);
     }
+  }
+
+  private async handleChangeScene(engine: IVideoEngine, productionId: string, sceneName?: string) {
+    if (!sceneName) {
+      throw new BadRequestException('sceneName is required');
+    }
+    if ('changeScene' in engine) {
+      return (engine as unknown as ISceneEngine).changeScene(productionId, sceneName);
+    }
+    throw new BadRequestException('CHANGE_SCENE not supported by this engine');
+  }
+
+  private async executeEngineMethod(engine: IVideoEngine, method: string, productionId: string, ...args: any[]) {
+    if (method in engine) {
+      return (engine as any)[method](productionId, ...args);
+    }
+    throw new BadRequestException(`${method.toUpperCase()} not supported by this engine`);
   }
 }

@@ -9,10 +9,18 @@ import {
 
 export class SaveObsConnectionDto {
   @IsString()
-  @IsNotEmpty()
-  // Allow ws:// or wss://
-  @Matches(/^wss?:\/\//, { message: 'URL must start with ws:// or wss://' })
-  url: string;
+  @IsOptional()
+  // Allow ws:// or wss:// if provided directly
+  @Matches(/^wss?:\/\//, { message: 'URL must start with ws:// or wss://', each: false })
+  url?: string;
+
+  @IsString()
+  @IsOptional()
+  host?: string;
+
+  @IsString()
+  @IsOptional()
+  port?: string;
 
   @IsString()
   @IsOptional()
