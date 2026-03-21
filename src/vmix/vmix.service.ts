@@ -148,6 +148,52 @@ export class VmixService implements IInputEngine {
     }
   }
 
+  async setVolume(productionId: string, input?: number, value?: number) {
+    if (value === undefined) throw new BadRequestException('Value is required');
+    try {
+      if (input === undefined || input === 0 || input === -1) {
+        // Master Volume
+        await this.vmixManager.sendCommand(productionId, 'SetMasterVolume', {
+          Value: value,
+        });
+      } else {
+        // Individual Input Volume
+        await this.vmixManager.sendCommand(productionId, 'SetVolume', {
+          Input: input,
+          Value: value,
+        });
+      }
+      return { success: true, input, value };
+    } catch (e: unknown) {
+      const error = e as Error;
+      this.logger.error(`Failed to set volume: ${error.message}`);
+      throw new BadRequestException(
+        `vMix Error: ${error.message || 'Unknown'}`,
+      );
+    }
+  }
+
+  async toggleMute(productionId: string, input?: number) {
+    try {
+      if (input === undefined || input === 0 || input === -1) {
+        // Master Mute Toggle
+        await this.vmixManager.sendCommand(productionId, 'MasterAudio');
+      } else {
+        // Input Mute Toggle
+        await this.vmixManager.sendCommand(productionId, 'Audio', {
+          Input: input,
+        });
+      }
+      return { success: true, input };
+    } catch (e: unknown) {
+      const error = e as Error;
+      this.logger.error(`Failed to toggle mute: ${error.message}`);
+      throw new BadRequestException(
+        `vMix Error: ${error.message || 'Unknown'}`,
+      );
+    }
+  }
+
   // IVideoEngine implementation stubs (to be fully implemented if vMix API wrapper supports them)
   async startStream(productionId: string) {
     await this.vmixManager.sendCommand(productionId, 'StartStreaming');

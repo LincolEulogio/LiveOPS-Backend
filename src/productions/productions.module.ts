@@ -2,8 +2,11 @@ import { Module } from '@nestjs/common';
 import { ProductionsService } from '@/productions/productions.service';
 import { ProductionsController } from '@/productions/productions.controller';
 import { RehearsalService } from '@/productions/rehearsal.service';
+import { ObsModule } from '@/obs/obs.module';
+import { VmixModule } from '@/vmix/vmix.module';
 
 @Module({
+  imports: [ObsModule, VmixModule],
   providers: [ProductionsService, RehearsalService],
   controllers: [ProductionsController],
 })

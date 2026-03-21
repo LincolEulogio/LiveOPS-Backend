@@ -185,6 +185,10 @@ export class StreamingService {
         return this.executeEngineMethod(engine, 'fade', productionId);
       case 'VMIX_SELECT_INPUT':
         return this.executeEngineMethod(engine, 'changeInput', productionId, payload?.input as number);
+      case 'VMIX_SET_VOLUME':
+        return this.executeEngineMethod(engine, 'setVolume', productionId, payload?.input, payload?.value);
+      case 'VMIX_TOGGLE_MUTE':
+        return this.executeEngineMethod(engine, 'toggleMute', productionId, payload?.input);
       case 'START_DESTINATION':
       case 'STOP_DESTINATION':
         return { success: true, destId: payload?.destId as string };

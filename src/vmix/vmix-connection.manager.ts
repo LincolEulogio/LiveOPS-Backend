@@ -18,6 +18,22 @@ export interface VmixInput {
   type: string;
   state: string;
   key: string;
+  volume?: number;
+  muted?: boolean;
+  hasAudio?: boolean;
+  audioLevels?: {
+    meterF1: number;
+    meterF2: number;
+  };
+}
+
+export interface VmixAudioState {
+  master?: {
+    volume: number;
+    muted: boolean;
+    meterF1: number;
+    meterF2: number;
+  };
 }
 
 interface VmixInstance {
@@ -31,6 +47,7 @@ interface VmixInstance {
   isExternal: boolean;
   isMultiCorder: boolean;
   inputs: VmixInput[];
+  audio?: VmixAudioState;
   pollingFailureCount: number;
   firstFailureAt?: number;
   isConnected: boolean;
@@ -200,7 +217,26 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
         type: i.$.type,
         state: i.$.state,
         key: i.$.key,
+        volume: i.$.volume ? parseFloat(i.$.volume) : undefined,
+        muted: i.$.muted === 'True',
+        hasAudio: i.$.audio === 'True',
+        audioLevels: i.$.meterF1 ? {
+          meterF1: parseFloat(i.$.meterF1),
+          meterF2: parseFloat(i.$.meterF2 || i.$.meterF1),
+        } : undefined,
       }));
+
+      // Parse Master Audio
+      const audioData = parsed.vmix.audio;
+      const masterAudio = audioData?.master?.$;
+      const audio: VmixAudioState = {
+        master: masterAudio ? {
+          volume: parseFloat(masterAudio.volume || '100'),
+          muted: masterAudio.muted === 'True',
+          meterF1: parseFloat(masterAudio.meterF1 || '0'),
+          meterF2: parseFloat(masterAudio.meterF2 || masterAudio.meterF1 || '0'),
+        } : undefined,
+      };
 
       // Telemetry Extraction
       const rawFps = parsed.vmix.fps || '0';
@@ -225,6 +261,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
       instance.isExternal = isExternal;
       instance.isMultiCorder = isMultiCorder;
       instance.inputs = inputs;
+      instance.audio = audio;
       instance.lastHeartbeat = new Date().toISOString();
       instance.lastLatency = latency;
 
@@ -251,6 +288,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
           fps: fps || 0,
           renderTime: renderTime || 0,
           url: instance.url,
+          audio,
         });
       }
 
@@ -340,6 +378,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
       isExternal: instance.isExternal,
       isMultiCorder: instance.isMultiCorder,
       inputs: instance.inputs,
+      audio: instance.audio,
       lastHeartbeat: instance.lastHeartbeat,
       lastLatency: instance.lastLatency,
     };
