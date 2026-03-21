@@ -15,3 +15,5 @@ node_modules
 /prisma/dev.db
 /prisma/schema.prisma
 /generated/prisma
+*.tsbuildinfo
+package-lock.json
