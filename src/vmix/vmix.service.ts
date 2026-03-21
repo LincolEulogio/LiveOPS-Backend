@@ -194,6 +194,63 @@ export class VmixService implements IInputEngine {
     }
   }
 
+  async toggleSolo(productionId: string, input?: number) {
+    if (input === undefined) return { success: true, message: 'Solo not supported on Master' };
+    try {
+      // Input Solo Toggle (Master doesn't have Solo in vMix API usually)
+      await this.vmixManager.sendCommand(productionId, 'Solo', {
+        Input: input,
+      });
+      return { success: true, input };
+    } catch (e: unknown) {
+      const error = e as Error;
+      this.logger.error(`Failed to toggle solo: ${error.message}`);
+      throw new BadRequestException(
+        `vMix Error: ${error.message || 'Unknown'}`,
+      );
+    }
+  }
+
+  async setGain(productionId: string, input?: number, value?: number) {
+    if (value === undefined) throw new BadRequestException('Value is required');
+    if (input === undefined) return { success: true, message: 'Gain not supported on Master' };
+    try {
+      // Individual Input Gain (Master doesn't have Gain in vMix API SetGain)
+      await this.vmixManager.sendCommand(productionId, 'SetGain', {
+        Input: input,
+        Value: value, // 0-100
+      });
+      return { success: true, input, value };
+    } catch (e: unknown) {
+      const error = e as Error;
+      this.logger.error(`Failed to set gain: ${error.message}`);
+      throw new BadRequestException(
+        `vMix Error: ${error.message || 'Unknown'}`,
+      );
+    }
+  }
+
+  async toggleBus(productionId: string, input?: number, bus?: string) {
+    if (!bus) throw new BadRequestException('Bus is required');
+    if (input === undefined) return { success: true, message: 'Bus routing not supported on Master' };
+    try {
+      // vMix Command format: AudioBusOn/AudioBusOff or AudioBus (toggle)
+      // vMix API uses 'AudioBus' command to toggle a specific bus for an input
+      // Value: M,A,B,C,D,E,F,G
+      await this.vmixManager.sendCommand(productionId, 'AudioBus', {
+        Input: input,
+        Value: bus,
+      });
+      return { success: true, input, bus };
+    } catch (e: unknown) {
+      const error = e as Error;
+      this.logger.error(`Failed to toggle bus: ${error.message}`);
+      throw new BadRequestException(
+        `vMix Error: ${error.message || 'Unknown'}`,
+      );
+    }
+  }
+
   // IVideoEngine implementation stubs (to be fully implemented if vMix API wrapper supports them)
   async startStream(productionId: string) {
     await this.vmixManager.sendCommand(productionId, 'StartStreaming');

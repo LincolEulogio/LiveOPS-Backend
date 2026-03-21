@@ -20,6 +20,9 @@ export interface VmixInput {
   key: string;
   volume?: number;
   muted?: boolean;
+  solo?: boolean;
+  gain?: number;
+  buses?: string;
   hasAudio?: boolean;
   audioLevels?: {
     meterF1: number;
@@ -219,6 +222,9 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
         key: i.$.key,
         volume: i.$.volume ? parseFloat(i.$.volume) : undefined,
         muted: i.$.muted === 'True',
+        solo: i.$.solo === 'True',
+        gain: i.$.gain ? parseFloat(i.$.gain) : 1,
+        buses: i.$.node || 'M',
         hasAudio: i.$.audio === 'True',
         audioLevels: i.$.meterF1 ? {
           meterF1: parseFloat(i.$.meterF1),

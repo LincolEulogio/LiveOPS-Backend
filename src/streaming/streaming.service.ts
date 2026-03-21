@@ -189,6 +189,12 @@ export class StreamingService {
         return this.executeEngineMethod(engine, 'setVolume', productionId, payload?.input, payload?.value);
       case 'VMIX_TOGGLE_MUTE':
         return this.executeEngineMethod(engine, 'toggleMute', productionId, payload?.input);
+      case 'VMIX_TOGGLE_SOLO':
+        return this.executeEngineMethod(engine, 'toggleSolo', productionId, payload?.input);
+      case 'VMIX_SET_GAIN':
+        return this.executeEngineMethod(engine, 'setGain', productionId, payload?.input, payload?.value);
+      case 'VMIX_TOGGLE_BUS':
+        return this.executeEngineMethod(engine, 'toggleBus', productionId, payload?.input, payload?.bus);
       case 'START_DESTINATION':
       case 'STOP_DESTINATION':
         return { success: true, destId: payload?.destId as string };
