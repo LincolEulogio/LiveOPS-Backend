@@ -1,0 +1,48 @@
+Note: Unnecessary use of -X or --request, POST is already inferred.
+* Host localhost:4000 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+                                 Dload  Upload  Total   Spent   Left   Speed
+  0      0   0      0   0      0      0      0                              0*   Trying [::1]:4000...
+* Established connection to localhost (::1 port 4000) from ::1 port 62677 
+* using HTTP/1.x
+> POST /api/v1/auth/login HTTP/1.1
+> Host: localhost:4000
+> User-Agent: curl/8.18.0
+> Accept: */*
+> Content-Type: application/json
+> Content-Length: 48
+> 
+} [48 bytes data]
+* upload completely sent off: 48 bytes
+100     48   0      0 100     48      0     39   00:01   00:01             39< HTTP/1.1 200 OK
+< Content-Security-Policy: default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+< Cross-Origin-Opener-Policy: same-origin
+< Cross-Origin-Resource-Policy: same-origin
+< Origin-Agent-Cluster: ?1
+< Referrer-Policy: no-referrer
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< X-Content-Type-Options: nosniff
+< X-DNS-Prefetch-Control: off
+< X-Download-Options: noopen
+< X-Frame-Options: SAMEORIGIN
+< X-Permitted-Cross-Domain-Policies: none
+< X-XSS-Protection: 0
+< Access-Control-Allow-Origin: http://localhost:3001
+< Vary: Origin
+< Access-Control-Allow-Credentials: true
+< X-RateLimit-Limit: 100
+< X-RateLimit-Remaining: 98
+< X-RateLimit-Reset: 44
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 1514
+< ETag: W/"5ea-02mfClYKRGWysq5dJg1G6s6JcqE"
+< Date: Sat, 21 Mar 2026 21:27:15 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+< 
+{ [1514 bytes data]
+100   1562 100   1514 100     48    929     29   00:01   00:01             39100   1562 100   1514 100     48    929     29   00:01   00:01             39100   1562 100   1514 100     48    929     29   00:01   00:01             39
+* Connection #0 to host localhost:4000 left intact
+{"user":{"id":"9a316280-79e2-47d7-9b5f-b58061d53d46","email":"admin@liveops.com","name":"Administrador Principal","createdAt":"2026-03-21T21:01:20.127Z","globalRole":{"id":"70e7a190-7896-4a57-9f07-15940a1b2cd5","name":"SUPERADMIN","permissions":[{"permission":{"action":"production:view"}},{"permission":{"action":"production:edit"}},{"permission":{"action":"production:control"}},{"permission":{"action":"script:view"}},{"permission":{"action":"script:edit"}},{"permission":{"action":"rundown:view"}},{"permission":{"action":"rundown:edit"}},{"permission":{"action":"rundown:control"}},{"permission":{"action":"intercom:view"}},{"permission":{"action":"intercom:manage"}},{"permission":{"action":"intercom:send"}},{"permission":{"action":"automation:view"}},{"permission":{"action":"automation:manage"}},{"permission":{"action":"media:view"}},{"permission":{"action":"media:manage"}},{"permission":{"action":"analytics:view"}},{"permission":{"action":"social:view"}},{"permission":{"action":"social:manage"}},{"permission":{"action":"streaming:view"}},{"permission":{"action":"streaming:manage"}},{"permission":{"action":"streaming:control"}},{"permission":{"action":"admin:access"}}]}},"accessToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5YTMxNjI4MC03OWUyLTQ3ZDctOWI1Zi1iNTgwNjFkNTNkNDYiLCJ0ZW5hbnRJZCI6ImFmMmIwNDQ5LTFiYzAtNDEyMi04NGUzLWZkM2Y5M2JmNTZmMSIsImlhdCI6MTc3NDEyODQzNCwiZXhwIjoxNzc0MTMyMDM0fQ.6OWixlc9Ki7YKIWl6q-8cRRho8cthF9yb2zKRrF3RjM","refreshToken":"b5e5c951-4b39-490c-9cb8-93c3f3cc3b68"}
