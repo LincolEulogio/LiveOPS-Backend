@@ -17,6 +17,25 @@ import * as crypto from 'crypto';
 
 import { UsersService } from '@/users/users.service';
 import { MailerService } from '@/common/services/mailer.service';
+import { Role } from '@/common/constants/roles.enum';
+
+const USER_SELECT = {
+  id: true,
+  email: true,
+  name: true,
+  isVerified: true,
+  createdAt: true,
+  tenantId: true,
+  globalRole: {
+    select: {
+      id: true,
+      name: true,
+      permissions: {
+        select: { permission: { select: { action: true } } },
+      },
+    },
+  },
+} as const;
 
 @Injectable()
 export class AuthService {
@@ -25,26 +44,12 @@ export class AuthService {
     private jwtService: JwtService,
     private usersService: UsersService,
     private mailerService: MailerService,
-  ) { }
+  ) {}
 
   async getProfile(userId: string) {
     return this.prisma.user.findUnique({
       where: { id: userId, deletedAt: null },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-        globalRole: {
-          select: {
-            id: true,
-            name: true,
-            permissions: {
-              select: { permission: { select: { action: true } } },
-            },
-          },
-        },
-      },
+      select: USER_SELECT,
     });
   }
 
@@ -60,21 +65,7 @@ export class AuthService {
     return this.prisma.user.update({
       where: { id: userId },
       data: updateData,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-        globalRole: {
-          select: {
-            id: true,
-            name: true,
-            permissions: {
-              select: { permission: { select: { action: true } } },
-            },
-          },
-        },
-      },
+      select: USER_SELECT,
     });
   }
 
@@ -173,13 +164,13 @@ export class AuthService {
 
     // Get or Create SUPERADMIN role
     let superAdminRole = await this.prisma.role.findUnique({
-      where: { name: 'SUPERADMIN' },
+      where: { name: Role.SUPERADMIN },
     });
 
     if (!superAdminRole) {
       superAdminRole = await this.prisma.role.create({
         data: {
-          name: 'SUPERADMIN',
+          name: Role.SUPERADMIN,
           description: 'Global System Administrator',
         },
       });
@@ -195,6 +186,8 @@ export class AuthService {
       data: { name: `${dto.name || email.split('@')[0]}'s Workspace` },
     });
 
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+
     const user = await this.prisma.user.create({
       data: {
         email,
@@ -202,27 +195,21 @@ export class AuthService {
         name: dto.name,
         globalRoleId: globalRoleId,
         tenantId: tenant.id,
+        isVerified: false,
+        verificationToken,
       },
     });
+
+    // Send verification email
+    await this.mailerService.sendVerificationEmail(
+      user.email,
+      verificationToken,
+    );
 
     const tokens = await this.generateTokens(user.id, user.tenantId);
     const fullUser = await this.prisma.user.findUnique({
       where: { id: user.id },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-        globalRole: {
-          select: {
-            id: true,
-            name: true,
-            permissions: {
-              select: { permission: { select: { action: true } } },
-            },
-          },
-        },
-      },
+      select: USER_SELECT,
     });
     return { user: fullUser, ...tokens };
   }
@@ -242,6 +229,12 @@ export class AuthService {
       throw new UnauthorizedException('Usuario o contraseña inválidos');
     }
 
+    if (!user.isVerified) {
+      throw new UnauthorizedException(
+        'Por favor, verifica tu cuenta antes de iniciar sesión',
+      );
+    }
+
     // Attempt to log audit event
     await this.prisma.auditLog
       .create({
@@ -259,21 +252,7 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id, user.tenantId);
     const fullUser = await this.prisma.user.findUnique({
       where: { id: user.id },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-        globalRole: {
-          select: {
-            id: true,
-            name: true,
-            permissions: {
-              select: { permission: { select: { action: true } } },
-            },
-          },
-        },
-      },
+      select: USER_SELECT,
     });
     return { user: fullUser, ...tokens };
   }
@@ -313,6 +292,57 @@ export class AuthService {
       data: { isRevoked: true },
     });
     return { success: true };
+  }
+
+  async verifyEmail(token: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { verificationToken: token },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Token de verificación inválido');
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isVerified: true,
+        verificationToken: null,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Cuenta verificada correctamente. Ya puedes iniciar sesión.',
+    };
+  }
+
+  async resendVerification(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() },
+    });
+
+    if (!user || user.isVerified) {
+      return {
+        message:
+          'Si la cuenta existe, se ha enviado un enlace de verificación.',
+      };
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { verificationToken },
+    });
+
+    await this.mailerService.sendVerificationEmail(
+      user.email,
+      verificationToken,
+    );
+
+    return {
+      message: 'Si la cuenta existe, se ha enviado un enlace de verificación.',
+    };
   }
 
   async checkSetup() {

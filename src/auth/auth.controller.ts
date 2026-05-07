@@ -45,6 +45,18 @@ export class AuthController {
     return this.authService.resetPassword(dto);
   }
 
+  @Post('verify')
+  @HttpCode(HttpStatus.OK)
+  verify(@Body('token') token: string) {
+    return this.authService.verifyEmail(token);
+  }
+
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  resendVerification(@Body('email') email: string) {
+    return this.authService.resendVerification(email);
+  }
+
   @Get('check-setup')
   checkSetup() {
     return this.authService.checkSetup();
