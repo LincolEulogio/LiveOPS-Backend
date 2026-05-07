@@ -951,7 +951,7 @@ export class EventsGateway
   @OnEvent('overlay.broadcast_data')
   handleOverlayBroadcastData(payload: {
     productionId: string;
-    data: Record<string, any>;
+    data: Record<string, unknown>;
   }) {
     this.server
       .to(`production_${payload.productionId}`)
