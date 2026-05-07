@@ -43,9 +43,7 @@ export class StreamingService {
     }
 
     const engine = this.getEngine(production);
-    const state = (await engine.getRealTimeState(productionId)) as {
-      isConnected: boolean;
-    } & Record<string, any>;
+    const state = await engine.getRealTimeState(productionId);
 
     return {
       productionId,
@@ -213,9 +211,9 @@ export class StreamingService {
     throw new BadRequestException('CHANGE_SCENE not supported by this engine');
   }
 
-  private async executeEngineMethod(engine: IVideoEngine, method: string, productionId: string, ...args: any[]) {
+  private async executeEngineMethod(engine: IVideoEngine, method: string, productionId: string, ...args: unknown[]) {
     if (method in engine) {
-      return (engine as any)[method](productionId, ...args);
+      return (engine as unknown as Record<string, (id: string, ...a: unknown[]) => Promise<unknown>>)[method](productionId, ...args);
     }
     throw new BadRequestException(`${method.toUpperCase()} not supported by this engine`);
   }

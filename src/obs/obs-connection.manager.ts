@@ -176,9 +176,9 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
           productionId,
           sceneName: sceneList.currentProgramSceneName,
         });
-      } catch (e) {
+      } catch (e: unknown) {
         this.logger.error(
-          `Failed to refresh scene list for production ${productionId}: ${e.message}`,
+          `Failed to refresh scene list for production ${productionId}: ${e instanceof Error ? e.message : String(e)}`,
         );
       }
     });
@@ -281,12 +281,12 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
             `OBS metadata warning (GetVideoSettings) for production ${productionId}: ${String(videoSettingsRes.reason)}`,
           );
         }
-      } catch (metadataError) {
+      } catch (metadataError: unknown) {
         this.logger.warn(
           `OBS metadata bootstrap failed for production ${productionId}, keeping connection alive: ${metadataError instanceof Error ? metadataError.message : String(metadataError)}`,
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
         `Failed to connect to OBS for production ${productionId} (${url}): ${message}`,
@@ -374,7 +374,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       try {
         // Simple call to check if connection is still alive
         await instance.obs.call('GetVersion');
-      } catch (e) {
+      } catch (e: unknown) {
         this.logger.warn(
           `Heartbeat failed for OBS (Production: ${productionId}), marking as disconnected.`,
         );
@@ -452,9 +452,9 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
         };
 
         this.eventEmitter.emit('production.health.stats', healthStats);
-      } catch (e) {
+      } catch (e: unknown) {
         this.logger.error(
-          `Error polling OBS stats for ${productionId}: ${e.message}`,
+          `Error polling OBS stats for ${productionId}: ${e instanceof Error ? e.message : String(e)}`,
         );
       }
     }, 2000);
@@ -512,35 +512,41 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
           imageCompressionQuality: 80
         };
 
-        const requests: Promise<any>[] = [];
+        const requests: Promise<{ imageData: string }>[] = [];
         if (programScene) {
           requests.push(instance.obs.call('GetSourceScreenshot', {
             sourceName: programScene,
             ...screenshotOptions
-          }));
+          }) as Promise<{ imageData: string }>);
         }
         if (previewScene) {
           requests.push(instance.obs.call('GetSourceScreenshot', {
             sourceName: previewScene,
             ...screenshotOptions
-          }));
+          }) as Promise<{ imageData: string }>);
         }
 
         const results = await Promise.allSettled(requests);
-        
-        const payload: any = { 
+
+        const payload: {
+          productionId: string;
+          programScene: string;
+          previewScene: string;
+          program?: string;
+          preview?: string;
+        } = {
           productionId,
           programScene,
-          previewScene
+          previewScene,
         };
-        
+
         if (results[0]?.status === 'fulfilled') {
-          payload.program = `data:image/jpeg;base64,${(results[0] as any).value.imageData}`;
+          payload.program = `data:image/jpeg;base64,${results[0].value.imageData}`;
         }
-        
+
         // If results[1] exists, it's the preview
         if (results[1] && results[1].status === 'fulfilled') {
-          payload.preview = `data:image/jpeg;base64,${(results[1] as any).value.imageData}`;
+          payload.preview = `data:image/jpeg;base64,${results[1].value.imageData}`;
         } else if (!previewScene && payload.program) {
           // If no studio mode, preview is often same or last program
           payload.preview = payload.program;
@@ -550,7 +556,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
           this.eventEmitter.emit('obs.screenshot.update', payload);
         }
 
-      } catch (err) {
+      } catch (err: unknown) {
         // Silent error for screenshots to avoid spamming logs
       }
     }, 2000);

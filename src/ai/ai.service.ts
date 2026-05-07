@@ -21,6 +21,61 @@ import { ObsService } from '@/obs/obs.service';
 import { OverlaysService } from '@/overlays/overlays.service';
 import { NotificationsService } from '@/notifications/notifications.service';
 
+interface ShowMetrics {
+  durationMs: number;
+  avgFps: number;
+  maxCpu: number;
+  totalDroppedFrames: number;
+  samples: number;
+}
+
+interface TelemetryEntry {
+  fps: number | null;
+  cpuUsage: number | null;
+  droppedFrames: number | null;
+}
+
+interface SocialMessage {
+  author: string;
+  content: string;
+}
+
+interface TimelineBlock {
+  title: string;
+  durationMs: number;
+  status: string;
+}
+
+interface IntercomCommand {
+  message?: string;
+  sender?: { name?: string };
+  template?: { name?: string };
+}
+
+interface ShowData {
+  name: string;
+  duration: string;
+  topics: string;
+}
+
+interface SeoPackage {
+  youtube: { title: string; description: string; tags: string[] };
+  social: { tweet: string; linkedin: string };
+  chapters: { time: string; title: string }[];
+}
+
+interface MacroDefinition {
+  name: string;
+  description: string;
+  triggers: { eventType: string; condition: Record<string, unknown> }[];
+  actions: { actionType: string; payload: Record<string, unknown> }[];
+}
+
+interface DirectionResult {
+  response: string;
+  actions: unknown[];
+}
+
 @Injectable()
 export class AiService implements OnModuleInit {
   private readonly logger = new Logger(AiService.name);
@@ -52,8 +107,8 @@ export class AiService implements OnModuleInit {
       this.logger.log(
         `LIVIA AI SDK Node synchronized: gemini-2.5-flash (2026 Series)`,
       );
-    } catch (error: any) {
-      this.logger.error(`AI SDK initialization failed: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(`AI SDK initialization failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -83,14 +138,14 @@ export class AiService implements OnModuleInit {
       });
       this.logger.debug(`Successfully generated ${text.length} characters.`);
       return text;
-    } catch (error: any) {
-      const msg = String(error?.message || error || '').toLowerCase();
+    } catch (error: unknown) {
+      const msg = String(error instanceof Error ? error.message : error || '').toLowerCase();
       if (
         msg.includes('quota exceeded') ||
         msg.includes('rate limit') ||
         msg.includes('too many requests')
       ) {
-        const retryMs = this.extractRetryMs(String(error?.message || ''));
+        const retryMs = this.extractRetryMs(error instanceof Error ? error.message : '');
         this.quotaBackoffUntil = Date.now() + retryMs;
         this.logger.warn(
           `AI quota/rate limited. Enabling cooldown for ${Math.ceil(retryMs / 1000)}s.`,
@@ -100,10 +155,9 @@ export class AiService implements OnModuleInit {
         );
       }
 
-      this.logger.error(`AI Core Failure: ${error.message}`);
-      throw new InternalServerErrorException(
-        `LIVIA Intelligence error: ${error.message || 'Unknown provider error'}`,
-      );
+      const errMsg = error instanceof Error ? error.message : 'Unknown provider error';
+      this.logger.error(`AI Core Failure: ${errMsg}`);
+      throw new InternalServerErrorException(`LIVIA Intelligence error: ${errMsg}`);
     }
   }
 
@@ -119,7 +173,7 @@ export class AiService implements OnModuleInit {
     return 60000;
   }
 
-  async analyzeShowPerformance(metrics: any): Promise<string> {
+  async analyzeShowPerformance(metrics: ShowMetrics): Promise<string> {
     const cacheKey = `performance_analysis_${JSON.stringify(metrics)}`;
     const cached = await this.cacheManager.get<string>(cacheKey);
     if (cached) {
@@ -165,7 +219,7 @@ export class AiService implements OnModuleInit {
         prompt: `Analiza el sentimiento y toxicidad de este mensaje de redes: "${content}". Si es ofensivo o spam, marca isToxic: true.`,
       });
       return object;
-    } catch (e) {
+    } catch (e: unknown) {
       this.logger.error('Failed to parse AI social sentiment:', e);
       return { sentiment: 'NEUTRAL', category: 'COMENTARIO', isToxic: false };
     }
@@ -226,7 +280,7 @@ export class AiService implements OnModuleInit {
   async streamChat(
     history: { role: 'user' | 'assistant' | 'system'; content: string }[],
     systemContext: string,
-  ): Promise<any> {
+  ): Promise<ReturnType<typeof streamText>> {
     if (!this.googleModel) {
       throw new ServiceUnavailableException(
         'LIVIA AI Node is not configured or API Key is missing.',
@@ -246,11 +300,10 @@ export class AiService implements OnModuleInit {
         model: this.googleModel,
         messages,
       });
-    } catch (error: any) {
-      this.logger.error(`AI Stream Chat Failure: ${error.message}`);
-      throw new InternalServerErrorException(
-        `LIVIA Intelligence error: ${error.message}`,
-      );
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(`AI Stream Chat Failure: ${errMsg}`);
+      throw new InternalServerErrorException(`LIVIA Intelligence error: ${errMsg}`);
     }
   }
 
@@ -276,10 +329,11 @@ export class AiService implements OnModuleInit {
         ],
       });
       return text;
-    } catch (error: any) {
-      this.logger.error(`AI Chat Failure: ${error.message}`);
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(`AI Chat Failure: ${errMsg}`);
       throw new InternalServerErrorException(
-        `LIVIA Intelligence error: ${error.message}`,
+        `LIVIA Intelligence error: ${errMsg}`,
       );
     }
   }
@@ -290,7 +344,7 @@ export class AiService implements OnModuleInit {
     mimeType: string,
   ): Promise<{ tags: string[]; description: string; colors?: string[] }> {
     const cacheKey = `media_analysis_${name}_${type}_${mimeType}`;
-    const cached = await this.cacheManager.get<any>(cacheKey);
+    const cached = await this.cacheManager.get<{ tags: string[]; description: string; colors?: string[] }>(cacheKey);
     if (cached) {
       this.logger.debug(`Returning cached analysis for media asset: ${name}`);
       return cached;
@@ -324,13 +378,13 @@ export class AiService implements OnModuleInit {
       });
       await this.cacheManager.set(cacheKey, object, 86400000); // Cache for 24 hours
       return object;
-    } catch (e) {
+    } catch (e: unknown) {
       this.logger.error('Failed to analyze media asset:', e);
       return { tags: ['media'], description: 'Procesado manualmente' };
     }
   }
 
-  async summarizeIntercom(commands: any[]): Promise<string> {
+  async summarizeIntercom(commands: IntercomCommand[]): Promise<string> {
     if (!this.googleModel || commands.length === 0)
       return 'Sin comandos recientes.';
 
@@ -350,7 +404,7 @@ export class AiService implements OnModuleInit {
     return this.generateText(prompt);
   }
 
-  async generateAutomationMacro(userInput: string): Promise<any> {
+  async generateAutomationMacro(userInput: string): Promise<MacroDefinition> {
     const prompt = `Convierte la siguiente petición de usuario en una Macro de automatización para LiveOPS.
         
         Petición: "${userInput}"
@@ -373,20 +427,20 @@ export class AiService implements OnModuleInit {
         schema: z.object({
           name: z.string(),
           description: z.string(),
-          triggers: z.array(z.any()),
-          actions: z.array(z.any()),
+          triggers: z.array(z.object({ eventType: z.string(), condition: z.record(z.unknown()).optional() })),
+          actions: z.array(z.object({ actionType: z.string(), payload: z.record(z.unknown()).optional() })),
         }),
         prompt,
       });
       return object;
-    } catch (e) {
+    } catch (e: unknown) {
       this.logger.error('Failed to generate automation macro:', e);
       throw new Error('No se pudo interpretar la automatización.');
     }
   }
 
   async analyzeTelemetryPredictive(
-    logs: any[],
+    logs: TelemetryEntry[],
   ): Promise<{ alert: string; confidence: number; suggestedAction?: string }> {
     const metrics = logs
       .map(
@@ -412,12 +466,12 @@ export class AiService implements OnModuleInit {
         prompt,
       });
       return object;
-    } catch (e) {
+    } catch (e: unknown) {
       return { alert: 'Sin anomalías detectadas', confidence: 0 };
     }
   }
 
-  async suggestSocialHighlights(messages: any[]): Promise<any[]> {
+  async suggestSocialHighlights(messages: SocialMessage[]): Promise<{ author: string; content: string; reason: string }[]> {
     const textLog = messages
       .map((m) => `[${m.author}]: ${m.content}`)
       .join('\n');
@@ -445,12 +499,12 @@ export class AiService implements OnModuleInit {
         prompt,
       });
       return object.highlights;
-    } catch (e) {
+    } catch (e: unknown) {
       return [];
     }
   }
 
-  async analyzeTimelineTiming(blocks: any[]): Promise<string> {
+  async analyzeTimelineTiming(blocks: TimelineBlock[]): Promise<string> {
     const scheduleText = blocks
       .map((b) => `${b.title} (${b.durationMs / 1000}s) - Status: ${b.status}`)
       .join('\n');
@@ -467,7 +521,7 @@ export class AiService implements OnModuleInit {
     return this.generateText(prompt);
   }
 
-  async suggestScriptHighlights(scriptContent: string): Promise<any[]> {
+  async suggestScriptHighlights(scriptContent: string): Promise<{ moment: string; type: string; suggestion: string }[]> {
     const prompt = `Analiza el siguiente guion de producción y marca los 2-3 puntos de "Clímax" o momentos clave donde el director debería lanzar efectos especiales o cambios de cámara importantes.
         
         Guion:
@@ -491,12 +545,12 @@ export class AiService implements OnModuleInit {
         prompt,
       });
       return object.highlights;
-    } catch (e) {
+    } catch (e: unknown) {
       return [];
     }
   }
 
-  async generatePostShowSEO(data: any): Promise<any> {
+  async generatePostShowSEO(data: ShowData): Promise<SeoPackage | { error: string }> {
     const prompt = `Genera un paquete de SEO y redes sociales para la producción terminada.
         
         Datos del Show:
@@ -526,7 +580,7 @@ export class AiService implements OnModuleInit {
         prompt,
       });
       return object;
-    } catch (e) {
+    } catch (e: unknown) {
       return { error: 'No se pudo generar el SEO' };
     }
   }
@@ -537,7 +591,7 @@ export class AiService implements OnModuleInit {
   async processDirection(
     productionId: string,
     userInput: string,
-  ): Promise<any> {
+  ): Promise<DirectionResult> {
     if (!this.googleModel) {
       throw new ServiceUnavailableException('AI Node is offline.');
     }

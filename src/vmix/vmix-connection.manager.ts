@@ -214,7 +214,14 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
         inputsData = [inputsData];
       }
 
-      const inputs: VmixInput[] = (inputsData || []).map((i: any) => ({
+      interface VmixRawInput {
+        $: {
+          number: string; title?: string; type: string; state: string; key: string;
+          volume?: string; muted?: string; solo?: string; gain?: string; node?: string;
+          audio?: string; meterF1?: string; meterF2?: string;
+        };
+      }
+      const inputs: VmixInput[] = ((inputsData || []) as VmixRawInput[]).map((i) => ({
         number: parseInt(i.$.number, 10),
         title: i.$.title || `Input ${i.$.number}`,
         type: i.$.type,
@@ -329,7 +336,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
         edition: parsed.vmix.edition,
         latency: instance.lastLatency,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       instance.pollingFailureCount++;
       if (!instance.firstFailureAt) {
         instance.firstFailureAt = Date.now();
@@ -360,7 +367,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
         instance.pollingFailureCount === this.DISCONNECT_AFTER_FAILURES
       ) {
         this.logger.debug(
-          `vMix polling error for ${productionId}: ${error.message} | failures=${instance.pollingFailureCount} | window=${Math.round(failureWindowMs / 1000)}s`,
+          `vMix polling error for ${productionId}: ${error instanceof Error ? error.message : String(error)} | failures=${instance.pollingFailureCount} | window=${Math.round(failureWindowMs / 1000)}s`,
         );
       }
     } finally {
@@ -449,8 +456,8 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
 
     try {
       await axios.get(fullUrl, { timeout: 2000 });
-    } catch (e: any) {
-      this.logger.error(`vMix command failed: ${e.message} (URL: ${fullUrl})`);
+    } catch (e: unknown) {
+      this.logger.error(`vMix command failed: ${e instanceof Error ? e.message : String(e)} (URL: ${fullUrl})`);
       throw e;
     }
   }

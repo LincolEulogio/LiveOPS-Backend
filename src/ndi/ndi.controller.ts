@@ -19,12 +19,12 @@ export class NdiController {
     }
 
     @Post('router/switch')
-    async switchRoute(@Body() data: any) {
+    async switchRoute(@Body() data: { from: string; to: string }) {
         return this.ndiService.routeSource(data.from, data.to);
     }
 
     @Patch('access-manager')
-    async updateAccess(@Body() config: any) {
+    async updateAccess(@Body() config: Record<string, unknown>) {
         return this.ndiService.updateAccessControl(config);
     }
 

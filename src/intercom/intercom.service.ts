@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PushNotificationsService } from '@/notifications/push-notifications.service';
 import {
@@ -148,14 +149,14 @@ export class IntercomService {
   }
 
   private async getSafeIntercomSummary(
-    history: any[],
+    history: Prisma.CommandGetPayload<{ include: { sender: true; template: true } }>[],
     productionId: string,
   ): Promise<string> {
     try {
       return await this.aiService.summarizeIntercom(history);
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.logger.warn(
-        `AI summary unavailable for production ${productionId}: ${error?.message || error}`,
+        `AI summary unavailable for production ${productionId}: ${error instanceof Error ? error.message : String(error)}`,
       );
 
       if (!history.length) {
@@ -163,7 +164,7 @@ export class IntercomService {
       }
 
       const recent = history.slice(0, 5);
-      const lines = recent.map((c: any) => {
+      const lines = recent.map((c) => {
         const sender = c?.sender?.name || 'Operador';
         const msg = c?.message || c?.template?.name || 'Comando enviado';
         return `• ${sender}: ${msg}`;
@@ -220,7 +221,7 @@ export class IntercomService {
     return command;
   }
 
-  private async handlePushNotification(command: any) {
+  private async handlePushNotification(command: Prisma.CommandGetPayload<{ include: { sender: { select: { id: true; name: true } } } }>) {
     try {
       const { productionId, targetUserId, targetRoleId, message, sender } =
         command;
@@ -246,18 +247,18 @@ export class IntercomService {
               body: 'Revisa tu panel para más detalles.',
               data: { productionId, commandId: command.id },
             });
-          } catch (innerError) {
+          } catch (innerError: unknown) {
             console.error(
               `[Intercom] Failed to send push to individual user ${userId}:`,
-              innerError.message,
+              innerError instanceof Error ? innerError.message : String(innerError),
             );
           }
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(
         '[Intercom] Error in handlePushNotification:',
-        error.message,
+        error instanceof Error ? error.message : String(error),
       );
     }
   }

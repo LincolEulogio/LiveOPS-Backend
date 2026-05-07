@@ -9,7 +9,7 @@ export class CreateOverlayDto {
   description?: string;
 
   @IsObject()
-  config: any;
+  config: Record<string, unknown>;
 
   @IsBoolean()
   @IsOptional()
@@ -27,7 +27,7 @@ export class UpdateOverlayDto {
 
   @IsObject()
   @IsOptional()
-  config?: any;
+  config?: Record<string, unknown>;
 
   @IsBoolean()
   @IsOptional()

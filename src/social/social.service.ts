@@ -62,7 +62,7 @@ export class SocialService {
       aiSentiment = aiResult.sentiment;
       aiCategory = aiResult.category;
       isToxic = aiResult.isToxic;
-    } catch (e) {
+    } catch (e: unknown) {
       this.logger.warn('AI social analysis failed, continuing with defaults');
     }
 

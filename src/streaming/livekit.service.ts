@@ -53,7 +53,7 @@ export class LiveKitService {
         maxParticipants: 50,
       });
       this.logger.log(`Room ${roomId} created or verified.`);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(`Error ensuring room exists: ${error}`);
     }
   }

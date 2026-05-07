@@ -8,13 +8,15 @@ export const ourFileRouter = {
     image: { maxFileSize: '4MB', maxFileCount: 4 },
     video: { maxFileSize: '256MB', maxFileCount: 1 },
     audio: { maxFileSize: '32MB', maxFileCount: 1 },
+  }).middleware(async () => {
+    return {} as { userId: string };
   }).onUploadComplete(async ({ metadata, file }) => {
     // This code RUNS ON YOUR SERVER after upload
-    console.log('Upload complete for userId:', (metadata as any).userId);
+    console.log('Upload complete for userId:', metadata.userId);
     console.log('file url', file.url);
 
     // !!! Everything returned here is sent to the clientside onUploadComplete callback
-    return { uploadedBy: (metadata as any).userId, url: file.url };
+    return { uploadedBy: metadata.userId, url: file.url };
   }),
 } satisfies FileRouter;
 

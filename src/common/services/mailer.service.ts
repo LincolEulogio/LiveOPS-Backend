@@ -46,7 +46,7 @@ export class MailerService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(`Failed to send verification email: ${error}`);
     }
   }
@@ -80,7 +80,7 @@ export class MailerService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(`Failed to send password reset email: ${error}`);
     }
   }

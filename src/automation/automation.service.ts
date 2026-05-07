@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { CreateRuleDto, UpdateRuleDto } from '@/automation/dto/automation.dto';
+import { CreateRuleDto, UpdateRuleDto, CreateActionDto } from '@/automation/dto/automation.dto';
+import { Prisma } from '@prisma/client';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiService } from '@/ai/ai.service';
 
@@ -43,13 +44,13 @@ export class AutomationService {
         description: dto.description,
         isEnabled: dto.isEnabled ?? true,
         triggers: {
-          create: dto.triggers as any,
+          create: dto.triggers as Prisma.TriggerCreateWithoutRuleInput[],
         },
         actions: {
-          create: dto.actions.map((a: any, idx: number) => ({
+          create: dto.actions.map((a: CreateActionDto, idx: number) => ({
             ...a,
             order: a.order ?? idx,
-          })) as any,
+          })) as Prisma.ActionCreateWithoutRuleInput[],
         },
       },
       include: { triggers: true, actions: true },

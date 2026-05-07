@@ -27,7 +27,7 @@ export class AuditService {
     productionId?: string;
     userId?: string;
     action: AuditAction | string;
-    details?: any;
+    details?: Record<string, unknown>;
     ipAddress?: string;
   }) {
     try {
@@ -56,8 +56,8 @@ export class AuditService {
       this.logger.debug(
         `Audit log created: ${payload.action} for production ${payload.productionId || 'GLOBAL'}`,
       );
-    } catch (error) {
-      this.logger.error(`Failed to create audit log: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(`Failed to create audit log: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

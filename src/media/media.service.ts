@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { AssetType } from '@prisma/client';
+import { AssetType, Prisma } from '@prisma/client';
 import { AiService } from '@/ai/ai.service';
 import * as sharp from 'sharp';
 import axios from 'axios';
@@ -31,9 +31,9 @@ export class MediaService {
         where: { productionId },
         orderBy: { createdAt: 'desc' },
       });
-    } catch (err) {
+    } catch (err: unknown) {
       this.logger.error(
-        `Failed to fetch assets for production ${productionId}: ${err.message}`,
+        `Failed to fetch assets for production ${productionId}: ${err instanceof Error ? err.message : String(err)}`,
       );
       return [];
     }
@@ -64,12 +64,12 @@ export class MediaService {
         data: {
           ...data,
           tags: aiMetadata.tags,
-          aiMetadata: aiMetadata as any,
+          aiMetadata: aiMetadata as Prisma.InputJsonValue,
           thumbnailUrl: thumbnailData,
         },
       });
-    } catch (err) {
-      this.logger.error(`Failed to save asset: ${err.message}`);
+    } catch (err: unknown) {
+      this.logger.error(`Failed to save asset: ${err instanceof Error ? err.message : String(err)}`);
       // Fallback save without AI if it fails
       return await this.prisma.mediaAsset.create({ data });
     }
@@ -79,8 +79,8 @@ export class MediaService {
       return await this.prisma.mediaAsset.delete({
         where: { id, productionId },
       });
-    } catch (err) {
-      this.logger.error(`Failed to delete asset ${id}: ${err.message}`);
+    } catch (err: unknown) {
+      this.logger.error(`Failed to delete asset ${id}: ${err instanceof Error ? err.message : String(err)}`);
       throw err;
     }
   }
@@ -91,7 +91,7 @@ export class MediaService {
       // In a real prod environment, we would use sharp to resize local buffer or remote stream.
       // For now, returning null/placeholder functionality.
       return null;
-    } catch (e) {
+    } catch (e: unknown) {
       return null;
     }
   }

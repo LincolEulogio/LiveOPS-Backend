@@ -181,15 +181,24 @@ export class AutomationEngineService {
         `Executing direct action engine.instantClip for production ${productionId}`,
       );
       // Create a dummy rule for action execution
-      const dummyRule: any = {
+      const dummyRule: RuleWithActions = {
         id: 'manual-trigger',
         productionId,
         name: 'Manual Instant Clip',
+        description: null,
+        isEnabled: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        triggers: [],
         actions: [
           {
+            id: 'dummy-action',
+            ruleId: 'manual-trigger',
             actionType: 'engine.instantClip',
             payload: {},
             order: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
           },
         ],
       };
@@ -351,9 +360,9 @@ export class AutomationEngineService {
                 } else if (this.vmixService.isConnected(rule.productionId)) {
                   await this.vmixService.saveVideoDelay(rule.productionId);
                 }
-              } catch (e: any) {
+              } catch (e: unknown) {
                 this.logger.error(
-                  `Failed to trigger instant clip: ${e.message}`,
+                  `Failed to trigger instant clip: ${e instanceof Error ? e.message : String(e)}`,
                 );
               }
               break;
@@ -361,9 +370,9 @@ export class AutomationEngineService {
             default:
               this.logger.warn(`Unknown action type: ${action.actionType}`);
           }
-        } catch (actionError: any) {
+        } catch (actionError: unknown) {
           this.logger.error(
-            `Action ${action.actionType} failed: ${actionError.message}`,
+            `Action ${action.actionType} failed: ${actionError instanceof Error ? actionError.message : String(actionError)}`,
           );
           throw actionError; // Re-throw to be caught by Promise.all
         }

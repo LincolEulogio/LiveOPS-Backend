@@ -138,9 +138,9 @@ export class PermissionsGuard implements CanActivate {
       }
 
       throw new ForbiddenException('Insufficient permissions');
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ForbiddenException) throw error;
-      console.error('[PermissionsGuard] Error:', error.message || error);
+      console.error('[PermissionsGuard] Error:', error instanceof Error ? error.message : error);
       throw new ForbiddenException('Insufficient permissions');
     }
 

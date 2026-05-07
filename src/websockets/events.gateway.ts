@@ -15,7 +15,7 @@ interface CustomSocket extends Socket {
   data: {
     productionId?: string;
     isNdiBridge?: boolean;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -270,7 +270,7 @@ export class EventsGateway
       if (socket) {
         socket.emit('webrtc.signal_received', {
           senderUserId,
-          signal: data.signal as any,
+          signal: data.signal,
           context: data.context,
         });
       }
@@ -450,7 +450,7 @@ export class EventsGateway
 
   @SubscribeMessage('ndi.sources_update')
   handleSourcesUpdate(
-    @MessageBody() data: { productionId: string; sources: any[] },
+    @MessageBody() data: { productionId: string; sources: Record<string, unknown>[] },
     @ConnectedSocket() _client: CustomSocket,
   ) {
     // Broadcast sources to all clients in the production
@@ -941,7 +941,7 @@ export class EventsGateway
   @OnEvent('overlay.template_updated')
   handleOverlayTemplateUpdated(payload: {
     productionId: string;
-    template: { id: string;[key: string]: any };
+    template: { id: string; [key: string]: unknown };
   }) {
     this.server
       .to(`production_${payload.productionId}`)
@@ -965,7 +965,7 @@ export class EventsGateway
   @OnEvent('guest.slots.updated')
   handleGuestSlotsUpdated(payload: {
     productionId: string;
-    slots: any[];
+    slots: Record<string, unknown>[];
     updatedAt?: string;
   }) {
     this.server

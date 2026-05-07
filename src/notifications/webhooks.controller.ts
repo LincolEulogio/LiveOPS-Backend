@@ -19,7 +19,8 @@ import { CreateSubscriptionDto } from '@/notifications/dto/push-subscription.dto
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
-import { Request } from 'express'; // Added import
+import { Request } from 'express';
+import { JwtUser } from '@/common/types/jwt-user.types';
 
 @Controller('notifications') // Changed controller path
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -90,7 +91,7 @@ export class WebhooksController {
     await this.notificationsService.sendNotification(
       webhook.productionId,
       `🔄 *LiveOPS Webhook Test*\nThis is a test notification for the ${webhook.name} integration.`,
-      webhook.platform as any,
+      webhook.platform as NotificationPlatform,
     );
 
     return { success: true };
@@ -98,7 +99,7 @@ export class WebhooksController {
 
   @Post('push/subscribe')
   async subscribe(
-    @Req() req: any,
+    @Req() req: Request & { user: JwtUser },
     @Body() subscription: CreateSubscriptionDto,
   ) {
     return this.pushService.subscribe(req.user.id, subscription);

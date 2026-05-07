@@ -48,9 +48,9 @@ export class PushNotificationsService implements OnModuleInit {
           auth: keys.auth,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
-        `Error subscribing user ${userId} to push notifications: ${error.message}`,
+        `Error subscribing user ${userId} to push notifications: ${error instanceof Error ? error.message : String(error)}`,
       );
       return null;
     }
@@ -61,9 +61,9 @@ export class PushNotificationsService implements OnModuleInit {
       return await this.prisma.pushSubscription.deleteMany({
         where: { endpoint },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
-        `Error unsubscribing from push notifications: ${error.message}`,
+        `Error unsubscribing from push notifications: ${error instanceof Error ? error.message : String(error)}`,
       );
       return null;
     }
@@ -71,16 +71,16 @@ export class PushNotificationsService implements OnModuleInit {
 
   async sendNotification(
     userId: string,
-    payload: { title: string; body: string; icon?: string; data?: any },
+    payload: { title: string; body: string; icon?: string; data?: Record<string, unknown> },
   ) {
     let subscriptions = [];
     try {
       subscriptions = await this.prisma.pushSubscription.findMany({
         where: { userId },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
-        `Error fetching push subscriptions for user ${userId}: ${error.message}`,
+        `Error fetching push subscriptions for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
       );
       return;
     }

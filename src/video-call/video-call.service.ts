@@ -55,7 +55,7 @@ export class VideoCallService {
         },
         include: { host: { select: { id: true, name: true, email: true } } },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error creating video call:', error);
       throw error;
     }

@@ -1,6 +1,6 @@
 export interface IVideoEngine {
   isConnected(productionId: string): boolean;
-  getRealTimeState(productionId: string): Promise<any>;
+  getRealTimeState(productionId: string): Promise<{ isConnected: boolean } & Record<string, unknown>>;
   startStream(productionId: string): Promise<{ success: boolean }>;
   stopStream(productionId: string): Promise<{ success: boolean }>;
   startRecord(productionId: string): Promise<{ success: boolean }>;

@@ -18,7 +18,7 @@ export class AnalyticsController {
     try {
       const mins = minutes ? parseInt(minutes, 10) : 60;
       return await this.analyticsService.getTelemetryLogs(id, mins);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Telemetry Fetch Error for ${id}:`, error);
       throw error;
     }

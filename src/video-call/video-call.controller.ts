@@ -15,6 +15,7 @@ import {
 } from './video-call.service';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { JwtUser } from '@/common/types/jwt-user.types';
 
 @UseGuards(JwtAuthGuard)
 @Controller('video-call')
@@ -29,9 +30,9 @@ export class VideoCallController {
 
   /** Create a new call */
   @Post('rooms')
-  create(@CurrentUser() user: any, @Body() dto: CreateVideoCallDto) {
+  create(@CurrentUser() user: JwtUser, @Body() dto: CreateVideoCallDto) {
     return this.videoCallService.create(
-      user?.userId || user?.id || user?.sub,
+      user.userId,
       dto,
     );
   }
@@ -59,15 +60,15 @@ export class VideoCallController {
   async join(
     @Param('id') id: string,
     @Body('name') name: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtUser,
   ) {
     const call = await this.videoCallService.findOne(id);
-    const identity = user?.userId || user?.id || user?.sub;
+    const identity = user.userId;
     const isHost = call.hostId === identity;
     const token = await this.videoCallService.generateJoinToken(
       call.roomId,
       identity,
-      name || user?.name || 'Participant',
+      name || 'Participant',
       isHost,
     );
     // Mark as active if still scheduled
@@ -85,15 +86,15 @@ export class VideoCallController {
   async joinByRoomId(
     @Param('roomId') roomId: string,
     @Body('name') name: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtUser,
   ) {
-    const identity = user?.userId || user?.id || user?.sub;
+    const identity = user.userId;
     const call = await this.videoCallService.findByRoomId(roomId);
     const isHost = call ? call.hostId === identity : false;
     const token = await this.videoCallService.generateJoinToken(
       roomId,
       identity,
-      name || user?.name || 'Participant',
+      name || 'Participant',
       isHost,
     );
     return {
@@ -106,8 +107,8 @@ export class VideoCallController {
 
   /** End a room explicitly */
   @Post('rooms/by-room/:roomId/end')
-  async endRoom(@Param('roomId') roomId: string, @CurrentUser() user: any) {
-    const identity = user?.userId || user?.id || user?.sub;
+  async endRoom(@Param('roomId') roomId: string, @CurrentUser() user: JwtUser) {
+    const identity = user.userId;
     const call = await this.videoCallService.findByRoomId(roomId);
     if (call && call.hostId === identity) {
       await this.videoCallService.update(call.id, { status: 'ended' });

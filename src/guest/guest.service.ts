@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { CreateGuestInvitationDto } from './dto/create-guest-invitation.dto';
 import { StreamingService } from '@/streaming/streaming.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -122,8 +123,8 @@ export class GuestService {
 
       this.logger.log(`Guest activation successful for: ${invitation.guestName}`);
       return updated;
-    } catch (error: any) {
-      this.logger.error(`FAILED to activate guest: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      this.logger.error(`FAILED to activate guest: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
       throw error;
     }
   }
@@ -227,7 +228,7 @@ export class GuestService {
       data: {
         productionId,
         eventType: this.SLOT_CONFIG_EVENT,
-        details: envelope as any,
+        details: envelope as Prisma.InputJsonValue,
       },
     });
   }

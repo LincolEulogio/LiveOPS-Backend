@@ -12,7 +12,7 @@ export class NdiService {
     }
 
     // 2. Access Manager (Network/IP Configuration)
-    async updateAccessControl(config: any) {
+    async updateAccessControl(config: Record<string, unknown>) {
         this.logger.log(`Updating NDI Access Manager: ${JSON.stringify(config)}`);
         return { success: true, updated: new Date() };
     }
@@ -53,7 +53,7 @@ export class NdiService {
     }
 
     // 9. Bridge (Ndi Bridge / WAN)
-    async configureBridge(settings: any) {
-        return { bridgeStatus: 'connecting', wanMode: settings.mode || 'encoder' };
+    async configureBridge(settings: Record<string, unknown>) {
+        return { bridgeStatus: 'connecting', wanMode: (settings.mode as string) || 'encoder' };
     }
 }

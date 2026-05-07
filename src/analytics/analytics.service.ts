@@ -44,7 +44,7 @@ export class AnalyticsService {
           isRecording: payload.isRecording,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Failed to save telemetry for production ${payload.productionId}:`,
         error,
@@ -150,7 +150,7 @@ export class AnalyticsService {
       });
 
       return updatedReport;
-    } catch (e) {
+    } catch (e: unknown) {
       this.logger.error(`Error generating show report for ${productionId}`, e);
       throw e;
     }

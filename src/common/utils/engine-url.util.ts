@@ -19,7 +19,7 @@ export function formatEngineUrl(config: EngineUrlConfig, defaultProtocol: string
       protocol = parsed.protocol.replace(':', '');
       host = parsed.hostname;
       if (parsed.port) port = parsed.port;
-    } catch (_e) {
+    } catch (_e: unknown) {
       // Fallback cleanup if user pasted malformed URL-like string
       host = host
         .replace(/^(wss?|https?):\/\//, '')

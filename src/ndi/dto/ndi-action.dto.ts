@@ -13,5 +13,5 @@ export enum NdiToolsType {
 export class NdiActionDto {
     type: NdiToolsType;
     action: string;
-    payload?: any;
+    payload?: Record<string, unknown>;
 }
