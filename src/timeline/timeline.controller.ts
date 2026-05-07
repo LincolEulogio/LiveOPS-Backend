@@ -7,7 +7,6 @@ import {
   Body,
   Param,
   UseGuards,
-  Put as HttpPut,
 } from '@nestjs/common';
 import { TimelineService } from '@/timeline/timeline.service';
 import {

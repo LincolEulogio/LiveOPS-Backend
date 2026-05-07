@@ -10,7 +10,6 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { EngineType } from '@prisma/client';
 import axios from 'axios';
 import { parseStringPromise } from 'xml2js';
-import { ProductionHealthStats } from '@/streaming/streaming.types';
 
 export interface VmixInput {
   number: number;
@@ -78,7 +77,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
     await this.loadAllConnections();
   }
 
-  async onModuleDestroy() {
+  onModuleDestroy() {
     this.logger.log('Destroying vMix Connection Manager...');
     for (const [productionId, instance] of this.connections.entries()) {
       this.disconnectVmix(productionId, instance);
@@ -101,7 +100,9 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
     if (existing) {
       const isSameConfig = existing.url === url;
       if (isSameConfig && (existing.isConnected || existing.pollInterval)) {
-        this.logger.debug(`vMix already polling with same config for ${productionId}. Skipping.`);
+        this.logger.debug(
+          `vMix already polling with same config for ${productionId}. Skipping.`,
+        );
         return;
       }
       this.disconnectVmix(productionId, existing);
@@ -137,8 +138,8 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
     void this.pollApi(productionId, instance);
 
     // Start Polling Loop
-    instance.pollInterval = setInterval(async () => {
-      await this.pollApi(productionId, instance);
+    instance.pollInterval = setInterval(() => {
+      this.pollApi(productionId, instance).catch(() => {});
     }, interval);
   }
 
@@ -151,7 +152,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  async stopPolling(productionId: string) {
+  stopPolling(productionId: string) {
     const instance = this.connections.get(productionId);
     if (instance) {
       this.disconnectVmix(productionId, instance);
@@ -188,13 +189,61 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
     try {
       const apiUrl = this.getApiUrl(instance.url);
       const startTime = Date.now();
-      const response = await axios.get(apiUrl, {
+      const response = await axios.get<string>(apiUrl, {
         timeout: this.VMIX_API_TIMEOUT_MS,
       });
       const latency = Date.now() - startTime;
 
-      const xml = response.data;
-      const parsed = await parseStringPromise(xml, { explicitArray: false });
+      const xml: string = response.data;
+
+      interface VmixRawInput {
+        $: {
+          number: string;
+          title?: string;
+          type: string;
+          state: string;
+          key: string;
+          volume?: string;
+          muted?: string;
+          solo?: string;
+          gain?: string;
+          node?: string;
+          audio?: string;
+          meterF1?: string;
+          meterF2?: string;
+        };
+      }
+      interface VmixParsed {
+        vmix?: {
+          active: string;
+          preview: string;
+          streaming: string;
+          recording: string;
+          external: string;
+          multiCorder: string;
+          fps?: string;
+          renderTime?: string;
+          vmixCpuUsage?: string;
+          version?: string;
+          edition?: string;
+          inputs?: { input?: VmixRawInput | VmixRawInput[] };
+          audio?: {
+            master?: {
+              $: {
+                volume?: string;
+                muted?: string;
+                meterF1?: string;
+                meterF2?: string;
+              };
+            };
+          };
+        };
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const parsed: VmixParsed = await parseStringPromise(xml, {
+        explicitArray: false,
+      });
 
       if (!parsed || !parsed.vmix) {
         throw new Error('Invalid XML response from vMix');
@@ -214,14 +263,7 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
         inputsData = [inputsData];
       }
 
-      interface VmixRawInput {
-        $: {
-          number: string; title?: string; type: string; state: string; key: string;
-          volume?: string; muted?: string; solo?: string; gain?: string; node?: string;
-          audio?: string; meterF1?: string; meterF2?: string;
-        };
-      }
-      const inputs: VmixInput[] = ((inputsData || []) as VmixRawInput[]).map((i) => ({
+      const inputs: VmixInput[] = (inputsData || []).map((i) => ({
         number: parseInt(i.$.number, 10),
         title: i.$.title || `Input ${i.$.number}`,
         type: i.$.type,
@@ -233,22 +275,28 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
         gain: i.$.gain ? parseFloat(i.$.gain) : 1,
         buses: i.$.node || 'M',
         hasAudio: i.$.audio === 'True',
-        audioLevels: i.$.meterF1 ? {
-          meterF1: parseFloat(i.$.meterF1),
-          meterF2: parseFloat(i.$.meterF2 || i.$.meterF1),
-        } : undefined,
+        audioLevels: i.$.meterF1
+          ? {
+              meterF1: parseFloat(i.$.meterF1),
+              meterF2: parseFloat(i.$.meterF2 || i.$.meterF1),
+            }
+          : undefined,
       }));
 
       // Parse Master Audio
       const audioData = parsed.vmix.audio;
       const masterAudio = audioData?.master?.$;
       const audio: VmixAudioState = {
-        master: masterAudio ? {
-          volume: parseFloat(masterAudio.volume || '100'),
-          muted: masterAudio.muted === 'True',
-          meterF1: parseFloat(masterAudio.meterF1 || '0'),
-          meterF2: parseFloat(masterAudio.meterF2 || masterAudio.meterF1 || '0'),
-        } : undefined,
+        master: masterAudio
+          ? {
+              volume: parseFloat(masterAudio.volume || '100'),
+              muted: masterAudio.muted === 'True',
+              meterF1: parseFloat(masterAudio.meterF1 || '0'),
+              meterF2: parseFloat(
+                masterAudio.meterF2 || masterAudio.meterF1 || '0',
+              ),
+            }
+          : undefined,
       };
 
       // Telemetry Extraction
@@ -457,7 +505,9 @@ export class VmixConnectionManager implements OnModuleInit, OnModuleDestroy {
     try {
       await axios.get(fullUrl, { timeout: 2000 });
     } catch (e: unknown) {
-      this.logger.error(`vMix command failed: ${e instanceof Error ? e.message : String(e)} (URL: ${fullUrl})`);
+      this.logger.error(
+        `vMix command failed: ${e instanceof Error ? e.message : String(e)} (URL: ${fullUrl})`,
+      );
       throw e;
     }
   }

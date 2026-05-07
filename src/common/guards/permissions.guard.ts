@@ -25,7 +25,11 @@ export class PermissionsGuard implements CanActivate {
       return true; // No permissions required
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<{
+      user: { userId: string };
+      params: Record<string, string>;
+      body: Record<string, string>;
+    }>();
     const user = request.user;
 
     if (!user) {
@@ -140,7 +144,10 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('Insufficient permissions');
     } catch (error: unknown) {
       if (error instanceof ForbiddenException) throw error;
-      console.error('[PermissionsGuard] Error:', error instanceof Error ? error.message : error);
+      console.error(
+        '[PermissionsGuard] Error:',
+        error instanceof Error ? error.message : error,
+      );
       throw new ForbiddenException('Insufficient permissions');
     }
 

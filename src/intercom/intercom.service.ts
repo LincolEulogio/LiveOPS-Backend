@@ -149,7 +149,12 @@ export class IntercomService {
   }
 
   private async getSafeIntercomSummary(
-    history: Prisma.CommandGetPayload<{ include: { sender: true; template: true } }>[],
+    history: Prisma.CommandGetPayload<{
+      include: {
+        sender: { select: { id: true; name: true } };
+        template: true;
+      };
+    }>[],
     productionId: string,
   ): Promise<string> {
     try {
@@ -204,10 +209,10 @@ export class IntercomService {
     });
 
     // --- PWA Push Notification Logic ---
-    this.handlePushNotification(command);
+    void this.handlePushNotification(command);
 
     // --- Audit Logging ---
-    this.auditService.log({
+    void this.auditService.log({
       productionId: dto.productionId,
       userId: dto.senderId,
       action: AuditAction.INTERCOM_SEND,
@@ -221,7 +226,11 @@ export class IntercomService {
     return command;
   }
 
-  private async handlePushNotification(command: Prisma.CommandGetPayload<{ include: { sender: { select: { id: true; name: true } } } }>) {
+  private async handlePushNotification(
+    command: Prisma.CommandGetPayload<{
+      include: { sender: { select: { id: true; name: true } } };
+    }>,
+  ) {
     try {
       const { productionId, targetUserId, targetRoleId, message, sender } =
         command;
@@ -250,7 +259,9 @@ export class IntercomService {
           } catch (innerError: unknown) {
             console.error(
               `[Intercom] Failed to send push to individual user ${userId}:`,
-              innerError instanceof Error ? innerError.message : String(innerError),
+              innerError instanceof Error
+                ? innerError.message
+                : String(innerError),
             );
           }
         }

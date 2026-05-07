@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateOverlayDto, UpdateOverlayDto } from '@/overlays/dto/overlay.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class OverlaysService {
@@ -15,6 +16,7 @@ export class OverlaysService {
       data: {
         ...dto,
         productionId,
+        config: dto.config as Prisma.InputJsonValue,
       },
     });
     this.eventEmitter.emit('overlay.list_updated', { productionId });
@@ -37,9 +39,15 @@ export class OverlaysService {
   }
 
   async update(id: string, dto: UpdateOverlayDto) {
+    const { config, ...rest } = dto;
     const overlay = await this.prisma.overlayTemplate.update({
       where: { id },
-      data: dto,
+      data: {
+        ...rest,
+        ...(config !== undefined && {
+          config: config as Prisma.InputJsonValue,
+        }),
+      },
     });
     this.eventEmitter.emit('overlay.template_updated', {
       productionId: overlay.productionId,

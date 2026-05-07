@@ -91,7 +91,7 @@ export class WebhooksController {
     await this.notificationsService.sendNotification(
       webhook.productionId,
       `🔄 *LiveOPS Webhook Test*\nThis is a test notification for the ${webhook.name} integration.`,
-      webhook.platform as NotificationPlatform,
+      { platform: webhook.platform as NotificationPlatform },
     );
 
     return { success: true };
@@ -102,7 +102,10 @@ export class WebhooksController {
     @Req() req: Request & { user: JwtUser },
     @Body() subscription: CreateSubscriptionDto,
   ) {
-    return this.pushService.subscribe(req.user.id, subscription);
+    return this.pushService.subscribe(
+      (req.user as JwtUser).userId,
+      subscription,
+    );
   }
 
   @Delete('push/unsubscribe')

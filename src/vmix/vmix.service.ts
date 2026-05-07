@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { VmixConnectionManager } from '@/vmix/vmix-connection.manager';
-import { SaveVmixConnectionDto, ChangeInputDto } from '@/vmix/dto/vmix.dto';
+import { SaveVmixConnectionDto } from '@/vmix/dto/vmix.dto';
 import { AuditService, AuditAction } from '@/common/services/audit.service';
 import { formatEngineUrl } from '@/common/utils/engine-url.util';
 
@@ -68,8 +68,8 @@ export class VmixService implements IInputEngine {
     return this.vmixManager.isConnected(productionId);
   }
 
-  async getRealTimeState(productionId: string) {
-    return this.vmixManager.getVmixState(productionId);
+  getRealTimeState(productionId: string) {
+    return Promise.resolve(this.vmixManager.getVmixState(productionId));
   }
 
   // --- vMix Commands --- //
@@ -82,7 +82,7 @@ export class VmixService implements IInputEngine {
       });
 
       // Audit Trail
-      this.auditService.log({
+      void this.auditService.log({
         productionId,
         action: AuditAction.SCENE_CHANGE,
         details: { engine: 'vmix', input, target: 'preview' },
@@ -104,7 +104,7 @@ export class VmixService implements IInputEngine {
       await this.vmixManager.sendCommand(productionId, 'Cut');
 
       // Audit Trail
-      this.auditService.log({
+      void this.auditService.log({
         productionId,
         action: AuditAction.SCENE_CHANGE,
         details: { engine: 'vmix', action: 'cut', target: 'program' },
@@ -127,7 +127,7 @@ export class VmixService implements IInputEngine {
       await this.vmixManager.sendCommand(productionId, 'Fade', params);
 
       // Audit Trail
-      this.auditService.log({
+      void this.auditService.log({
         productionId,
         action: AuditAction.SCENE_CHANGE,
         details: {
@@ -195,7 +195,8 @@ export class VmixService implements IInputEngine {
   }
 
   async toggleSolo(productionId: string, input?: number) {
-    if (input === undefined) return { success: true, message: 'Solo not supported on Master' };
+    if (input === undefined)
+      return { success: true, message: 'Solo not supported on Master' };
     try {
       // Input Solo Toggle (Master doesn't have Solo in vMix API usually)
       await this.vmixManager.sendCommand(productionId, 'Solo', {
@@ -213,7 +214,8 @@ export class VmixService implements IInputEngine {
 
   async setGain(productionId: string, input?: number, value?: number) {
     if (value === undefined) throw new BadRequestException('Value is required');
-    if (input === undefined) return { success: true, message: 'Gain not supported on Master' };
+    if (input === undefined)
+      return { success: true, message: 'Gain not supported on Master' };
     try {
       // Individual Input Gain (Master doesn't have Gain in vMix API SetGain)
       await this.vmixManager.sendCommand(productionId, 'SetGain', {
@@ -232,7 +234,8 @@ export class VmixService implements IInputEngine {
 
   async toggleBus(productionId: string, input?: number, bus?: string) {
     if (!bus) throw new BadRequestException('Bus is required');
-    if (input === undefined) return { success: true, message: 'Bus routing not supported on Master' };
+    if (input === undefined)
+      return { success: true, message: 'Bus routing not supported on Master' };
     try {
       // vMix Command format: AudioBusOn/AudioBusOff or AudioBus (toggle)
       // vMix API uses 'AudioBus' command to toggle a specific bus for an input

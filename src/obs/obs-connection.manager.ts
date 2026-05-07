@@ -8,7 +8,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import OBSWebSocket from 'obs-websocket-js';
 import { PrismaService } from '@/prisma/prisma.service';
 import { OnEvent } from '@nestjs/event-emitter';
-import { EngineType, ProductionStatus } from '@prisma/client';
+import { EngineType } from '@prisma/client';
 
 import { ProductionHealthStats } from '@/streaming/streaming.types';
 
@@ -43,8 +43,7 @@ interface ObsInstance {
 @Injectable()
 export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ObsConnectionManager.name);
-  private readonly MAX_RECONNECT_ATTEMPTS = 50; // Allow sufficient attempts for transient network issues
-  // Map of productionId -> ObsInstance
+  private readonly MAX_RECONNECT_ATTEMPTS = 50;
   private connections = new Map<string, ObsInstance>();
 
   constructor(
@@ -57,23 +56,20 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     await this.loadAllConnections();
   }
 
-  async onModuleDestroy() {
+  onModuleDestroy() {
     this.logger.log('Destroying OBS Connection Manager...');
     for (const [productionId, instance] of this.connections.entries()) {
       this.disconnectInstance(productionId, instance);
     }
   }
 
-  /**
-   * Load and connect all enabled OBS configurations from the database.
-   */
   private async loadAllConnections() {
     const obsConnections = await this.prisma.obsConnection.findMany({
       where: { isEnabled: true },
     });
 
     for (const config of obsConnections) {
-      this.connectObs(
+      void this.connectObs(
         config.productionId,
         config.url,
         config.password || undefined,
@@ -82,12 +78,14 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
   }
 
   async connectObs(productionId: string, url: string, password?: string) {
-    // Clean up existing connection if there is one
     const existing = this.connections.get(productionId);
     if (existing) {
-      const isSameConfig = existing.url === url && existing.password === password;
+      const isSameConfig =
+        existing.url === url && existing.password === password;
       if (isSameConfig && (existing.isConnected || existing.reconnectTimeout)) {
-        this.logger.debug(`OBS already connected or reconnecting with same config for ${productionId}. Skipping.`);
+        this.logger.debug(
+          `OBS already connected or reconnecting with same config for ${productionId}. Skipping.`,
+        );
         return;
       }
       this.disconnectInstance(productionId, existing);
@@ -96,14 +94,13 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     const obs = new OBSWebSocket();
     const instance: ObsInstance = {
       obs,
-      url, // Store URL in instance for comparison
-      password, // Store password in instance for comparison
+      url,
+      password,
       isConnected: false,
       reconnectAttempts: existing?.reconnectAttempts || 0,
     };
     this.connections.set(productionId, instance);
 
-    // Setup Event Listeners
     obs.on('ConnectionClosed', (error) => {
       this.logger.warn(
         `OBS connection closed for production ${productionId}: ${error?.message || 'Unknown'} | code=${error?.code ?? 'n/a'}`,
@@ -111,9 +108,6 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       instance.isConnected = false;
       this.scheduleReconnect(productionId, url, password);
 
-      // Only emit "disconnected" to UI if we don't have a pending timeout soon
-      // or if it's a fatal close. For now, we allow the frontend grace period to handle micro-drops,
-      // but we ensure we don't spam the event if we are mid-reconnect.
       if (instance.reconnectAttempts >= this.MAX_RECONNECT_ATTEMPTS) {
         this.eventEmitter.emit('obs.connection.state', {
           productionId,
@@ -129,7 +123,6 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       );
     });
 
-    // OBS Domain Events forwarding
     obs.on('CurrentProgramSceneChanged', (data) => {
       if (instance.lastState) {
         instance.lastState.currentScene = data.sceneName;
@@ -162,25 +155,26 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       });
     });
 
-    obs.on('SceneListChanged', async () => {
-      try {
-        const sceneList = await obs.call('GetSceneList');
-        if (instance.lastState) {
-          instance.lastState.scenes = (
-            sceneList.scenes as unknown as ObsScene[]
-          ).map((s) => s.sceneName);
-          instance.lastState.currentScene = sceneList.currentProgramSceneName;
+    obs.on('SceneListChanged', () => {
+      void (async () => {
+        try {
+          const sceneList = await obs.call('GetSceneList');
+          if (instance.lastState) {
+            instance.lastState.scenes = (
+              sceneList.scenes as unknown as ObsScene[]
+            ).map((s) => s.sceneName);
+            instance.lastState.currentScene = sceneList.currentProgramSceneName;
+          }
+          this.eventEmitter.emit('obs.scene.changed', {
+            productionId,
+            sceneName: sceneList.currentProgramSceneName,
+          });
+        } catch (e: unknown) {
+          this.logger.error(
+            `Failed to refresh scene list for production ${productionId}: ${e instanceof Error ? e.message : String(e)}`,
+          );
         }
-        // We might want to emit a full state update here but usually scenes list is enough
-        this.eventEmitter.emit('obs.scene.changed', {
-          productionId,
-          sceneName: sceneList.currentProgramSceneName,
-        });
-      } catch (e: unknown) {
-        this.logger.error(
-          `Failed to refresh scene list for production ${productionId}: ${e instanceof Error ? e.message : String(e)}`,
-        );
-      }
+      })();
     });
 
     try {
@@ -189,11 +183,9 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
         `Successfully connected to OBS for production ${productionId} (${url})`,
       );
 
-      // Mark as connected IMMEDIATELY after handshake
       instance.isConnected = true;
-      instance.reconnectAttempts = 0; // Reset attempts on success
+      instance.reconnectAttempts = 0;
 
-      // Clear any reconnect timeouts
       if (instance.reconnectTimeout) {
         clearTimeout(instance.reconnectTimeout);
         instance.reconnectTimeout = undefined;
@@ -203,12 +195,10 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
         connected: true,
       });
 
-      // Start health loops as soon as transport is up.
       this.startStatsPolling(productionId, instance);
       this.startHeartbeat(productionId, instance);
       this.startScreenshotPolling(productionId, instance);
 
-      // Best-effort metadata bootstrap.
       try {
         const [
           sceneListRes,
@@ -295,9 +285,6 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Disconnect and clean up an OBS instance.
-   */
   private disconnectInstance(productionId: string, instance: ObsInstance) {
     if (instance.reconnectTimeout) {
       clearTimeout(instance.reconnectTimeout);
@@ -305,7 +292,6 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     this.stopStatsPolling(instance);
     this.stopHeartbeat(instance);
     this.stopScreenshotPolling(instance);
-    // Remove listeners to prevent memory leaks or unwanted reconnects during manual disconnect
     instance.obs.removeAllListeners();
     instance.obs.disconnect().catch(() => {});
     this.connections.delete(productionId);
@@ -315,26 +301,20 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  /**
-   * Manually disconnect (e.g., when a user disables the connection).
-   */
-  async disconnectObs(productionId: string) {
+  disconnectObs(productionId: string) {
     const instance = this.connections.get(productionId);
     if (instance) {
       this.disconnectInstance(productionId, instance);
     }
   }
 
-  /**
-   * Schedule a reconnection attempt.
-   */
   private scheduleReconnect(
     productionId: string,
     url: string,
     password?: string,
   ) {
     const instance = this.connections.get(productionId);
-    if (!instance) return; // Production was probably removed/disabled manually
+    if (!instance) return;
 
     if (instance.reconnectTimeout) {
       this.logger.debug(
@@ -351,7 +331,6 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    // Exponential backoff: 2s, 4s, 8s, 16s, up to 30s max
     const delay = Math.min(
       Math.pow(2, instance.reconnectAttempts) * 1000,
       30000,
@@ -363,27 +342,26 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
 
     instance.reconnectTimeout = setTimeout(() => {
       instance.reconnectTimeout = undefined;
-      this.connectObs(productionId, url, password);
+      void this.connectObs(productionId, url, password);
     }, delay);
   }
 
   private startHeartbeat(productionId: string, instance: ObsInstance) {
     this.stopHeartbeat(instance);
-    instance.heartbeatInterval = setInterval(async () => {
-      if (!instance.isConnected) return;
-      try {
-        // Simple call to check if connection is still alive
-        await instance.obs.call('GetVersion');
-      } catch (e: unknown) {
-        this.logger.warn(
-          `Heartbeat failed for OBS (Production: ${productionId}), marking as disconnected.`,
-        );
-        instance.isConnected = false;
-        // The ConnectionClosed event might not fire immediately, so we force-close
-        instance.obs.disconnect().catch(() => {});
-        // ConnectionClosed listener will trigger scheduleReconnect
-      }
-    }, 10000); // 10s heartbeat
+    instance.heartbeatInterval = setInterval(() => {
+      void (async () => {
+        if (!instance.isConnected) return;
+        try {
+          await instance.obs.call('GetVersion');
+        } catch {
+          this.logger.warn(
+            `Heartbeat failed for OBS (Production: ${productionId}), marking as disconnected.`,
+          );
+          instance.isConnected = false;
+          instance.obs.disconnect().catch(() => {});
+        }
+      })();
+    }, 10000);
   }
 
   private stopHeartbeat(instance: ObsInstance) {
@@ -393,9 +371,6 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Listen for external connection updates
-   */
   @OnEvent('engine.connection.update')
   handleConnectionUpdate(payload: {
     productionId: string;
@@ -407,7 +382,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       this.logger.log(
         `Received connection update for production ${payload.productionId} (OBS)`,
       );
-      this.connectObs(payload.productionId, payload.url, payload.password);
+      void this.connectObs(payload.productionId, payload.url, payload.password);
     }
   }
 
@@ -417,46 +392,47 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       `Starting Technical Stats Polling for production ${productionId} (OBS)`,
     );
 
-    instance.statsInterval = setInterval(async () => {
-      try {
-        if (!instance.isConnected) return;
-        const [stats, streamStatus] = await Promise.all([
-          instance.obs.call('GetStats'),
-          instance.obs.call('GetStreamStatus'),
-        ]);
+    instance.statsInterval = setInterval(() => {
+      void (async () => {
+        try {
+          if (!instance.isConnected) return;
+          const [stats, streamStatus] = await Promise.all([
+            instance.obs.call('GetStats'),
+            instance.obs.call('GetStreamStatus'),
+          ]);
 
-        if (instance.lastState) {
-          instance.lastState.cpuUsage = stats.cpuUsage;
-          instance.lastState.outputSkippedFrames =
-            streamStatus.outputSkippedFrames;
-          instance.lastState.outputTotalFrames = streamStatus.outputTotalFrames;
-          // Note: obs-websocket-js v5 streamStatus might not have 'kbitrate' directly in every version,
-          // but we focus on cpu and drops if available.
+          if (instance.lastState) {
+            instance.lastState.cpuUsage = stats.cpuUsage;
+            instance.lastState.outputSkippedFrames =
+              streamStatus.outputSkippedFrames;
+            instance.lastState.outputTotalFrames =
+              streamStatus.outputTotalFrames;
+          }
+
+          const recordStatus = await instance.obs.call('GetRecordStatus');
+
+          const healthStats: ProductionHealthStats = {
+            productionId,
+            engineType: EngineType.OBS,
+            cpuUsage: stats.cpuUsage,
+            fps: stats.activeFps,
+            bitrate: streamStatus.outputActive ? 5500 : 0,
+            skippedFrames: streamStatus.outputSkippedFrames || 0,
+            totalFrames: streamStatus.outputTotalFrames || 0,
+            memoryUsage: stats.memoryUsage,
+            availableDiskSpace: stats.availableDiskSpace,
+            isStreaming: streamStatus.outputActive,
+            isRecording: recordStatus.outputActive,
+            timestamp: new Date().toISOString(),
+          };
+
+          this.eventEmitter.emit('production.health.stats', healthStats);
+        } catch (e: unknown) {
+          this.logger.error(
+            `Error polling OBS stats for ${productionId}: ${e instanceof Error ? e.message : String(e)}`,
+          );
         }
-
-        const recordStatus = await instance.obs.call('GetRecordStatus');
-
-        const healthStats: ProductionHealthStats = {
-          productionId,
-          engineType: EngineType.OBS,
-          cpuUsage: stats.cpuUsage,
-          fps: stats.activeFps,
-          bitrate: streamStatus.outputActive ? 5500 : 0, // Placeholder bitate in kbps
-          skippedFrames: streamStatus.outputSkippedFrames || 0,
-          totalFrames: streamStatus.outputTotalFrames || 0,
-          memoryUsage: stats.memoryUsage,
-          availableDiskSpace: stats.availableDiskSpace, // Added disk space
-          isStreaming: streamStatus.outputActive,
-          isRecording: recordStatus.outputActive,
-          timestamp: new Date().toISOString(),
-        };
-
-        this.eventEmitter.emit('production.health.stats', healthStats);
-      } catch (e: unknown) {
-        this.logger.error(
-          `Error polling OBS stats for ${productionId}: ${e instanceof Error ? e.message : String(e)}`,
-        );
-      }
+      })();
     }, 2000);
   }
 
@@ -467,17 +443,11 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Get the underlying OBS WebSocket instance for a production.
-   */
   getInstance(productionId: string): OBSWebSocket | undefined {
     const instance = this.connections.get(productionId);
     return instance?.isConnected ? instance.obs : undefined;
   }
 
-  /**
-   * Get the latest known state for a production's OBS connection.
-   */
   getObsState(productionId: string) {
     const instance = this.connections.get(productionId);
     if (!instance) return { isConnected: false };
@@ -490,75 +460,73 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
 
   private startScreenshotPolling(productionId: string, instance: ObsInstance) {
     this.stopScreenshotPolling(instance);
-    
-    // Polling interval for screenshots (e.g., 2 seconds)
-    instance.screenshotInterval = setInterval(async () => {
-      if (!instance.isConnected) return;
 
-      try {
-        // Try to get current scenes dynamically for more robustness
-        const [streamStatus, sceneList] = await Promise.all([
-           instance.obs.call('GetStreamStatus'),
-           instance.obs.call('GetSceneList')
-        ]);
+    instance.screenshotInterval = setInterval(() => {
+      void (async () => {
+        if (!instance.isConnected) return;
 
-        const programScene = sceneList.currentProgramSceneName;
-        const previewScene = sceneList.currentPreviewSceneName;
+        try {
+          const sceneList = await instance.obs.call('GetSceneList');
 
-        const screenshotOptions = {
-          imageFormat: 'jpeg',
-          imageWidth: 480, 
-          imageHeight: 270,
-          imageCompressionQuality: 80
-        };
+          const programScene = sceneList.currentProgramSceneName;
+          const previewScene = sceneList.currentPreviewSceneName;
 
-        const requests: Promise<{ imageData: string }>[] = [];
-        if (programScene) {
-          requests.push(instance.obs.call('GetSourceScreenshot', {
-            sourceName: programScene,
-            ...screenshotOptions
-          }) as Promise<{ imageData: string }>);
+          const screenshotOptions = {
+            imageFormat: 'jpeg',
+            imageWidth: 480,
+            imageHeight: 270,
+            imageCompressionQuality: 80,
+          };
+
+          const requests: Promise<{ imageData: string }>[] = [];
+          if (programScene) {
+            requests.push(
+              instance.obs.call('GetSourceScreenshot', {
+                sourceName: programScene,
+                ...screenshotOptions,
+              }) as Promise<{ imageData: string }>,
+            );
+          }
+          if (previewScene) {
+            requests.push(
+              instance.obs.call('GetSourceScreenshot', {
+                sourceName: previewScene,
+                ...screenshotOptions,
+              }) as Promise<{ imageData: string }>,
+            );
+          }
+
+          const results = await Promise.allSettled(requests);
+
+          const payload: {
+            productionId: string;
+            programScene: string;
+            previewScene?: string;
+            program?: string;
+            preview?: string;
+          } = {
+            productionId,
+            programScene: programScene ?? '',
+            previewScene: previewScene ?? undefined,
+          };
+
+          if (results[0]?.status === 'fulfilled') {
+            payload.program = `data:image/jpeg;base64,${results[0].value.imageData}`;
+          }
+
+          if (results[1] && results[1].status === 'fulfilled') {
+            payload.preview = `data:image/jpeg;base64,${results[1].value.imageData}`;
+          } else if (!previewScene && payload.program) {
+            payload.preview = payload.program;
+          }
+
+          if (payload.program || payload.preview) {
+            this.eventEmitter.emit('obs.screenshot.update', payload);
+          }
+        } catch {
+          // Silent error for screenshots to avoid spamming logs
         }
-        if (previewScene) {
-          requests.push(instance.obs.call('GetSourceScreenshot', {
-            sourceName: previewScene,
-            ...screenshotOptions
-          }) as Promise<{ imageData: string }>);
-        }
-
-        const results = await Promise.allSettled(requests);
-
-        const payload: {
-          productionId: string;
-          programScene: string;
-          previewScene: string;
-          program?: string;
-          preview?: string;
-        } = {
-          productionId,
-          programScene,
-          previewScene,
-        };
-
-        if (results[0]?.status === 'fulfilled') {
-          payload.program = `data:image/jpeg;base64,${results[0].value.imageData}`;
-        }
-
-        // If results[1] exists, it's the preview
-        if (results[1] && results[1].status === 'fulfilled') {
-          payload.preview = `data:image/jpeg;base64,${results[1].value.imageData}`;
-        } else if (!previewScene && payload.program) {
-          // If no studio mode, preview is often same or last program
-          payload.preview = payload.program;
-        }
-
-        if (payload.program || payload.preview) {
-          this.eventEmitter.emit('obs.screenshot.update', payload);
-        }
-
-      } catch (err: unknown) {
-        // Silent error for screenshots to avoid spamming logs
-      }
+      })();
     }, 2000);
   }
 

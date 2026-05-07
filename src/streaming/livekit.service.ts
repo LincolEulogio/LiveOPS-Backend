@@ -28,11 +28,7 @@ export class LiveKitService {
     const httpUrl = this.livekitUrl.replace(/^ws/, 'http');
 
     // Initialize EgressClient
-    this.egressClient = new EgressClient(
-      httpUrl,
-      this.apiKey,
-      this.apiSecret,
-    );
+    this.egressClient = new EgressClient(httpUrl, this.apiKey, this.apiSecret);
 
     // Initialize RoomServiceClient
     this.roomClient = new RoomServiceClient(
@@ -54,7 +50,9 @@ export class LiveKitService {
       });
       this.logger.log(`Room ${roomId} created or verified.`);
     } catch (error: unknown) {
-      this.logger.error(`Error ensuring room exists: ${error}`);
+      this.logger.error(
+        `Error ensuring room exists: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 

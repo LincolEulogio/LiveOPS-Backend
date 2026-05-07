@@ -105,15 +105,18 @@ export class GuestService {
     // Permitimos reutilizar el mismo link mientras no haya expirado.
     // Esto habilita reingreso tras recarga o reconexión del invitado sin bloquear el acceso.
 
-    this.logger.log(`Token validated successfully for: ${invitation.guestName}`);
+    this.logger.log(
+      `Token validated successfully for: ${invitation.guestName}`,
+    );
     return invitation;
   }
 
   async activateGuest(token: string) {
     try {
-      this.logger.debug(`Attempting to activate token: ${token.substring(0, 8)}...`);
+      this.logger.debug(
+        `Attempting to activate token: ${token.substring(0, 8)}...`,
+      );
       const invitation = await this.validateToken(token);
-      
       const updated = await this.prisma.guestInvitation.update({
         where: { token: token },
         data: { status: 'ACTIVE' },
@@ -121,10 +124,15 @@ export class GuestService {
 
       await this.emitGuestSlotsUpdated(invitation.productionId);
 
-      this.logger.log(`Guest activation successful for: ${invitation.guestName}`);
+      this.logger.log(
+        `Guest activation successful for: ${invitation.guestName}`,
+      );
       return updated;
     } catch (error: unknown) {
-      this.logger.error(`FAILED to activate guest: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
+      this.logger.error(
+        `FAILED to activate guest: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw error;
     }
   }
@@ -228,7 +236,7 @@ export class GuestService {
       data: {
         productionId,
         eventType: this.SLOT_CONFIG_EVENT,
-        details: envelope as Prisma.InputJsonValue,
+        details: envelope as unknown as Prisma.InputJsonValue,
       },
     });
   }

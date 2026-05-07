@@ -16,7 +16,7 @@ interface WebhookType {
   productionId: string;
   name: string;
   url: string;
-  platform: string;
+  platform: NotificationPlatform;
   isEnabled: boolean;
 }
 
@@ -43,13 +43,17 @@ export class NotificationsService {
       where: {
         productionId,
         isEnabled: true,
-        ...(options?.platform && options.platform !== NotificationPlatform.PUSH ? { platform: options.platform } : {}),
+        ...(options?.platform && options.platform !== NotificationPlatform.PUSH
+          ? { platform: options.platform }
+          : {}),
       },
     });
 
     if (webhooks.length > 0) {
       await Promise.allSettled(
-        webhooks.map((webhook) => this.dispatchWebhook(webhook, message)),
+        webhooks.map((webhook) =>
+          this.dispatchWebhook(webhook as WebhookType, message),
+        ),
       );
     }
 

@@ -12,7 +12,6 @@ import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
 import {
   IVideoEngine,
   ISceneEngine,
-  IInputEngine,
 } from './interfaces/video-engine.interface';
 import { Production, StreamingDestination } from '@prisma/client';
 
@@ -25,7 +24,7 @@ export class StreamingService {
     private obsService: ObsService,
     private vmixService: VmixService,
     private liveKitService: LiveKitService,
-  ) { }
+  ) {}
 
   private getEngine(production: Production): IVideoEngine {
     if (production.engineType === 'OBS') return this.obsService;
@@ -182,17 +181,50 @@ export class StreamingService {
       case 'VMIX_FADE':
         return this.executeEngineMethod(engine, 'fade', productionId);
       case 'VMIX_SELECT_INPUT':
-        return this.executeEngineMethod(engine, 'changeInput', productionId, payload?.input as number);
+        return this.executeEngineMethod(
+          engine,
+          'changeInput',
+          productionId,
+          payload?.input as number,
+        );
       case 'VMIX_SET_VOLUME':
-        return this.executeEngineMethod(engine, 'setVolume', productionId, payload?.input, payload?.value);
+        return this.executeEngineMethod(
+          engine,
+          'setVolume',
+          productionId,
+          payload?.input,
+          payload?.value,
+        );
       case 'VMIX_TOGGLE_MUTE':
-        return this.executeEngineMethod(engine, 'toggleMute', productionId, payload?.input);
+        return this.executeEngineMethod(
+          engine,
+          'toggleMute',
+          productionId,
+          payload?.input,
+        );
       case 'VMIX_TOGGLE_SOLO':
-        return this.executeEngineMethod(engine, 'toggleSolo', productionId, payload?.input);
+        return this.executeEngineMethod(
+          engine,
+          'toggleSolo',
+          productionId,
+          payload?.input,
+        );
       case 'VMIX_SET_GAIN':
-        return this.executeEngineMethod(engine, 'setGain', productionId, payload?.input, payload?.value);
+        return this.executeEngineMethod(
+          engine,
+          'setGain',
+          productionId,
+          payload?.input,
+          payload?.value,
+        );
       case 'VMIX_TOGGLE_BUS':
-        return this.executeEngineMethod(engine, 'toggleBus', productionId, payload?.input, payload?.bus);
+        return this.executeEngineMethod(
+          engine,
+          'toggleBus',
+          productionId,
+          payload?.input,
+          payload?.bus,
+        );
       case 'START_DESTINATION':
       case 'STOP_DESTINATION':
         return { success: true, destId: payload?.destId as string };
@@ -201,20 +233,39 @@ export class StreamingService {
     }
   }
 
-  private async handleChangeScene(engine: IVideoEngine, productionId: string, sceneName?: string) {
+  private async handleChangeScene(
+    engine: IVideoEngine,
+    productionId: string,
+    sceneName?: string,
+  ) {
     if (!sceneName) {
       throw new BadRequestException('sceneName is required');
     }
     if ('changeScene' in engine) {
-      return (engine as unknown as ISceneEngine).changeScene(productionId, sceneName);
+      return (engine as unknown as ISceneEngine).changeScene(
+        productionId,
+        sceneName,
+      );
     }
     throw new BadRequestException('CHANGE_SCENE not supported by this engine');
   }
 
-  private async executeEngineMethod(engine: IVideoEngine, method: string, productionId: string, ...args: unknown[]) {
+  private async executeEngineMethod(
+    engine: IVideoEngine,
+    method: string,
+    productionId: string,
+    ...args: unknown[]
+  ) {
     if (method in engine) {
-      return (engine as unknown as Record<string, (id: string, ...a: unknown[]) => Promise<unknown>>)[method](productionId, ...args);
+      return (
+        engine as unknown as Record<
+          string,
+          (id: string, ...a: unknown[]) => Promise<unknown>
+        >
+      )[method](productionId, ...args);
     }
-    throw new BadRequestException(`${method.toUpperCase()} not supported by this engine`);
+    throw new BadRequestException(
+      `${method.toUpperCase()} not supported by this engine`,
+    );
   }
 }

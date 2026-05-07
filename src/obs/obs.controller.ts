@@ -42,7 +42,7 @@ export class ObsController {
     @Param('productionId') productionId: string,
     @Body() dto: ChangeSceneDto,
   ) {
-    return this.obsService.changeScene(productionId, dto);
+    return this.obsService.changeScene(productionId, dto.sceneName);
   }
 
   @Post('stream/start')

@@ -47,7 +47,7 @@ export class AiController {
 
   @Post('chat-stream')
   @Permissions('production:view')
-  async streamChat(
+  streamChat(
     @Res() res: Response,
     @Body()
     body: {
@@ -55,7 +55,7 @@ export class AiController {
       context: string;
     },
   ) {
-    const result = await this.aiService.streamChat(body.history, body.context);
+    const result = this.aiService.streamChat(body.history, body.context);
     result.pipeTextStreamToResponse(res);
   }
 

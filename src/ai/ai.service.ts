@@ -47,9 +47,9 @@ interface TimelineBlock {
 }
 
 interface IntercomCommand {
-  message?: string;
-  sender?: { name?: string };
-  template?: { name?: string };
+  message?: string | null;
+  sender?: { name?: string | null };
+  template?: { name?: string | null } | null;
 }
 
 interface ShowData {
@@ -58,7 +58,7 @@ interface ShowData {
   topics: string;
 }
 
-interface SeoPackage {
+export interface SeoPackage {
   youtube: { title: string; description: string; tags: string[] };
   social: { tweet: string; linkedin: string };
   chapters: { time: string; title: string }[];
@@ -67,11 +67,11 @@ interface SeoPackage {
 interface MacroDefinition {
   name: string;
   description: string;
-  triggers: { eventType: string; condition: Record<string, unknown> }[];
-  actions: { actionType: string; payload: Record<string, unknown> }[];
+  triggers: { eventType: string; condition?: Record<string, unknown> }[];
+  actions: { actionType: string; payload?: Record<string, unknown> }[];
 }
 
-interface DirectionResult {
+export interface DirectionResult {
   response: string;
   actions: unknown[];
 }
@@ -90,7 +90,7 @@ export class AiService implements OnModuleInit {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  async onModuleInit() {
+  onModuleInit() {
     const rawApiKey = this.configService.get<string>('GEMINI_API_KEY');
     const apiKey = rawApiKey?.replace(/["']/g, '').trim();
 
@@ -105,10 +105,12 @@ export class AiService implements OnModuleInit {
       const google = createGoogleGenerativeAI({ apiKey });
       this.googleModel = google('gemini-2.5-flash');
       this.logger.log(
-        `LIVIA AI SDK Node synchronized: gemini-2.5-flash (2026 Series)`,
+        'LIVIA AI SDK Node synchronized: gemini-2.5-flash (2026 Series)',
       );
     } catch (error: unknown) {
-      this.logger.error(`AI SDK initialization failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `AI SDK initialization failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -139,13 +141,17 @@ export class AiService implements OnModuleInit {
       this.logger.debug(`Successfully generated ${text.length} characters.`);
       return text;
     } catch (error: unknown) {
-      const msg = String(error instanceof Error ? error.message : error || '').toLowerCase();
+      const msg = (
+        error instanceof Error ? error.message : String(error)
+      ).toLowerCase();
       if (
         msg.includes('quota exceeded') ||
         msg.includes('rate limit') ||
         msg.includes('too many requests')
       ) {
-        const retryMs = this.extractRetryMs(error instanceof Error ? error.message : '');
+        const retryMs = this.extractRetryMs(
+          error instanceof Error ? error.message : '',
+        );
         this.quotaBackoffUntil = Date.now() + retryMs;
         this.logger.warn(
           `AI quota/rate limited. Enabling cooldown for ${Math.ceil(retryMs / 1000)}s.`,
@@ -155,9 +161,12 @@ export class AiService implements OnModuleInit {
         );
       }
 
-      const errMsg = error instanceof Error ? error.message : 'Unknown provider error';
+      const errMsg =
+        error instanceof Error ? error.message : 'Unknown provider error';
       this.logger.error(`AI Core Failure: ${errMsg}`);
-      throw new InternalServerErrorException(`LIVIA Intelligence error: ${errMsg}`);
+      throw new InternalServerErrorException(
+        `LIVIA Intelligence error: ${errMsg}`,
+      );
     }
   }
 
@@ -184,24 +193,24 @@ export class AiService implements OnModuleInit {
     const prompt = `
       Eres un director de producción técnica experto. Analiza el siguiente log de telemetría de una producción en vivo y genera un resumen ejecutivo profesional.
       Enfócate en la estabilidad del stream, el uso de recursos y cualquier anomalía detectada.
-      
+
       Métricas del Show:
       - Duración: ${Math.round(metrics.durationMs / 60000)} minutos
       - FPS Promedio: ${metrics.avgFps.toFixed(2)}
       - Uso Máximo de CPU: ${metrics.maxCpu.toFixed(2)}%
       - Total de Cuadros Perdidos (Dropped Frames): ${metrics.totalDroppedFrames}
       - Muestras de telemetría: ${metrics.samples}
-      
+
       Instrucciones:
       1. Sé conciso pero informativo.
       2. Si los cuadros perdidos son altos, sugiere posibles causas (red, codificador).
       3. Si el CPU es alto, advierte sobre la carga del sistema.
       4. Termina con una "Puntuación de Salud del Show" del 1 al 10.
-      
+
       Responde en Español.
     `;
     const result = await this.generateText(prompt);
-    await this.cacheManager.set(cacheKey, result, 3600000); // Cache for 1 hour
+    await this.cacheManager.set(cacheKey, result, 3600000);
     return result;
   }
 
@@ -231,17 +240,17 @@ export class AiService implements OnModuleInit {
   ): Promise<string> {
     const prompt = `
       Eres un asistente de producción creativa para un programa en vivo.
-      Basado en el título del bloque y el contenido actual, genera 3 puntos clave (talking points) 
+      Basado en el título del bloque y el contenido actual, genera 3 puntos clave (talking points)
       y una sugerencia de acción de cámara o visual para este segmento.
-      
+
       Segmento: "${title}"
       Notas Actuales: "${currentContent}"
-      
+
       Instrucciones:
       1. Sé conciso, directo y profesional.
       2. Genera 3 bullet points con ideas clave para el presentador.
       3. Añade una sección "Visual/Cámara" con una recomendación técnica.
-      
+
       Responde en Español.
     `;
     return this.generateText(prompt);
@@ -255,56 +264,53 @@ export class AiService implements OnModuleInit {
     const prompt = `
       Eres LIVIA, la IA de control de dirección de LiveOPS.
       Analiza el estado actual de la producción:
-      
+
       - Social: ${data.social}
       - Telemetría: ${data.telemetry}
       - Guion: ${data.script}
-      
+
       Instrucciones:
       1. Genera un "Short Briefing" (3-4 líneas) sobre cómo va el show.
       2. Si hay problemas técnicos, identifícalos.
       3. Identifica el "Top Sentiment" de la audiencia.
       4. Sugiere la próxima acción para el director.
-      
+
       Formato:
       STATUS: [Resumen]
       ALERTS: [Problemas o "All Clear"]
       MOOD: [Sentimiento]
       NEXT: [Sugerencia]
-      
+
       Responde en Español de forma ejecutiva.
     `;
     return this.generateText(prompt);
   }
 
-  async streamChat(
+  streamChat(
     history: { role: 'user' | 'assistant' | 'system'; content: string }[],
     systemContext: string,
-  ): Promise<ReturnType<typeof streamText>> {
+  ): ReturnType<typeof streamText> {
     if (!this.googleModel) {
       throw new ServiceUnavailableException(
         'LIVIA AI Node is not configured or API Key is missing.',
       );
     }
 
-    try {
-      const messages = [
-        { role: 'system' as const, content: systemContext },
-        ...history.map((m) => ({
-          role: m.role === 'assistant' ? 'assistant' : 'user',
-          content: m.content,
-        })),
-      ];
+    const messages: {
+      role: 'system' | 'user' | 'assistant';
+      content: string;
+    }[] = [
+      { role: 'system', content: systemContext },
+      ...history.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
+    ];
 
-      return streamText({
-        model: this.googleModel,
-        messages,
-      });
-    } catch (error: unknown) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`AI Stream Chat Failure: ${errMsg}`);
-      throw new InternalServerErrorException(`LIVIA Intelligence error: ${errMsg}`);
-    }
+    return streamText({
+      model: this.googleModel,
+      messages,
+    });
   }
 
   async chat(
@@ -342,9 +348,17 @@ export class AiService implements OnModuleInit {
     name: string,
     type: string,
     mimeType: string,
-  ): Promise<{ tags: string[]; description: string; colors?: string[] }> {
+  ): Promise<{
+    tags: string[];
+    description: string;
+    colors?: string[];
+  }> {
     const cacheKey = `media_analysis_${name}_${type}_${mimeType}`;
-    const cached = await this.cacheManager.get<{ tags: string[]; description: string; colors?: string[] }>(cacheKey);
+    const cached = await this.cacheManager.get<{
+      tags: string[];
+      description: string;
+      colors?: string[];
+    }>(cacheKey);
     if (cached) {
       this.logger.debug(`Returning cached analysis for media asset: ${name}`);
       return cached;
@@ -353,16 +367,16 @@ export class AiService implements OnModuleInit {
     if (!this.googleModel) return { tags: [], description: 'AI node offline' };
 
     const prompt = `Analiza este recurso multimedia para una producción en vivo y genera etiquetas y descripción.
-        
+
         Nombre: ${name}
         Tipo: ${type}
         MIME: ${mimeType}
-        
+
         Instrucciones:
         1. Genera 5-8 etiquetas (tags) relevantes.
         2. Escribe una descripción de una línea.
         3. Si puedes inferir colores predominantes por el nombre, inclúyelos.
-        
+
         Responde SOLO en formato JSON:
         { "tags": ["tag1", "tag2"], "description": "...", "colors": ["#...", "#..."] }`;
 
@@ -376,7 +390,7 @@ export class AiService implements OnModuleInit {
         }),
         prompt,
       });
-      await this.cacheManager.set(cacheKey, object, 86400000); // Cache for 24 hours
+      await this.cacheManager.set(cacheKey, object, 86400000);
       return object;
     } catch (e: unknown) {
       this.logger.error('Failed to analyze media asset:', e);
@@ -392,10 +406,10 @@ export class AiService implements OnModuleInit {
       .map((c) => `${c.sender?.name}: ${c.message}`)
       .join('\n');
     const prompt = `Resume la actividad técnica reciente del Intercom de producción. Sé breve y directo.
-        
+
         Log de Comandos:
         ${historyText}
-        
+
         Instrucciones:
         1. Identifica órdenes críticas.
         2. Resume el tono de la comunicación.
@@ -406,13 +420,13 @@ export class AiService implements OnModuleInit {
 
   async generateAutomationMacro(userInput: string): Promise<MacroDefinition> {
     const prompt = `Convierte la siguiente petición de usuario en una Macro de automatización para LiveOPS.
-        
+
         Petición: "${userInput}"
-        
+
         Sistemas Disponibles:
         - Triggers: "manual.trigger", "telemetry.fps_drop", "social.keyword", "obs.scene_change"
         - Actions: "obs.switch_scene", "vmix.cut", "audio.set_volume", "social.send_to_overlay", "notification.send_push"
-        
+
         Responde SOLO en JSON con este formato:
         {
           "name": "Nombre de la Macro",
@@ -427,8 +441,18 @@ export class AiService implements OnModuleInit {
         schema: z.object({
           name: z.string(),
           description: z.string(),
-          triggers: z.array(z.object({ eventType: z.string(), condition: z.record(z.unknown()).optional() })),
-          actions: z.array(z.object({ actionType: z.string(), payload: z.record(z.unknown()).optional() })),
+          triggers: z.array(
+            z.object({
+              eventType: z.string(),
+              condition: z.record(z.string(), z.unknown()).optional(),
+            }),
+          ),
+          actions: z.array(
+            z.object({
+              actionType: z.string(),
+              payload: z.record(z.string(), z.unknown()).optional(),
+            }),
+          ),
         }),
         prompt,
       });
@@ -448,10 +472,10 @@ export class AiService implements OnModuleInit {
       )
       .join('\n');
     const prompt = `Analiza la tendencia de telemetría y predice fallos inminentes.
-        
+
         Métricas:
         ${metrics}
-        
+
         Responde SOLO en JSON:
         { "alert": "...", "confidence": 0.0-1.0, "suggestedAction": "..." }`;
 
@@ -466,21 +490,23 @@ export class AiService implements OnModuleInit {
         prompt,
       });
       return object;
-    } catch (e: unknown) {
+    } catch {
       return { alert: 'Sin anomalías detectadas', confidence: 0 };
     }
   }
 
-  async suggestSocialHighlights(messages: SocialMessage[]): Promise<{ author: string; content: string; reason: string }[]> {
+  async suggestSocialHighlights(
+    messages: SocialMessage[],
+  ): Promise<{ author: string; content: string; reason: string }[]> {
     const textLog = messages
       .map((m) => `[${m.author}]: ${m.content}`)
       .join('\n');
     const prompt = `Selecciona los 3 mejores mensajes de este chat para mostrar en pantalla durante el show en vivo.
         Busca mensajes positivos, preguntas interesantes o felicitaciones.
-        
+
         Chat:
         ${textLog}
-        
+
         Responde SOLO en JSON:
         { "highlights": [{ "author": "...", "content": "...", "reason": "..." }] }`;
 
@@ -499,7 +525,7 @@ export class AiService implements OnModuleInit {
         prompt,
       });
       return object.highlights;
-    } catch (e: unknown) {
+    } catch {
       return [];
     }
   }
@@ -508,12 +534,12 @@ export class AiService implements OnModuleInit {
     const scheduleText = blocks
       .map((b) => `${b.title} (${b.durationMs / 1000}s) - Status: ${b.status}`)
       .join('\n');
-    const prompt = `Analiza la escaleta de producción y sugiere ajustes de tiempo. 
+    const prompt = `Analiza la escaleta de producción y sugiere ajustes de tiempo.
         Si hay bloques activos excediendo su tiempo, sugiere dónde recortar.
-        
+
         Escaleta:
         ${scheduleText}
-        
+
         Instrucciones:
         1. Identifica si vamos retrasados o adelantados.
         2. Sugiere cambios directos en los próximos 3 bloques.`;
@@ -521,12 +547,14 @@ export class AiService implements OnModuleInit {
     return this.generateText(prompt);
   }
 
-  async suggestScriptHighlights(scriptContent: string): Promise<{ moment: string; type: string; suggestion: string }[]> {
+  async suggestScriptHighlights(
+    scriptContent: string,
+  ): Promise<{ moment: string; type: string; suggestion: string }[]> {
     const prompt = `Analiza el siguiente guion de producción y marca los 2-3 puntos de "Clímax" o momentos clave donde el director debería lanzar efectos especiales o cambios de cámara importantes.
-        
+
         Guion:
         ${scriptContent}
-        
+
         Responde SOLO en JSON:
         { "highlights": [{ "moment": "Texto del momento", "type": "VISUAL/AUDIO", "suggestion": "..." }] }`;
 
@@ -545,19 +573,21 @@ export class AiService implements OnModuleInit {
         prompt,
       });
       return object.highlights;
-    } catch (e: unknown) {
+    } catch {
       return [];
     }
   }
 
-  async generatePostShowSEO(data: ShowData): Promise<SeoPackage | { error: string }> {
+  async generatePostShowSEO(
+    data: ShowData,
+  ): Promise<SeoPackage | { error: string }> {
     const prompt = `Genera un paquete de SEO y redes sociales para la producción terminada.
-        
+
         Datos del Show:
         - Título: ${data.name}
         - Duración: ${data.duration}
         - Temas tratados: ${data.topics}
-        
+
         Responde SOLO en JSON:
         {
           "youtube": { "title": "...", "description": "...", "tags": [] },
@@ -580,14 +610,11 @@ export class AiService implements OnModuleInit {
         prompt,
       });
       return object;
-    } catch (e: unknown) {
+    } catch {
       return { error: 'No se pudo generar el SEO' };
     }
   }
 
-  /**
-   * Procesa una instrucción del director usando herramientas de IA.
-   */
   async processDirection(
     productionId: string,
     userInput: string,
@@ -598,7 +625,7 @@ export class AiService implements OnModuleInit {
 
     const { text, toolResults } = await generateText({
       model: this.googleModel,
-      system: `Eres LIVIA, la asistente de dirección de LiveOPS. 
+      system: `Eres LIVIA, la asistente de dirección de LiveOPS.
       Tienes permiso para realizar acciones técnicas en la producción.
       Si el usuario pide algo que requiere una herramienta, úsala inmediatamente.
       Sé breve y profesional en tus respuestas.`,
@@ -613,9 +640,7 @@ export class AiService implements OnModuleInit {
           }),
           execute: async ({ sceneName }: { sceneName: string }) => {
             this.logger.log(`LIVIA executing scene change: ${sceneName}`);
-            return await this.obsService.changeScene(productionId, {
-              sceneName,
-            });
+            return await this.obsService.changeScene(productionId, sceneName);
           },
         },
         toggleOverlay: {

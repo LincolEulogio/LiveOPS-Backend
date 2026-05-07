@@ -31,10 +31,7 @@ export class VideoCallController {
   /** Create a new call */
   @Post('rooms')
   create(@CurrentUser() user: JwtUser, @Body() dto: CreateVideoCallDto) {
-    return this.videoCallService.create(
-      user.userId,
-      dto,
-    );
+    return this.videoCallService.create(user.userId, dto);
   }
 
   /** Get one call */

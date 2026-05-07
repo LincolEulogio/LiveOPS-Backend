@@ -9,14 +9,11 @@ export interface UserPresence extends PresenceMember {
 @Injectable()
 export class PresenceService {
   private readonly logger = new Logger(PresenceService.name);
-  
   // clientId (socketId) -> Presence data
   private activeSockets: Map<string, UserPresence> = new Map();
-  
   // userId -> Set of clientIds (socketIds)
   // A user can be connected from multiple devices/tabs
   private userToSockets: Map<string, Set<string>> = new Map();
-  
   // productionId -> Set of clientIds (socketIds)
   private productionToSockets: Map<string, Set<string>> = new Map();
 

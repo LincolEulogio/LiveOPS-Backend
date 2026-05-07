@@ -25,7 +25,7 @@ export class ProductionsService {
     private eventEmitter: EventEmitter2,
     private obsService: ObsService,
     private vmixService: VmixService,
-  ) { }
+  ) {}
 
   async create(userId: string, dto: CreateProductionDto) {
     // We assume the creator gets an 'ADMIN' role in this production
@@ -246,7 +246,7 @@ export class ProductionsService {
           this.eventEmitter.emit('engine.connection.update', {
             productionId,
             type: EngineType.OBS,
-            isEnabled: false
+            isEnabled: false,
           });
         }
 
@@ -258,7 +258,7 @@ export class ProductionsService {
           this.eventEmitter.emit('engine.connection.update', {
             productionId,
             type: EngineType.VMIX,
-            isEnabled: false
+            isEnabled: false,
           });
         }
 

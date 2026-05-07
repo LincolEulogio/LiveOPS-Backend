@@ -14,7 +14,7 @@ import { MailerService } from '@/common/services/mailer.service';
     UsersModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET') || 'super-secret',
         signOptions: { expiresIn: '1h' },
       }),

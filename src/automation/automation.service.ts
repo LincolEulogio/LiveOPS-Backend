@@ -1,6 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { CreateRuleDto, UpdateRuleDto, CreateActionDto } from '@/automation/dto/automation.dto';
+import {
+  CreateRuleDto,
+  UpdateRuleDto,
+  CreateActionDto,
+} from '@/automation/dto/automation.dto';
 import { Prisma } from '@prisma/client';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiService } from '@/ai/ai.service';
@@ -88,7 +92,7 @@ export class AutomationService {
     });
   }
 
-  async triggerInstantClip(productionId: string) {
+  triggerInstantClip(productionId: string) {
     // Simply emit the event that the engine is listening for
     this.eventEmitter.emit('manual.trigger', {
       productionId,
@@ -116,6 +120,6 @@ export class AutomationService {
 
   async generateRuleAi(productionId: string, prompt: string) {
     const macro = await this.aiService.generateAutomationMacro(prompt);
-    return this.createRule(productionId, macro);
+    return this.createRule(productionId, macro as unknown as CreateRuleDto);
   }
 }

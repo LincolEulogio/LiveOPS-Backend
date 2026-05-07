@@ -41,7 +41,7 @@ export class VmixController {
     @Param('productionId') productionId: string,
     @Body() dto: ChangeInputDto,
   ) {
-    return this.vmixService.changeInput(productionId, dto);
+    return this.vmixService.changeInput(productionId, dto.input);
   }
 
   @Post('transition/cut')

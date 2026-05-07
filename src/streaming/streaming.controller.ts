@@ -28,7 +28,7 @@ export class StreamingController {
     private readonly streamingService: StreamingService,
     private readonly destinationsService: StreamingDestinationsService,
     private readonly liveKitService: LiveKitService,
-  ) { }
+  ) {}
 
   @Post(':id/token')
   @Permissions('streaming:control')

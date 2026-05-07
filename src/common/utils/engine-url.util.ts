@@ -7,7 +7,11 @@ export interface EngineUrlConfig {
   pollingInterval?: number;
 }
 
-export function formatEngineUrl(config: EngineUrlConfig, defaultProtocol: string, defaultPort: string): string {
+export function formatEngineUrl(
+  config: EngineUrlConfig,
+  defaultProtocol: string,
+  defaultPort: string,
+): string {
   let host = (config.host || '127.0.0.1').trim();
   let port = (config.port || defaultPort).trim();
   let protocol = defaultProtocol;
@@ -19,7 +23,7 @@ export function formatEngineUrl(config: EngineUrlConfig, defaultProtocol: string
       protocol = parsed.protocol.replace(':', '');
       host = parsed.hostname;
       if (parsed.port) port = parsed.port;
-    } catch (_e: unknown) {
+    } catch {
       // Fallback cleanup if user pasted malformed URL-like string
       host = host
         .replace(/^(wss?|https?):\/\//, '')

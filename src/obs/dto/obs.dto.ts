@@ -3,7 +3,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUrl,
   Matches,
 } from 'class-validator';
 
@@ -11,7 +10,10 @@ export class SaveObsConnectionDto {
   @IsString()
   @IsOptional()
   // Allow ws:// or wss:// if provided directly
-  @Matches(/^wss?:\/\//, { message: 'URL must start with ws:// or wss://', each: false })
+  @Matches(/^wss?:\/\//, {
+    message: 'URL must start with ws:// or wss://',
+    each: false,
+  })
   url?: string;
 
   @IsString()

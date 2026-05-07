@@ -2,7 +2,6 @@ import {
   Injectable,
   NestMiddleware,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '@/prisma/prisma.service';

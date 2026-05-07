@@ -71,9 +71,18 @@ export class PushNotificationsService implements OnModuleInit {
 
   async sendNotification(
     userId: string,
-    payload: { title: string; body: string; icon?: string; data?: Record<string, unknown> },
+    payload: {
+      title: string;
+      body: string;
+      icon?: string;
+      data?: Record<string, unknown>;
+    },
   ) {
-    let subscriptions = [];
+    let subscriptions: {
+      endpoint: string;
+      p256dh: string;
+      auth: string;
+    }[] = [];
     try {
       subscriptions = await this.prisma.pushSubscription.findMany({
         where: { userId },
@@ -108,7 +117,11 @@ export class PushNotificationsService implements OnModuleInit {
 
     for (const result of results) {
       if (result.status === 'rejected') {
-        const error = result.reason;
+        const error = result.reason as {
+          statusCode?: number;
+          endpoint?: string;
+          message?: string;
+        };
         if (error.statusCode === 410 || error.statusCode === 404) {
           // Subscription expired or no longer valid
           this.logger.log(`Removing expired subscription: ${error.endpoint}`);

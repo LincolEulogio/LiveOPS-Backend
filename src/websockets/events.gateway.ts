@@ -25,16 +25,9 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { IntercomService } from '@/intercom/intercom.service';
 import { ChatService } from '@/chat/chat.service';
 import { ScriptService } from '@/script/script.service';
-import { PresenceService, UserPresence } from '@/websockets/presence.service';
+import { PresenceService } from '@/websockets/presence.service';
 import { SocketEvents } from '@/common/socket-events';
-import type {
-  WebRTCSignalPayload,
-  PresenceMember,
-} from '@/common/types/webrtc.types';
-
-
-
-// WebRTCSignalPayload is now imported from webrtc.types.ts
+import type { WebRTCSignalPayload } from '@/common/types/webrtc.types';
 
 interface SocialComment {
   id: string;
@@ -76,7 +69,8 @@ interface HealthStatsPayload {
 })
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class EventsGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -90,7 +84,7 @@ export class EventsGateway
     private chatService: ChatService,
     private scriptService: ScriptService,
     private presenceService: PresenceService,
-  ) { }
+  ) {}
 
   afterInit() {
     this.logger.log('WebSocket Gateway initialized');
@@ -99,10 +93,13 @@ export class EventsGateway
 
   @SubscribeMessage('chat.send')
   async handleChatSend(
-    @MessageBody() data: { productionId: string; userId: string; message: string },
+    @MessageBody()
+    data: { productionId: string; userId: string; message: string },
     @ConnectedSocket() client: CustomSocket,
   ) {
-    this.logger.log(`Chat sent in production: ${data.productionId} by user: ${data.userId}`);
+    this.logger.log(
+      `Chat sent in production: ${data.productionId} by user: ${data.userId}`,
+    );
 
     // 1. Check for slash commands
     if (data.message.startsWith('/')) {
@@ -211,7 +208,7 @@ export class EventsGateway
   }
 
   @SubscribeMessage('script.update')
-  async handleScriptUpdate(
+  handleScriptUpdate(
     @MessageBody() data: { productionId: string; update: number[] },
     @ConnectedSocket() client: CustomSocket,
   ) {
@@ -227,12 +224,13 @@ export class EventsGateway
       clearTimeout(this.scriptUpdateTimers.get(data.productionId));
     }
 
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       this.scriptUpdateTimers.delete(data.productionId);
-      await this.scriptService.updateScriptState(
-        data.productionId,
-        Buffer.from(updateArray),
-      );
+      this.scriptService
+        .updateScriptState(data.productionId, Buffer.from(updateArray))
+        .catch((err) => {
+          this.logger.error('Failed to persist script update', err);
+        });
     }, 1000); // 1s throttle for DB writes
 
     this.scriptUpdateTimers.set(data.productionId, timer);
@@ -263,7 +261,9 @@ export class EventsGateway
     );
 
     // Forward the signal to EVERY socket of the target user
-    const targetSocketIds = this.presenceService.getSocketIdsForUser(data.targetUserId);
+    const targetSocketIds = this.presenceService.getSocketIdsForUser(
+      data.targetUserId,
+    );
 
     for (const socketId of targetSocketIds) {
       const socket = this.server.sockets.sockets.get(socketId);
@@ -285,7 +285,6 @@ export class EventsGateway
       isTalking: boolean;
       targetUserId?: string | null;
     },
-    @ConnectedSocket() _client: CustomSocket,
   ) {
     const room = `production_${data.productionId}`;
 
@@ -320,7 +319,6 @@ export class EventsGateway
       productionId: string;
       comment: SocialComment | null;
     },
-    @ConnectedSocket() _client: CustomSocket,
   ) {
     this.server
       .to(`production_${data.productionId}`)
@@ -358,14 +356,18 @@ export class EventsGateway
     if (productionId && userId) {
       await client.join(`production_${productionId}`);
 
-      this.presenceService.upsertPresence(client.id, {
-        userId,
-        userName: userName || 'User',
-        roleId: roleId || '',
-        roleName: roleName || 'Viewer',
-        lastSeen: new Date().toISOString(),
-        status: 'IDLE',
-      }, productionId);
+      this.presenceService.upsertPresence(
+        client.id,
+        {
+          userId,
+          userName: userName || 'User',
+          roleId: roleId || '',
+          roleName: roleName || 'Viewer',
+          lastSeen: new Date().toISOString(),
+          status: 'IDLE',
+        },
+        productionId,
+      );
 
       client.data.productionId = productionId;
       this.logger.log(
@@ -378,7 +380,9 @@ export class EventsGateway
 
   private broadcastPresence(productionId: string) {
     const members = this.presenceService.getPresenceForProduction(productionId);
-    this.server.to(`production_${productionId}`).emit('presence.update', { members });
+    this.server
+      .to(`production_${productionId}`)
+      .emit('presence.update', { members });
   }
 
   handleDisconnect(client: CustomSocket) {
@@ -404,14 +408,18 @@ export class EventsGateway
     },
     @ConnectedSocket() client: CustomSocket,
   ) {
-    this.presenceService.upsertPresence(client.id, {
-      userId: data.userId,
-      userName: data.userName || 'User',
-      roleId: data.roleId || '',
-      roleName: data.roleName || 'Viewer',
-      lastSeen: new Date().toISOString(),
-      status: 'IDLE',
-    }, data.productionId);
+    this.presenceService.upsertPresence(
+      client.id,
+      {
+        userId: data.userId,
+        userName: data.userName || 'User',
+        roleId: data.roleId || '',
+        roleName: data.roleName || 'Viewer',
+        lastSeen: new Date().toISOString(),
+        status: 'IDLE',
+      },
+      data.productionId,
+    );
 
     if (data.productionId) {
       await client.join(`production_${data.productionId}`);
@@ -437,27 +445,36 @@ export class EventsGateway
     client.data.isNdiBridge = true;
     client.data.bridgeName = data.bridgeName;
     client.data.productionId = data.productionId;
-    client.join(`production_${data.productionId}`);
+    void client.join(`production_${data.productionId}`);
 
-    this.logger.log(`NDI Bridge "${data.bridgeName}" identified for production ${data.productionId}`);
+    this.logger.log(
+      `NDI Bridge "${data.bridgeName}" identified for production ${data.productionId}`,
+    );
 
     // Notify frontend that bridge is online
-    this.server.to(`production_${data.productionId}`).emit('ndi.bridge_status', {
-      bridgeName: data.bridgeName,
-      status: 'ONLINE',
-    });
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('ndi.bridge_status', {
+        bridgeName: data.bridgeName,
+        status: 'ONLINE',
+      });
   }
 
   @SubscribeMessage('ndi.sources_update')
   handleSourcesUpdate(
-    @MessageBody() data: { productionId: string; sources: Record<string, unknown>[] },
-    @ConnectedSocket() _client: CustomSocket,
+    @MessageBody()
+    data: {
+      productionId: string;
+      sources: Record<string, unknown>[];
+    },
   ) {
     // Broadcast sources to all clients in the production
-    this.server.to(`production_${data.productionId}`).emit('ndi.sources_received', {
-      productionId: data.productionId,
-      sources: data.sources,
-    });
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('ndi.sources_received', {
+        productionId: data.productionId,
+        sources: data.sources,
+      });
   }
 
   @SubscribeMessage('ndi.request_sync')
@@ -476,16 +493,20 @@ export class EventsGateway
   private startPresenceCleanup() {
     setInterval(() => {
       const timeout = 60000; // 1 minute
-      const inactiveSocketIds = this.presenceService.getInactiveSockets(timeout);
+      const inactiveSocketIds =
+        this.presenceService.getInactiveSockets(timeout);
 
       if (inactiveSocketIds.length > 0) {
-        inactiveSocketIds.forEach(sid => {
+        inactiveSocketIds.forEach((sid) => {
           this.presenceService.updateStatus(sid, 'OFFLINE');
-          this.logger.warn(`Client ${sid} marked as OFFLINE due to inactivity.`);
+          this.logger.warn(
+            `Client ${sid} marked as OFFLINE due to inactivity.`,
+          );
         });
 
         // Broadcast presence update for each active production
-        const productions = this.presenceService.getProductionsWithActiveUsers();
+        const productions =
+          this.presenceService.getProductionsWithActiveUsers();
         productions.forEach((pid) => this.broadcastPresence(pid));
       }
     }, 30000); // Check every 30s
@@ -501,7 +522,7 @@ export class EventsGateway
       roleName: data.roleName,
       userName: (client.handshake.query.userName as string) || 'User',
       lastSeen: new Date().toISOString(),
-      status: 'IDLE'
+      status: 'IDLE',
     });
 
     const productionId = client.data.productionId;
@@ -523,7 +544,6 @@ export class EventsGateway
       message: string;
       requiresAck?: boolean;
     },
-    @ConnectedSocket() _client: CustomSocket,
   ) {
     console.log(
       `[Intercom] Sending command from ${data.senderId} to production ${data.productionId}`,
@@ -547,7 +567,8 @@ export class EventsGateway
 
           const isTargeted =
             (data.targetUserId && uId === data.targetUserId) ||
-            (!data.targetUserId && (rId === data.targetRoleId || !data.targetRoleId));
+            (!data.targetUserId &&
+              (rId === data.targetRoleId || !data.targetRoleId));
 
           if (isTargeted) {
             this.presenceService.updateStatus(sid, data.message);
@@ -562,7 +583,7 @@ export class EventsGateway
   }
 
   @SubscribeMessage('chat.direct')
-  async handleChatDirect(
+  handleChatDirect(
     @MessageBody()
     data: {
       productionId: string;
@@ -571,7 +592,6 @@ export class EventsGateway
       message: string;
       senderName?: string;
     },
-    @ConnectedSocket() _client: CustomSocket,
   ) {
     console.log(
       `[Intercom] Direct Chat from ${data.senderId} to ${data.targetUserId}`,
@@ -635,7 +655,7 @@ export class EventsGateway
     const room = `production_${data.productionId}`;
     // Update status to ACKNOWLEDGED for the specific responder
     this.presenceService.updateStatus(client.id, `ACK:${data.responseType}`);
-    
+
     if (data.productionId) this.broadcastPresence(data.productionId);
 
     this.server.to(room).emit('command.ack_received', response);
@@ -1061,12 +1081,21 @@ export class EventsGateway
     data: {
       productionId: string;
       sourceName: string;
-      action: 'move_up' | 'move_down' | 'move_left' | 'move_right' | 'zoom_in' | 'zoom_out' | 'stop';
+      action:
+        | 'move_up'
+        | 'move_down'
+        | 'move_left'
+        | 'move_right'
+        | 'zoom_in'
+        | 'zoom_out'
+        | 'stop';
       value?: number;
       speed?: number;
     },
   ) {
-    this.logger.log(`PTZ Command: ${data.sourceName} -> ${data.action} (speed: ${data.speed})`);
+    this.logger.log(
+      `PTZ Command: ${data.sourceName} -> ${data.action} (speed: ${data.speed})`,
+    );
 
     // Reenviar el comando al NDI Bridge que está escuchando en la misma sala de producción
     this.server
@@ -1101,7 +1130,9 @@ export class EventsGateway
       action: 'recall' | 'save';
     },
   ) {
-    this.logger.log(`NDI Preset: ${data.sourceName} index ${data.presetIndex} action ${data.action}`);
+    this.logger.log(
+      `NDI Preset: ${data.sourceName} index ${data.presetIndex} action ${data.action}`,
+    );
 
     this.server
       .to(`production_${data.productionId}`)

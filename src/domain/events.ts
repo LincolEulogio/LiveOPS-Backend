@@ -2,6 +2,7 @@ export const DomainEvents = {
   PRODUCTION_CREATED: 'production.created',
   DEVICE_ONLINE: 'device.online',
   DEVICE_OFFLINE: 'device.offline',
+  VIDEO_RECEIVED: 'video.received',
 } as const;
 
 export class ProductionCreatedEvent {

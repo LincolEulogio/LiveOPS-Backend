@@ -15,21 +15,31 @@ export class WsJwtGuard implements CanActivate {
     const client: Socket = context.switchToWs().getClient<Socket>();
 
     // Extract token from handshake auth or query
-    const token =
-      client.handshake?.auth?.token || client.handshake?.query?.token;
+    const authToken: unknown = client.handshake?.auth?.token;
+    const queryToken = client.handshake?.query?.token;
+    const token: string | undefined =
+      typeof authToken === 'string'
+        ? authToken
+        : Array.isArray(queryToken)
+          ? queryToken[0]
+          : queryToken;
 
     if (!token) {
       throw new WsException('Unauthorized');
     }
 
     try {
-      const payload = await this.jwtService.verifyAsync(token, {
+      const payload: { sub: string } = await this.jwtService.verifyAsync<{
+        sub: string;
+      }>(token, {
         secret: this.configService.get<string>('JWT_SECRET') || 'super-secret',
       });
       // Attach user to socket client object
-      client.data.user = { userId: payload.sub };
+      (client.data as { user: { userId: string } }).user = {
+        userId: payload.sub,
+      };
       return true;
-    } catch (err: unknown) {
+    } catch {
       throw new WsException('Unauthorized');
     }
   }

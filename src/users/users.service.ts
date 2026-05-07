@@ -14,10 +14,7 @@ import {
 } from '@/users/dto/users.dto';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
-import {
-  PermissionAction,
-  StandardRoles,
-} from '@/common/constants/rbac.constants';
+import { PermissionAction } from '@/common/constants/rbac.constants';
 import { Role } from '@/common/constants/roles.enum';
 
 @Injectable()

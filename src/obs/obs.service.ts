@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { ObsConnectionManager } from '@/obs/obs-connection.manager';
-import { SaveObsConnectionDto, ChangeSceneDto } from '@/obs/dto/obs.dto';
+import { SaveObsConnectionDto } from '@/obs/dto/obs.dto';
 import { AuditService, AuditAction } from '@/common/services/audit.service';
 import { formatEngineUrl } from '@/common/utils/engine-url.util';
 
@@ -24,7 +24,6 @@ export class ObsService implements ISceneEngine {
 
   async saveConnection(productionId: string, dto: SaveObsConnectionDto) {
     const url = formatEngineUrl(dto, 'ws', '4455');
-    
     const connection = await this.prisma.obsConnection.upsert({
       where: { productionId },
       update: {
@@ -41,7 +40,7 @@ export class ObsService implements ISceneEngine {
     });
 
     if (connection.isEnabled) {
-      this.obsManager.connectObs(
+      void this.obsManager.connectObs(
         productionId,
         connection.url,
         connection.password || undefined,
@@ -68,8 +67,8 @@ export class ObsService implements ISceneEngine {
     return this.obsManager.getObsState(productionId).isConnected;
   }
 
-  async getRealTimeState(productionId: string) {
-    return this.obsManager.getObsState(productionId);
+  getRealTimeState(productionId: string) {
+    return Promise.resolve(this.obsManager.getObsState(productionId));
   }
 
   // --- OBS Commands --- //
@@ -90,7 +89,7 @@ export class ObsService implements ISceneEngine {
       await obs.call('SetCurrentProgramScene', { sceneName });
 
       // Audit Log
-      this.auditService.log({
+      void this.auditService.log({
         productionId,
         action: AuditAction.SCENE_CHANGE,
         details: { sceneName },
@@ -110,7 +109,7 @@ export class ObsService implements ISceneEngine {
       await obs.call('StartStream');
 
       // Audit Log
-      this.auditService.log({
+      void this.auditService.log({
         productionId,
         action: AuditAction.STREAM_START,
       });
@@ -129,7 +128,7 @@ export class ObsService implements ISceneEngine {
       await obs.call('StopStream');
 
       // Audit Log
-      this.auditService.log({
+      void this.auditService.log({
         productionId,
         action: AuditAction.STREAM_STOP,
       });
@@ -148,7 +147,7 @@ export class ObsService implements ISceneEngine {
       await obs.call('StartRecord');
 
       // Audit Log
-      this.auditService.log({
+      void this.auditService.log({
         productionId,
         action: AuditAction.RECORD_START,
       });
@@ -167,7 +166,7 @@ export class ObsService implements ISceneEngine {
       await obs.call('StopRecord');
 
       // Audit Log
-      this.auditService.log({
+      void this.auditService.log({
         productionId,
         action: AuditAction.RECORD_STOP,
       });

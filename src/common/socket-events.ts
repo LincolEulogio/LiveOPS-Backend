@@ -13,9 +13,9 @@ export enum SocketEvents {
   WEBRTC_SIGNAL = 'webrtc.signal',
   WEBRTC_SIGNAL_RECEIVED = 'webrtc.signal_received',
   WEBRTC_TALKING = 'webrtc.talking',
-  WEBRTC_TALKING_RECEIVED = 'webrtc.talking',
+  WEBRTC_TALKING_RECEIVED = 'webrtc.talking_received',
   WEBRTC_AUDIO_LEVEL = 'webrtc.audio_level',
-  WEBRTC_AUDIO_LEVEL_RECEIVED = 'webrtc.audio_level',
+  WEBRTC_AUDIO_LEVEL_RECEIVED = 'webrtc.audio_level_received',
 
   // Timeline/Escaleta
   TIMELINE_UPDATED = 'timeline.updated',

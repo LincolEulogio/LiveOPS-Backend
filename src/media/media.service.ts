@@ -2,8 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AssetType, Prisma } from '@prisma/client';
 import { AiService } from '@/ai/ai.service';
-import * as sharp from 'sharp';
-import axios from 'axios';
 
 export interface MediaAsset {
   id: string;
@@ -69,7 +67,9 @@ export class MediaService {
         },
       });
     } catch (err: unknown) {
-      this.logger.error(`Failed to save asset: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(
+        `Failed to save asset: ${err instanceof Error ? err.message : String(err)}`,
+      );
       // Fallback save without AI if it fails
       return await this.prisma.mediaAsset.create({ data });
     }
@@ -80,19 +80,15 @@ export class MediaService {
         where: { id, productionId },
       });
     } catch (err: unknown) {
-      this.logger.error(`Failed to delete asset ${id}: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(
+        `Failed to delete asset ${id}: ${err instanceof Error ? err.message : String(err)}`,
+      );
       throw err;
     }
   }
 
-  private async generateThumbnail(url: string): Promise<string | null> {
-    try {
-      this.logger.debug(`Generating thumbnail for ${url}`);
-      // In a real prod environment, we would use sharp to resize local buffer or remote stream.
-      // For now, returning null/placeholder functionality.
-      return null;
-    } catch (e: unknown) {
-      return null;
-    }
+  private generateThumbnail(url: string): Promise<string | null> {
+    this.logger.debug(`Generating thumbnail for ${url}`);
+    return Promise.resolve(null);
   }
 }

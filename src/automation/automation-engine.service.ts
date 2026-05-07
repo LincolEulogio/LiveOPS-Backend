@@ -56,7 +56,9 @@ export class AutomationEngineService {
     if (activeBlocks.length === 0) return;
 
     // 2. Agrupar bloques por producción para optimizar consultas de reglas
-    const activeProductionIds = [...new Set(activeBlocks.map((b) => b.productionId))];
+    const activeProductionIds = [
+      ...new Set(activeBlocks.map((b) => b.productionId)),
+    ];
 
     // 3. Obtener todas las reglas relevantes para estas producciones de una sola vez
     const allRules = await this.prisma.rule.findMany({
@@ -78,10 +80,14 @@ export class AutomationEngineService {
       if (!block.startTime) continue;
 
       const elapsedTime = now.getTime() - block.startTime.getTime();
-      const remainingSeconds = Math.floor((block.durationMs - elapsedTime) / 1000);
+      const remainingSeconds = Math.floor(
+        (block.durationMs - elapsedTime) / 1000,
+      );
 
       // Reglas para esta producción específica
-      const productionRules = allRules.filter((r) => r.productionId === block.productionId);
+      const productionRules = allRules.filter(
+        (r) => r.productionId === block.productionId,
+      );
 
       for (const rule of productionRules) {
         for (const trigger of rule.triggers) {
@@ -104,7 +110,10 @@ export class AutomationEngineService {
               this.logger.log(
                 `Time-trigger hit! Rule "${rule.name}" triggered ${triggerSeconds}s before block end.`,
               );
-              await this.executeActions(rule as RuleWithActions, { ...block, remainingSeconds });
+              await this.executeActions(rule as RuleWithActions, {
+                ...block,
+                remainingSeconds,
+              });
             }
           }
         }
@@ -302,7 +311,10 @@ export class AutomationEngineService {
           switch (action.actionType) {
             case 'obs.changeScene':
               if (payload?.sceneName) {
-                await this.obsService.changeScene(rule.productionId, payload.sceneName as string);
+                await this.obsService.changeScene(
+                  rule.productionId,
+                  payload.sceneName as string,
+                );
               }
               break;
 
@@ -311,12 +323,18 @@ export class AutomationEngineService {
               break;
 
             case 'vmix.fade':
-              await this.vmixService.fade(rule.productionId, (payload?.duration as number) || 500);
+              await this.vmixService.fade(
+                rule.productionId,
+                (payload?.duration as number) || 500,
+              );
               break;
 
             case 'vmix.changeInput':
               if (payload?.input) {
-                await this.vmixService.changeInput(rule.productionId, payload.input as number);
+                await this.vmixService.changeInput(
+                  rule.productionId,
+                  payload.input as number,
+                );
               }
               break;
 
@@ -382,9 +400,11 @@ export class AutomationEngineService {
       await Promise.all(executionPromises);
 
       // Log Success with context
-      const context = eventPayload?.id
-        ? `Block: ${eventPayload.id}`
-        : 'Generic event';
+      const context =
+        typeof eventPayload?.id === 'string' ||
+        typeof eventPayload?.id === 'number'
+          ? `Block: ${eventPayload.id}`
+          : 'Generic event';
       await this.logExecution(
         rule.id,
         rule.productionId,

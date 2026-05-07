@@ -39,7 +39,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
       // We don't leak the stack trace to the client, just the message or a generic 'Internal server error'
       message:
         exception instanceof HttpException
-          ? typeof message === 'object' && message !== null && 'message' in message
+          ? typeof message === 'object' &&
+            message !== null &&
+            'message' in message
             ? (message as { message: string }).message
             : message
           : 'Internal server error',

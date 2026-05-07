@@ -7,8 +7,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  Req,
-  Request,
 } from '@nestjs/common';
 import { IntercomService } from '@/intercom/intercom.service';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
