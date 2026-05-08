@@ -14,7 +14,7 @@ import {
 } from '@/users/dto/users.dto';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
-import { PermissionAction } from '@/common/constants/rbac.constants';
+import { PermissionAction, StandardRoles } from '@/common/constants/rbac.constants';
 import { Role } from '@/common/constants/roles.enum';
 
 @Injectable()
@@ -92,11 +92,32 @@ export class UsersService implements OnModuleInit {
       });
     }
 
-    // 4. Standard roles are now managed manually via UI
-    /*
-    const allRoles = Object.values(StandardRoles) as any[];
-    ...
-    */
+    // 4. Ensure VIEWER role always exists as the default for new registrations
+    let viewerRole = await this.prisma.role.findUnique({
+      where: { name: Role.VIEWER },
+    });
+
+    if (!viewerRole) {
+      viewerRole = await this.prisma.role.create({
+        data: {
+          name: Role.VIEWER,
+          description: 'Usuario nuevo — solo lectura, pendiente de asignación',
+        },
+      });
+      this.logger.log('Created mandatory VIEWER role');
+    }
+
+    // Assign VIEWER its base read-only permissions
+    const viewerPermissions = StandardRoles.VIEWER?.permissions ?? [];
+    for (const action of viewerPermissions) {
+      const perm = await this.prisma.permission.findUnique({ where: { action } });
+      if (!perm) continue;
+      await this.prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: viewerRole.id, permissionId: perm.id } },
+        create: { roleId: viewerRole.id, permissionId: perm.id },
+        update: {},
+      });
+    }
   }
 
   async updateRolePermissions(roleId: string, permissionIds: string[]) {

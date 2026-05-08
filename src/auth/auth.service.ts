@@ -162,24 +162,22 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    // Get or Create SUPERADMIN role
-    let superAdminRole = await this.prisma.role.findUnique({
-      where: { name: Role.SUPERADMIN },
+    // Ensure all default roles exist
+    await this.usersService.seedDefaultRoles();
+
+    // First registered user becomes SUPERADMIN; all subsequent users get VIEWER
+    const existingUserCount = await this.prisma.user.count();
+    const assignedRoleName = existingUserCount === 0 ? Role.SUPERADMIN : Role.VIEWER;
+
+    const assignedRole = await this.prisma.role.findUnique({
+      where: { name: assignedRoleName },
     });
 
-    if (!superAdminRole) {
-      superAdminRole = await this.prisma.role.create({
-        data: {
-          name: Role.SUPERADMIN,
-          description: 'Global System Administrator',
-        },
-      });
-      // Ensure it has all permissions
-      await this.usersService.seedDefaultRoles();
+    if (!assignedRole) {
+      throw new Error(`Role ${assignedRoleName} not found after seeding`);
     }
 
-    // Every new registrant is a SUPERADMIN of their own workspace
-    const globalRoleId = superAdminRole.id;
+    const globalRoleId = assignedRole.id;
 
     // Create a NEW unique tenant for this new user
     const tenant = await this.prisma.tenant.create({
