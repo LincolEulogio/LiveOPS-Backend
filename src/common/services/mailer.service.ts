@@ -98,7 +98,10 @@ export class MailerService {
   async sendVerificationEmail(email: string, token: string) {
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
-    const verifyLink = `${frontendUrl}/verify-account?token=${token}`;
+    const verifyLink = `${frontendUrl}/verify-account`;
+
+    // Format code with a space in the middle for readability: 123 456
+    const codeDisplay = `${token.slice(0, 3)}&thinsp;${token.slice(3)}`;
 
     this.logger.log(`[MAILER] Sending verification email to: ${email}`);
 
@@ -109,24 +112,25 @@ export class MailerService {
       </div>
 
       <h2 style="margin:0 0 12px;font-size:24px;font-weight:800;color:${BRAND.slate900};line-height:1.2;">¡Bienvenido a LiveOPS!</h2>
-      <p style="margin:0 0 24px;font-size:15px;color:${BRAND.slate700};line-height:1.6;">
-        Tu cuenta ha sido creada correctamente. Para activarla y comenzar a operar, verifica tu correo electrónico haciendo clic en el botón de abajo.
+      <p style="margin:0 0 28px;font-size:15px;color:${BRAND.slate700};line-height:1.6;">
+        Tu cuenta ha sido creada correctamente. Usa el código de verificación de abajo para activarla y comenzar a operar.
       </p>
 
-      <!-- CTA Button -->
-      <div style="text-align:center;margin:32px 0;">
-        <a href="${verifyLink}"
-           style="display:inline-block;background-color:${BRAND.indigo};color:${BRAND.white};padding:14px 36px;text-decoration:none;border-radius:10px;font-size:15px;font-weight:700;letter-spacing:0.3px;transition:background 0.2s;">
-          &#9889;&nbsp; Verificar Cuenta
-        </a>
+      <!-- 6-digit code block -->
+      <div style="text-align:center;margin:0 0 28px;">
+        <p style="margin:0 0 10px;font-size:12px;font-weight:700;color:${BRAND.slate400};letter-spacing:2px;text-transform:uppercase;">Tu código de verificación</p>
+        <div style="display:inline-block;background:linear-gradient(135deg,${BRAND.indigo} 0%,#818cf8 100%);border-radius:16px;padding:20px 40px;">
+          <span style="font-size:42px;font-weight:900;color:${BRAND.white};letter-spacing:10px;font-family:'Courier New',monospace;">${codeDisplay}</span>
+        </div>
+        <p style="margin:12px 0 0;font-size:12px;color:${BRAND.slate400};">Ingresa este código en la página de verificación</p>
       </div>
 
-      <!-- Info box -->
-      <div style="background-color:${BRAND.slate100};border-radius:10px;padding:16px 20px;margin-bottom:24px;">
-        <p style="margin:0;font-size:13px;color:${BRAND.slate700};line-height:1.5;">
-          <strong>¿El botón no funciona?</strong> Copia y pega el siguiente enlace en tu navegador:
-        </p>
-        <p style="margin:8px 0 0;font-size:12px;word-break:break-all;color:${BRAND.indigo};">${verifyLink}</p>
+      <!-- CTA Button -->
+      <div style="text-align:center;margin:0 0 28px;">
+        <a href="${verifyLink}"
+           style="display:inline-block;background-color:${BRAND.indigo};color:${BRAND.white};padding:14px 36px;text-decoration:none;border-radius:10px;font-size:15px;font-weight:700;letter-spacing:0.3px;">
+          &#9889;&nbsp; Ir a Verificar Cuenta
+        </a>
       </div>
 
       <hr style="border:0;border-top:1px solid #e2e8f0;margin:24px 0 20px;" />

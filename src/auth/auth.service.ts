@@ -186,7 +186,7 @@ export class AuthService {
       data: { name: `${dto.name || email.split('@')[0]}'s Workspace` },
     });
 
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationToken = String(Math.floor(100000 + Math.random() * 900000));
 
     const user = await this.prisma.user.create({
       data: {
@@ -329,7 +329,7 @@ export class AuthService {
       };
     }
 
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationToken = String(Math.floor(100000 + Math.random() * 900000));
     await this.prisma.user.update({
       where: { id: user.id },
       data: { verificationToken },
