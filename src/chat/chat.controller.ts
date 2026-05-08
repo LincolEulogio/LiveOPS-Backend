@@ -1,11 +1,10 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Protected } from '@/common/decorators/protected.decorator';
 import { ChatService } from '@/chat/chat.service';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Controller('chats')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Protected()
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
@@ -21,3 +20,4 @@ export class ChatController {
     );
   }
 }
+

@@ -1,14 +1,14 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
   Body,
   Param,
   Delete,
-  UseGuards,
   Patch,
   Req, // Added Req for the new endpoints
 } from '@nestjs/common';
+import { Protected } from '@/common/decorators/protected.decorator';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   NotificationPlatform,
@@ -16,14 +16,12 @@ import {
 } from '@/notifications/notifications.service'; // Modified import
 import { PushNotificationsService } from '@/notifications/push-notifications.service'; // Added import
 import { CreateSubscriptionDto } from '@/notifications/dto/push-subscription.dto'; // Added import
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 import { Request } from 'express';
 import { JwtUser } from '@/common/types/jwt-user.types';
 
 @Controller('notifications') // Changed controller path
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Protected()
 export class WebhooksController {
   constructor(
     private prisma: PrismaService, // Kept prisma service
@@ -113,3 +111,4 @@ export class WebhooksController {
     return this.pushService.unsubscribe(endpoint);
   }
 }
+

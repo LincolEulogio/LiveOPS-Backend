@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -6,8 +6,8 @@ import {
   Param,
   Delete,
   Put,
-  UseGuards,
 } from '@nestjs/common';
+import { Protected } from '@/common/decorators/protected.decorator';
 import { StreamingService } from '@/streaming/streaming.service';
 import { StreamingDestinationsService } from '@/streaming/streaming-destinations.service';
 import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
@@ -15,15 +15,13 @@ import {
   CreateStreamingDestinationDto,
   UpdateStreamingDestinationDto,
 } from '@/streaming/dto/streaming-destination.dto';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 
 import { LiveKitService } from '@/streaming/livekit.service';
 
 import { SkipThrottle } from '@nestjs/throttler';
 
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Protected()
 @Controller('streaming')
 export class StreamingController {
   constructor(
@@ -115,3 +113,4 @@ export class StreamingController {
     return this.streamingService.stopCloudStream(productionId);
   }
 }
+

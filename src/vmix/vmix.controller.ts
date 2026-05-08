@@ -1,19 +1,17 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
   Body,
   Param,
   Put,
-  UseGuards,
 } from '@nestjs/common';
+import { Protected } from '@/common/decorators/protected.decorator';
 import { VmixService } from '@/vmix/vmix.service';
 import { SaveVmixConnectionDto, ChangeInputDto } from '@/vmix/dto/vmix.dto';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Protected()
 @Controller('productions/:productionId/vmix')
 export class VmixController {
   constructor(private readonly vmixService: VmixService) {}
@@ -56,3 +54,4 @@ export class VmixController {
     return this.vmixService.fade(productionId);
   }
 }
+

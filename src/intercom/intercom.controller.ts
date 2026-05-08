@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -6,15 +6,13 @@ import {
   Body,
   Param,
   Delete,
-  UseGuards,
 } from '@nestjs/common';
+import { Protected } from '@/common/decorators/protected.decorator';
 import { IntercomService } from '@/intercom/intercom.service';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { CreateCommandTemplateDto } from '@/intercom/dto/intercom.dto';
-import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Protected()
 @Controller('productions/:productionId/intercom')
 export class IntercomController {
   constructor(private readonly intercomService: IntercomService) {}
@@ -65,3 +63,4 @@ export class IntercomController {
     return this.intercomService.getAiSummary(productionId);
   }
 }
+

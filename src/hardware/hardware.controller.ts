@@ -1,20 +1,18 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
   Delete,
   Body,
   Param,
-  UseGuards,
 } from '@nestjs/common';
+import { Protected } from '@/common/decorators/protected.decorator';
 import { HardwareService } from '@/hardware/hardware.service';
 import { CreateHardwareMappingDto } from '@/hardware/dto/hardware-mapping.dto';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Controller('productions/:productionId/hardware')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Protected()
 export class HardwareController {
   constructor(private readonly hardwareService: HardwareService) {}
 
@@ -42,3 +40,4 @@ export class HardwareController {
     return this.hardwareService.deleteMapping(productionId, mapKey);
   }
 }
+

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -6,16 +6,14 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
 } from '@nestjs/common';
+import { Protected } from '@/common/decorators/protected.decorator';
 import { OverlaysService } from '@/overlays/overlays.service';
 import { CreateOverlayDto, UpdateOverlayDto } from '@/overlays/dto/overlay.dto';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Controller('productions/:productionId/overlays')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Protected()
 export class OverlaysController {
   constructor(private readonly overlaysService: OverlaysService) {}
 
@@ -62,3 +60,4 @@ export class OverlaysController {
     return this.overlaysService.toggleActive(id, productionId, isActive);
   }
 }
+

@@ -1,11 +1,10 @@
-import { Controller, Get, Post, Param, Query, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Post, Param, Query } from '@nestjs/common';
+import { Protected } from '@/common/decorators/protected.decorator';
 import { AnalyticsService } from '@/analytics/analytics.service';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Controller('productions/:id/analytics')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Protected()
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
@@ -42,3 +41,4 @@ export class AnalyticsController {
     return this.analyticsService.getPostShowSeo(id);
   }
 }
+

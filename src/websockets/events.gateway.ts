@@ -89,6 +89,39 @@ export class EventsGateway
   afterInit() {
     this.logger.log('WebSocket Gateway initialized');
     this.startPresenceCleanup();
+    this.registerForwardEvents();
+  }
+
+  private forwardToRoom(event: string, payload: { productionId: string }) {
+    this.server.to(`production_${payload.productionId}`).emit(event, payload);
+  }
+
+  private registerForwardEvents() {
+    const passthrough = [
+      'obs.screenshot.update',
+      'obs.audio.volume',
+      'obs.audio.mute',
+      'vmix.connection.state',
+      'timeline.updated',
+      'production.health.stats',
+      'social.overlay_update',
+      'social.message.new',
+      'social.message.updated',
+      'social.poll.created',
+      'social.poll.updated',
+      'social.poll.closed',
+      'graphics.social.show',
+      'graphics.social.hide',
+      'overlay.list_updated',
+      'production.updated',
+      'guest.slots.updated',
+      'guest.returnfeed.updated',
+    ];
+    for (const event of passthrough) {
+      this.eventEmitter.on(event, (payload: { productionId: string }) => {
+        this.forwardToRoom(event, payload);
+      });
+    }
   }
 
   @SubscribeMessage('chat.send')
@@ -767,39 +800,6 @@ export class EventsGateway
       .to(`production_${payload.productionId}`)
       .emit('chat.received', msg);
   }
-  @OnEvent('obs.screenshot.update')
-  handleObsScreenshotUpdate(payload: {
-    productionId: string;
-    program?: string;
-    preview?: string;
-  }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('obs.screenshot.update', payload);
-  }
-
-  @OnEvent('obs.audio.volume')
-  handleObsAudioVolume(payload: {
-    productionId: string;
-    inputName: string;
-    volumeMul: number;
-    volumeDb: number;
-  }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('obs.audio.volume', payload);
-  }
-
-  @OnEvent('obs.audio.mute')
-  handleObsAudioMute(payload: {
-    productionId: string;
-    inputName: string;
-    muted: boolean;
-  }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('obs.audio.mute', payload);
-  }
 
   @OnEvent('vmix.input.changed')
   handleVmixInputChanged(payload: {
@@ -860,23 +860,6 @@ export class EventsGateway
     }
   }
 
-  @OnEvent('vmix.connection.state')
-  handleVmixConnectionState(payload: {
-    productionId: string;
-    connected: boolean;
-  }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('vmix.connection.state', payload);
-  }
-
-  @OnEvent('timeline.updated')
-  handleTimelineUpdated(payload: { productionId: string }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('timeline.updated', payload);
-  }
-
   @OnEvent('command.created')
   handleCommandCreated(payload: {
     productionId: string;
@@ -890,89 +873,9 @@ export class EventsGateway
       .emit('command.received', payload.command);
   }
 
-  @OnEvent('production.health.stats')
-  handleProductionHealthStats(payload: HealthStatsPayload) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('production.health.stats', payload);
-  }
-
-  @OnEvent('social.overlay_update')
-  handleSocialOverlayUpdate(payload: {
-    productionId: string;
-    comment: SocialComment | null;
-  }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('social.overlay_update', payload);
-  }
-
   // --- External Social Events Forwarding ---
-
-  // --- External Social Events Forwarding ---
-
-  @OnEvent('social.message.new')
-  handleSocialMessageNew(payload: SocialComment & { productionId: string }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('social.message.new', payload);
-  }
-
-  @OnEvent('social.message.updated')
-  handleSocialMessageUpdated(
-    payload: SocialComment & { productionId: string },
-  ) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('social.message.updated', payload);
-  }
-
-  @OnEvent('social.poll.created')
-  handleSocialPollCreated(payload: {
-    productionId: string;
-    [key: string]: unknown;
-  }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('social.poll.created', payload);
-  }
-
-  @OnEvent('social.poll.updated')
-  handleSocialPollUpdated(payload: {
-    productionId: string;
-    [key: string]: unknown;
-  }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('social.poll.updated', payload);
-  }
-
-  @OnEvent('social.poll.closed')
-  handleSocialPollClosed(payload: {
-    productionId: string;
-    [key: string]: unknown;
-  }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('social.poll.closed', payload);
-  }
-
-  @OnEvent('graphics.social.show')
-  handleGraphicsSocialShow(payload: {
-    productionId: string;
-    comment: SocialComment;
-  }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('graphics.social.show', payload);
-  }
-
-  @OnEvent('graphics.social.hide')
-  handleGraphicsSocialHide(payload: { productionId: string }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('graphics.social.hide', payload);
-  }
+  // social.*, graphics.social.*, production.health.stats, social.overlay_update
+  // are forwarded automatically via registerForwardEvents()
 
   @OnEvent('overlay.broadcast_data')
   handleOverlayBroadcastData(payload: {
@@ -994,43 +897,8 @@ export class EventsGateway
       .emit(`overlay.template_update:${payload.template.id}`, payload.template);
   }
 
-  @OnEvent('overlay.list_updated')
-  handleOverlayListUpdated(payload: { productionId: string }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('overlay.list_updated', payload);
-  }
-
-  @OnEvent('production.updated')
-  handleProductionUpdated(payload: { productionId: string }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('production.updated', payload);
-  }
-
-  @OnEvent('guest.slots.updated')
-  handleGuestSlotsUpdated(payload: {
-    productionId: string;
-    slots: Record<string, unknown>[];
-    updatedAt?: string;
-  }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('guest.slots.updated', payload);
-  }
-
-  @OnEvent('guest.returnfeed.updated')
-  handleGuestReturnFeedUpdated(payload: {
-    productionId: string;
-    slotId: string;
-    participantIdentity: string;
-    returnFeed: 'PROGRAM' | 'PREVIEW' | 'CONTROL' | 'NONE';
-    updatedAt?: string;
-  }) {
-    this.server
-      .to(`production_${payload.productionId}`)
-      .emit('guest.returnfeed.updated', payload);
-  }
+  // overlay.list_updated, production.updated, guest.slots.updated, guest.returnfeed.updated
+  // are forwarded automatically via registerForwardEvents()
 
   // --- NDI Management Events ---
 

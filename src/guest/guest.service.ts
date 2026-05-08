@@ -11,6 +11,7 @@ import { CreateGuestInvitationDto } from './dto/create-guest-invitation.dto';
 import { StreamingService } from '@/streaming/streaming.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as crypto from 'crypto';
+import { getErrorMessage } from '@/common/utils/error.util';
 
 type GuestSlotStatus = 'FREE' | 'PREVIEW' | 'PROGRAM';
 type GuestReturnFeed = 'PROGRAM' | 'PREVIEW' | 'CONTROL' | 'NONE';
@@ -130,7 +131,7 @@ export class GuestService {
       return updated;
     } catch (error: unknown) {
       this.logger.error(
-        `FAILED to activate guest: ${error instanceof Error ? error.message : String(error)}`,
+        `FAILED to activate guest: ${getErrorMessage(error)}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw error;
@@ -140,69 +141,32 @@ export class GuestService {
   async finalizeGuest(token: string) {
     const invitation = await this.prisma.guestInvitation.findUnique({
       where: { token },
-      select: {
-        id: true,
-        productionId: true,
-        status: true,
-      },
+      select: { id: true, productionId: true, status: true },
     });
-
-    if (!invitation) {
-      throw new UnauthorizedException('Token de invitado inválido');
-    }
-
-    await this.prisma.guestInvitation.delete({
-      where: { token },
-    });
-
-    // Libera estado de slot persistido para evitar que quede en PROGRAM/PREVIEW.
-    const envelope = await this.getSlotConfigEnvelope(invitation.productionId);
-    if (envelope.slots[invitation.id]) {
-      envelope.slots[invitation.id] = {
-        ...envelope.slots[invitation.id],
-        status: 'FREE',
-      };
-      await this.saveSlotConfigEnvelope(invitation.productionId, envelope);
-    }
-
-    await this.emitGuestSlotsUpdated(invitation.productionId);
-
-    return { success: true };
+    if (!invitation) throw new UnauthorizedException('Token de invitado inválido');
+    return this.releaseInvitation(invitation, { token });
   }
 
   async finalizeGuestById(productionId: string, invitationId: string) {
     const invitation = await this.prisma.guestInvitation.findFirst({
-      where: {
-        id: invitationId,
-        productionId: productionId,
-      },
-      select: {
-        id: true,
-        productionId: true,
-        status: true,
-      },
+      where: { id: invitationId, productionId },
+      select: { id: true, productionId: true, status: true },
     });
+    if (!invitation) throw new NotFoundException('Invitación no encontrada');
+    return this.releaseInvitation(invitation, { id: invitationId });
+  }
 
-    if (!invitation) {
-      throw new NotFoundException('Invitación no encontrada');
+  private async releaseInvitation(
+    invitation: { id: string; productionId: string },
+    deleteWhere: { token?: string; id?: string },
+  ) {
+    await this.prisma.guestInvitation.delete({ where: deleteWhere });
+    const envelope = await this.getSlotConfigEnvelope(invitation.productionId);
+    if (envelope.slots[invitation.id]) {
+      envelope.slots[invitation.id] = { ...envelope.slots[invitation.id], status: 'FREE' };
+      await this.saveSlotConfigEnvelope(invitation.productionId, envelope);
     }
-
-    await this.prisma.guestInvitation.delete({
-      where: { id: invitationId },
-    });
-
-    // Libera estado de slot persistido
-    const envelope = await this.getSlotConfigEnvelope(productionId);
-    if (envelope.slots[invitationId]) {
-      envelope.slots[invitationId] = {
-        ...envelope.slots[invitationId],
-        status: 'FREE',
-      };
-      await this.saveSlotConfigEnvelope(productionId, envelope);
-    }
-
-    await this.emitGuestSlotsUpdated(productionId);
-
+    await this.emitGuestSlotsUpdated(invitation.productionId);
     return { success: true };
   }
 

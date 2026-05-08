@@ -1,11 +1,10 @@
-import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Query, Param } from '@nestjs/common';
+import { Protected } from '@/common/decorators/protected.decorator';
 import { AuditService } from '@/common/services/audit.service';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Controller('audit')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Protected()
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
@@ -36,3 +35,4 @@ export class AuditController {
     );
   }
 }
+

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -6,15 +6,13 @@ import {
   Delete,
   Body,
   Param,
-  UseGuards,
 } from '@nestjs/common';
+import { Protected } from '@/common/decorators/protected.decorator';
 import { AutomationService } from '@/automation/automation.service';
 import { CreateRuleDto, UpdateRuleDto } from '@/automation/dto/automation.dto';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Protected()
 @Controller('productions/:productionId/automation')
 export class AutomationController {
   constructor(private readonly automationService: AutomationService) {}
@@ -94,3 +92,4 @@ export class AutomationController {
     return this.automationService.generateRuleAi(productionId, prompt);
   }
 }
+

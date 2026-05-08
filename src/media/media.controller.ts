@@ -1,15 +1,13 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
   Delete,
   Body,
   Param,
-  UseGuards,
 } from '@nestjs/common';
+import { Protected } from '@/common/decorators/protected.decorator';
 import { MediaService } from '@/media/media.service';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 import { IsNotEmpty, IsNumber, IsString, IsEnum } from 'class-validator';
 import { AssetType } from '@prisma/client';
@@ -34,7 +32,7 @@ class SaveAssetDto {
 }
 
 @Controller('media')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Protected()
 export class MediaController {
   constructor(private mediaService: MediaService) {}
 
@@ -62,3 +60,4 @@ export class MediaController {
     return this.mediaService.deleteAsset(id, productionId);
   }
 }
+

@@ -1,17 +1,15 @@
-import {
+﻿import {
   Controller,
   Post,
   Get,
   Param,
   Body,
-  UseGuards,
   Patch,
 } from '@nestjs/common';
+import { Protected } from '@/common/decorators/protected.decorator';
 import { GuestService } from './guest.service';
 import { CreateGuestInvitationDto } from './dto/create-guest-invitation.dto';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { LiveKitService } from '@/streaming/livekit.service';
-import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Controller()
@@ -35,7 +33,7 @@ export class GuestController {
   }
 
   @Post('productions/:id/guests/invite')
-  @UseGuards(JwtAuthGuard)
+  @Protected()
   async createInvite(
     @Param('id') productionId: string,
     @Body() dto: CreateGuestInvitationDto,
@@ -44,14 +42,14 @@ export class GuestController {
   }
 
   @Get('productions/:id/guest-slots')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Protected()
   @Permissions('streaming:view')
   async getGuestSlots(@Param('id') productionId: string) {
     return this.guestService.getGuestSlots(productionId);
   }
 
   @Patch('productions/:id/guest-slots/:slotId')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Protected()
   @Permissions('streaming:control')
   async updateGuestSlot(
     @Param('id') productionId: string,
@@ -68,7 +66,7 @@ export class GuestController {
   }
 
   @Post('productions/:id/guest-slots/:slotId/preview')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Protected()
   @Permissions('streaming:control')
   async previewGuestSlot(
     @Param('id') productionId: string,
@@ -78,7 +76,7 @@ export class GuestController {
   }
 
   @Post('productions/:id/guest-slots/:slotId/program')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Protected()
   @Permissions('streaming:control')
   async programGuestSlot(
     @Param('id') productionId: string,
@@ -107,7 +105,7 @@ export class GuestController {
   }
 
   @Post('productions/:id/guests/:invitationId/finalize')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Protected()
   @Permissions('streaming:control')
   async finalizeGuestById(
     @Param('id') productionId: string,
@@ -116,3 +114,4 @@ export class GuestController {
     return this.guestService.finalizeGuestById(productionId, invitationId);
   }
 }
+

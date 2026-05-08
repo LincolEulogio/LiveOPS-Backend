@@ -9,6 +9,7 @@ import { ObsService } from '@/obs/obs.service';
 import { VmixService } from '@/vmix/vmix.service';
 import { LiveKitService } from './livekit.service';
 import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
+import { getErrorMessage } from '@/common/utils/error.util';
 import {
   IVideoEngine,
   ISceneEngine,
@@ -103,7 +104,7 @@ export class StreamingService {
       );
       return { success: true, egressId: egressInfo.egressId };
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
+      const message = getErrorMessage(error);
       this.logger.error(`Failed to start cloud stream: ${message}`);
       throw new BadRequestException(`Failed to start cloud stream: ${message}`);
     }
@@ -135,7 +136,7 @@ export class StreamingService {
       this.logger.log(`Cloud stream stopped for production ${productionId}`);
       return { success: true };
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
+      const message = getErrorMessage(error);
       this.logger.error(`Failed to stop cloud stream: ${message}`);
       // Even if LiveKit fails to stop it (e.g. already stopped), we reset our local state
       await this.prisma.production.update({
@@ -153,84 +154,35 @@ export class StreamingService {
     const production = await this.prisma.production.findUnique({
       where: { id: productionId },
     });
-
-    if (!production) {
-      throw new NotFoundException('Production not found');
-    }
+    if (!production) throw new NotFoundException('Production not found');
 
     const engine = this.getEngine(production);
-    const payload = dto.payload as Record<string, any>;
+    const p = dto.payload as Record<string, any>;
 
-    switch (dto.type) {
-      case 'CHANGE_SCENE':
-        return this.handleChangeScene(engine, productionId, dto.sceneName);
-      case 'START_STREAM':
-        return engine.startStream(productionId);
-      case 'STOP_STREAM':
-        return engine.stopStream(productionId);
-      case 'START_CLOUD_STREAM':
-        return this.startCloudStream(productionId, payload?.layout as string);
-      case 'STOP_CLOUD_STREAM':
-        return this.stopCloudStream(productionId);
-      case 'START_RECORD':
-        return engine.startRecord(productionId);
-      case 'STOP_RECORD':
-        return engine.stopRecord(productionId);
-      case 'VMIX_CUT':
-        return this.executeEngineMethod(engine, 'cut', productionId);
-      case 'VMIX_FADE':
-        return this.executeEngineMethod(engine, 'fade', productionId);
-      case 'VMIX_SELECT_INPUT':
-        return this.executeEngineMethod(
-          engine,
-          'changeInput',
-          productionId,
-          payload?.input as number,
-        );
-      case 'VMIX_SET_VOLUME':
-        return this.executeEngineMethod(
-          engine,
-          'setVolume',
-          productionId,
-          payload?.input,
-          payload?.value,
-        );
-      case 'VMIX_TOGGLE_MUTE':
-        return this.executeEngineMethod(
-          engine,
-          'toggleMute',
-          productionId,
-          payload?.input,
-        );
-      case 'VMIX_TOGGLE_SOLO':
-        return this.executeEngineMethod(
-          engine,
-          'toggleSolo',
-          productionId,
-          payload?.input,
-        );
-      case 'VMIX_SET_GAIN':
-        return this.executeEngineMethod(
-          engine,
-          'setGain',
-          productionId,
-          payload?.input,
-          payload?.value,
-        );
-      case 'VMIX_TOGGLE_BUS':
-        return this.executeEngineMethod(
-          engine,
-          'toggleBus',
-          productionId,
-          payload?.input,
-          payload?.bus,
-        );
-      case 'START_DESTINATION':
-      case 'STOP_DESTINATION':
-        return { success: true, destId: payload?.destId as string };
-      default:
-        throw new BadRequestException(`Unknown command: ${dto.type}`);
-    }
+    type CommandHandler = () => Promise<unknown> | unknown;
+    const commands: Partial<Record<string, CommandHandler>> = {
+      CHANGE_SCENE:      () => this.handleChangeScene(engine, productionId, dto.sceneName),
+      START_STREAM:      () => engine.startStream(productionId),
+      STOP_STREAM:       () => engine.stopStream(productionId),
+      START_CLOUD_STREAM:() => this.startCloudStream(productionId, p?.layout as string),
+      STOP_CLOUD_STREAM: () => this.stopCloudStream(productionId),
+      START_RECORD:      () => engine.startRecord(productionId),
+      STOP_RECORD:       () => engine.stopRecord(productionId),
+      VMIX_CUT:          () => this.executeEngineMethod(engine, 'cut', productionId),
+      VMIX_FADE:         () => this.executeEngineMethod(engine, 'fade', productionId),
+      VMIX_SELECT_INPUT: () => this.executeEngineMethod(engine, 'changeInput', productionId, p?.input as number),
+      VMIX_SET_VOLUME:   () => this.executeEngineMethod(engine, 'setVolume', productionId, p?.input, p?.value),
+      VMIX_TOGGLE_MUTE:  () => this.executeEngineMethod(engine, 'toggleMute', productionId, p?.input),
+      VMIX_TOGGLE_SOLO:  () => this.executeEngineMethod(engine, 'toggleSolo', productionId, p?.input),
+      VMIX_SET_GAIN:     () => this.executeEngineMethod(engine, 'setGain', productionId, p?.input, p?.value),
+      VMIX_TOGGLE_BUS:   () => this.executeEngineMethod(engine, 'toggleBus', productionId, p?.input, p?.bus),
+      START_DESTINATION: () => ({ success: true, destId: p?.destId as string }),
+      STOP_DESTINATION:  () => ({ success: true, destId: p?.destId as string }),
+    };
+
+    const handler = commands[dto.type];
+    if (!handler) throw new BadRequestException(`Unknown command: ${dto.type}`);
+    return handler();
   }
 
   private async handleChangeScene(

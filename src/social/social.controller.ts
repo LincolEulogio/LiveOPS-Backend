@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -7,15 +7,13 @@ import {
   Body,
   Param,
   Query,
-  UseGuards,
 } from '@nestjs/common';
+import { Protected } from '@/common/decorators/protected.decorator';
 import { SocialService } from '@/social/social.service';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '@/common/guards/permissions.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Controller('productions/:productionId/social')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Protected()
 export class SocialController {
   constructor(private readonly socialService: SocialService) {}
 
@@ -114,3 +112,4 @@ export class SocialController {
     return { words };
   }
 }
+

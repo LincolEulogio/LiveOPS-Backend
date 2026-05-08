@@ -1,19 +1,10 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Put,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
 import { ObsService } from '@/obs/obs.service';
 import { SaveObsConnectionDto, ChangeSceneDto } from '@/obs/dto/obs.dto';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '@/common/guards/permissions.guard';
+import { Protected } from '@/common/decorators/protected.decorator';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Protected()
 @Controller('productions/:productionId/obs')
 export class ObsController {
   constructor(private readonly obsService: ObsService) {}
