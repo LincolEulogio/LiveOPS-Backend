@@ -352,7 +352,7 @@ export class AuthService {
 
   private async generateTokens(userId: string, tenantId?: string | null) {
     const payload = { sub: userId, tenantId };
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '6h' });
 
     const refreshToken = crypto.randomUUID();
     const expiresAt = new Date();
