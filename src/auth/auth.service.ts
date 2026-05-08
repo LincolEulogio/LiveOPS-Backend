@@ -14,7 +14,6 @@ import { ForgotPasswordDto } from '@/auth/dto/forgot-password.dto';
 import { ResetPasswordDto } from '@/auth/dto/reset-password.dto';
 import { Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
-
 import { UsersService } from '@/users/users.service';
 import { MailerService } from '@/common/services/mailer.service';
 import { Role } from '@/common/constants/roles.enum';
@@ -167,7 +166,8 @@ export class AuthService {
 
     // First registered user becomes SUPERADMIN; all subsequent users get VIEWER
     const existingUserCount = await this.prisma.user.count();
-    const assignedRoleName = existingUserCount === 0 ? Role.SUPERADMIN : Role.VIEWER;
+    const assignedRoleName =
+      existingUserCount === 0 ? Role.SUPERADMIN : Role.VIEWER;
 
     const assignedRole = await this.prisma.role.findUnique({
       where: { name: assignedRoleName },
@@ -184,7 +184,9 @@ export class AuthService {
       data: { name: `${dto.name || email.split('@')[0]}'s Workspace` },
     });
 
-    const verificationToken = String(Math.floor(100000 + Math.random() * 900000));
+    const verificationToken = String(
+      Math.floor(100000 + Math.random() * 900000),
+    );
 
     const user = await this.prisma.user.create({
       data: {
@@ -327,7 +329,9 @@ export class AuthService {
       };
     }
 
-    const verificationToken = String(Math.floor(100000 + Math.random() * 900000));
+    const verificationToken = String(
+      Math.floor(100000 + Math.random() * 900000),
+    );
     await this.prisma.user.update({
       where: { id: user.id },
       data: { verificationToken },
