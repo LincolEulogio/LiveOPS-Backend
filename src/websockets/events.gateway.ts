@@ -76,6 +76,9 @@ export class EventsGateway
 
   private logger: Logger = new Logger('EventsGateway');
   private scriptUpdateTimers: Map<string, NodeJS.Timeout> = new Map();
+  // Rate limiting: userId → last command timestamp (ms)
+  private commandRateMap: Map<string, number> = new Map();
+  private readonly COMMAND_RATE_LIMIT_MS = 1000;
 
   constructor(
     private prisma: PrismaService,
@@ -580,32 +583,31 @@ export class EventsGateway
       message: string;
       requiresAck?: boolean;
     },
+    @ConnectedSocket() client: CustomSocket,
   ) {
-    console.log(
-      `[Intercom] Sending command from ${data.senderId} to production ${data.productionId}`,
-      data,
-    );
-    // Save to DB via service
+    // Rate limiting
+    const now = Date.now();
+    const last = this.commandRateMap.get(data.senderId) || 0;
+    if (now - last < this.COMMAND_RATE_LIMIT_MS) {
+      client.emit('command.error', { message: 'Demasiados comandos. Espera un momento.' });
+      return { status: 'rate_limited' };
+    }
+    this.commandRateMap.set(data.senderId, now);
+
+    this.logger.log(`[Intercom] Command from ${data.senderId} → production ${data.productionId}`);
     const command = await this.intercomService.sendCommand(data);
 
-    // Update presence status for relevant users via PresenceService
-    // Note: We use the server to find specific users or roles more efficiently if needed,
-    // but here we just update our presence map for those online.
     const room = `production_${data.productionId}`;
     const socketsInRoom = this.server.sockets.adapter.rooms.get(room);
-
     if (socketsInRoom) {
       for (const sid of socketsInRoom) {
         const socket = this.server.sockets.sockets.get(sid);
         if (socket) {
           const uId = socket.handshake.query.userId as string;
           const rId = socket.handshake.query.roleId as string;
-
           const isTargeted =
             (data.targetUserId && uId === data.targetUserId) ||
-            (!data.targetUserId &&
-              (rId === data.targetRoleId || !data.targetRoleId));
-
+            (!data.targetUserId && (rId === data.targetRoleId || !data.targetRoleId));
           if (isTargeted) {
             this.presenceService.updateStatus(sid, data.message);
           }
@@ -614,8 +616,78 @@ export class EventsGateway
     }
 
     this.broadcastPresence(data.productionId);
-
     return { status: 'ok', commandId: command.id };
+  }
+
+  @SubscribeMessage('command.group_send')
+  async handleCommandGroupSend(
+    @MessageBody()
+    data: {
+      productionId: string;
+      senderId: string;
+      targetUserIds: string[];
+      templateId?: string;
+      message: string;
+      requiresAck?: boolean;
+    },
+    @ConnectedSocket() client: CustomSocket,
+  ) {
+    const now = Date.now();
+    const last = this.commandRateMap.get(data.senderId) || 0;
+    if (now - last < this.COMMAND_RATE_LIMIT_MS) {
+      client.emit('command.error', { message: 'Demasiados comandos. Espera un momento.' });
+      return { status: 'rate_limited' };
+    }
+    this.commandRateMap.set(data.senderId, now);
+
+    const commands = await Promise.all(
+      data.targetUserIds.map((userId) =>
+        this.intercomService.sendCommand({
+          productionId: data.productionId,
+          senderId: data.senderId,
+          targetUserId: userId,
+          templateId: data.templateId,
+          message: data.message,
+          requiresAck: data.requiresAck,
+        }),
+      ),
+    );
+
+    this.broadcastPresence(data.productionId);
+    return { status: 'ok', commandIds: commands.map((c) => c.id) };
+  }
+
+  @SubscribeMessage('command.delivered')
+  async handleCommandDelivered(
+    @MessageBody() data: { commandId: string; productionId: string; userId: string },
+  ) {
+    // Update status to DELIVERED in DB
+    try {
+      await this.prisma.command.updateMany({
+        where: { id: data.commandId, status: 'SENT' },
+        data: { status: 'DELIVERED' },
+      });
+    } catch {
+      // Command may not exist (chat messages) — ignore
+    }
+
+    // Notify the room so the sender sees "Visto"
+    this.server.to(`production_${data.productionId}`).emit('command.delivered_ack', {
+      commandId: data.commandId,
+      deliveredBy: data.userId,
+      deliveredAt: new Date().toISOString(),
+    });
+  }
+
+  @SubscribeMessage('crew.status_update')
+  handleCrewStatusUpdate(
+    @MessageBody()
+    data: { productionId: string; userId: string; status: string },
+    @ConnectedSocket() client: CustomSocket,
+  ) {
+    this.presenceService.updateStatus(client.id, data.status);
+    this.broadcastPresence(data.productionId);
+    return { status: 'ok' };
   }
 
   @SubscribeMessage('chat.direct')
@@ -629,31 +701,26 @@ export class EventsGateway
       senderName?: string;
     },
   ) {
-    console.log(
+    this.logger.log(
       `[Intercom] Direct Chat from ${data.senderId} to ${data.targetUserId}`,
     );
 
     const payload = {
-      id: `chat-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      id: `dm-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
       productionId: data.productionId,
+      userId: data.senderId,
       senderId: data.senderId,
       targetUserId: data.targetUserId,
       message: data.message,
       senderName: data.senderName,
-      templateId: 'chat',
-      requiresAck: false,
+      userName: data.senderName,
       createdAt: new Date().toISOString(),
-      status: 'SENT',
-      sender: {
-        id: data.senderId,
-        name: data.senderName || 'Sender',
-      },
     };
 
-    // Broadcast only to the specific production room (frontend handles filtering by targetUserId)
+    // Emit as chat.received so it appears in the chat feed, NOT as an alert
     this.server
       .to(`production_${data.productionId}`)
-      .emit('command.received', payload);
+      .emit('chat.received', payload);
 
     return { status: 'ok', messageId: payload.id };
   }
@@ -694,7 +761,11 @@ export class EventsGateway
 
     if (data.productionId) this.broadcastPresence(data.productionId);
 
-    this.server.to(room).emit('command.ack_received', response);
+    this.server.to(room).emit('command.ack_received', {
+      ...response,
+      responseType: data.responseType || response.response,
+      productionId: data.productionId,
+    });
 
     return { status: 'ok', responseId: response.id };
   }

@@ -37,6 +37,13 @@ export enum SocketEvents {
   COMMAND_RECEIVED = 'command.received',
   COMMAND_ACK = 'command.ack',
   COMMAND_ACK_RECEIVED = 'command.ack_received',
+  COMMAND_DELIVERED = 'command.delivered',
+  COMMAND_DELIVERED_ACK = 'command.delivered_ack',
+  COMMAND_GROUP_SEND = 'command.group_send',
+  COMMAND_EXPIRED = 'command.expired',
+
+  // Crew Status
+  CREW_STATUS_UPDATE = 'crew.status_update',
 
   // Chat
   CHAT_SEND = 'chat.send',
