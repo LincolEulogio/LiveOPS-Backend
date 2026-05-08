@@ -1,137 +1,100 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import axios from 'axios';
-
-import { PushNotificationsService } from './push-notifications.service';
+import { ConfigService } from '@nestjs/config';
+import { Novu } from '@novu/node';
 
 export enum NotificationPlatform {
   DISCORD = 'DISCORD',
   SLACK = 'SLACK',
   PUSH = 'PUSH',
+  EMAIL = 'EMAIL',
   GENERIC = 'GENERIC',
 }
 
-interface WebhookType {
-  id: string;
-  productionId: string;
-  name: string;
-  url: string;
-  platform: NotificationPlatform;
-  isEnabled: boolean;
-}
-
 @Injectable()
-export class NotificationsService {
+export class NotificationsService implements OnModuleInit {
   private readonly logger = new Logger(NotificationsService.name);
+  private novu: Novu;
 
   constructor(
     private prisma: PrismaService,
-    private pushService: PushNotificationsService,
+    private configService: ConfigService,
   ) {}
+
+  onModuleInit() {
+    const apiKey = this.configService.get<string>('NOVU_API_KEY');
+    if (apiKey) {
+      this.novu = new Novu(apiKey);
+      this.logger.log('Novu Notification Engine initialized.');
+    } else {
+      this.logger.warn(
+        'NOVU_API_KEY missing. Notifications will be logged but not sent.',
+      );
+    }
+  }
 
   async sendNotification(
     productionId: string,
     message: string,
     options?: {
       platform?: NotificationPlatform;
-      userId?: string; // Para push directo
+      userId?: string;
       title?: string;
+      workflowId?: string; // Novu Workflow ID
     },
   ) {
-    // 1. Webhooks (Discord, Slack, Generic)
-    const webhooks = await this.prisma.webhook.findMany({
-      where: {
-        productionId,
-        isEnabled: true,
-        ...(options?.platform && options.platform !== NotificationPlatform.PUSH
-          ? { platform: options.platform }
-          : {}),
-      },
-    });
+    this.logger.debug(
+      `Sending notification for production ${productionId}: ${message}`,
+    );
 
-    if (webhooks.length > 0) {
-      await Promise.allSettled(
-        webhooks.map((webhook) =>
-          this.dispatchWebhook(webhook as WebhookType, message),
-        ),
-      );
+    if (!this.novu) {
+      this.logger.warn('Novu not initialized. Skipping delivery.');
+      return;
     }
 
-    // 2. Push Notifications (Si no se filtró por una plataforma específica distinta de PUSH)
-    if (!options?.platform || options.platform === NotificationPlatform.PUSH) {
-      // Si tenemos un userId, enviamos directo. Si no, enviamos a todos los operadores de la producción.
+    try {
+      // If a specific userId is provided, trigger Novu for that subscriber
       if (options?.userId) {
-        await this.pushService.sendNotification(options.userId, {
-          title: options.title || 'LiveOPS Alert',
-          body: message,
-        });
+        await this.triggerNovu(options.userId, message, options.title);
       } else {
-        // Buscar usuarios con acceso a esta producción (roles con permisos de visualización)
+        // Broadcast to all production members
         const productionUsers = await this.prisma.productionUser.findMany({
           where: { productionId },
           select: { userId: true },
         });
 
-        if (productionUsers.length > 0) {
-          await Promise.allSettled(
-            productionUsers.map((up: { userId: string }) =>
-              this.pushService.sendNotification(up.userId, {
-                title: options?.title || 'LiveOPS Alert',
-                body: message,
-              }),
-            ),
-          );
-        }
+        await Promise.allSettled(
+          productionUsers.map((up) =>
+            this.triggerNovu(up.userId, message, options?.title),
+          ),
+        );
       }
+    } catch (error: unknown) {
+      this.logger.error(
+        `Novu trigger failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
-  private async dispatchWebhook(webhook: WebhookType, message: string) {
+  private async triggerNovu(userId: string, message: string, title?: string) {
     try {
-      let payload: unknown;
-
-      if (webhook.platform === NotificationPlatform.DISCORD) {
-        payload = {
-          content: null,
-          embeds: [
-            {
-              title: 'LiveOPS Alert',
-              description: message,
-              color: 5814783, // Blurple-ish
-              timestamp: new Date().toISOString(),
-              footer: {
-                text: `Source: ${webhook.name}`,
-              },
-            },
-          ],
-        };
-      } else if (webhook.platform === NotificationPlatform.SLACK) {
-        payload = {
-          text: `*LiveOPS Alert:* ${message}`,
-          blocks: [
-            {
-              type: 'section',
-              text: {
-                type: 'mrkd-short',
-                text: `*LiveOPS Alert*\n${message}`,
-              },
-            },
-          ],
-        };
-      } else {
-        payload = { message, timestamp: new Date().toISOString() };
-      }
-
-      await axios.post(webhook.url, payload);
-      this.logger.log(
-        `Successfully dispatched notification to ${webhook.name} (${webhook.platform})`,
+      await this.novu.trigger(
+        this.configService.get('NOVU_WORKFLOW_ID') || 'production-alert',
+        {
+          to: {
+            subscriberId: userId,
+          },
+          payload: {
+            message,
+            title: title || 'LiveOPS Alert',
+            timestamp: new Date().toISOString(),
+          },
+        },
       );
     } catch (error: unknown) {
-      const err = error as Error;
       this.logger.error(
-        `Failed to dispatch notification to ${webhook.name}: ${err.message}`,
+        `Failed to trigger Novu for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
       );
-      throw err;
     }
   }
 }

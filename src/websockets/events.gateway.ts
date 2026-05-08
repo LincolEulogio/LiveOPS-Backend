@@ -228,8 +228,11 @@ export class EventsGateway
       this.scriptUpdateTimers.delete(data.productionId);
       this.scriptService
         .updateScriptState(data.productionId, Buffer.from(updateArray))
-        .catch((err) => {
-          this.logger.error('Failed to persist script update', err);
+        .catch((err: unknown) => {
+          this.logger.error(
+            'Failed to persist script update',
+            err instanceof Error ? err.message : String(err),
+          );
         });
     }, 1000); // 1s throttle for DB writes
 

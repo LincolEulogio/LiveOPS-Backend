@@ -97,9 +97,9 @@ export class ObsService implements ISceneEngine {
 
       return { success: true, sceneName };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to change scene: ${error.message}`);
-      throw new BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to change scene: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
 
@@ -116,9 +116,9 @@ export class ObsService implements ISceneEngine {
 
       return { success: true };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to start stream: ${error.message}`);
-      throw new BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to start stream: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
 
@@ -135,9 +135,9 @@ export class ObsService implements ISceneEngine {
 
       return { success: true };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to stop stream: ${error.message}`);
-      throw new BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to stop stream: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
 
@@ -154,9 +154,9 @@ export class ObsService implements ISceneEngine {
 
       return { success: true };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to start record: ${error.message}`);
-      throw new BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to start record: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
 
@@ -173,9 +173,9 @@ export class ObsService implements ISceneEngine {
 
       return { success: true };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to stop record: ${error.message}`);
-      throw new BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to stop record: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
 
@@ -185,14 +185,18 @@ export class ObsService implements ISceneEngine {
       await obs.call('SaveReplayBuffer');
       return { success: true };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to save replay buffer: ${error.message}`);
-      throw new BadRequestException(`OBS Error: ${error.message || 'Unknown'}`);
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to save replay buffer: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
 
   // --- Audio Control for OBS ---
-  async setVolume(productionId: string, input?: any, value?: number) {
+  async setVolume(
+    productionId: string,
+    input?: string | number,
+    value?: number,
+  ) {
     const obs = this.getObs(productionId);
     try {
       // Determine source name: if input is numeric/0/undefined, try default OBS audio sources
@@ -201,7 +205,10 @@ export class ObsService implements ISceneEngine {
         // Try common default OBS audio names
         try {
           const inputVolumeMul = (value ?? 0) / 100;
-          await obs.call('SetInputVolume', { inputName: 'Desktop Audio', inputVolumeMul });
+          await obs.call('SetInputVolume', {
+            inputName: 'Desktop Audio',
+            inputVolumeMul,
+          });
           return { success: true };
         } catch {
           inputName = 'Mic/Aux';
@@ -212,12 +219,13 @@ export class ObsService implements ISceneEngine {
       await obs.call('SetInputVolume', { inputName, inputVolumeMul });
       return { success: true };
     } catch (e: unknown) {
-      this.logger.warn(`Failed to set OBS volume for ${input}: ${(e as Error).message}`);
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.warn(`Failed to set OBS volume for ${input}: ${message}`);
       return { success: true }; // Return success to UI anyway
     }
   }
 
-  async toggleMute(productionId: string, input?: any) {
+  async toggleMute(productionId: string, input?: string | number) {
     const obs = this.getObs(productionId);
     try {
       let inputName = typeof input === 'string' ? input : '';
@@ -232,23 +240,41 @@ export class ObsService implements ISceneEngine {
       await obs.call('ToggleInputMute', { inputName });
       return { success: true };
     } catch (e: unknown) {
-      this.logger.warn(`Failed to toggle OBS mute for ${input}: ${(e as Error).message}`);
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.warn(`Failed to toggle OBS mute for ${input}: ${message}`);
       return { success: true };
     }
   }
 
-  async toggleSolo(productionId: string, input?: any) {
-    this.logger.debug(`toggleSolo (OBS) - Production: ${productionId}, Input: ${input}`);
-    return { success: true };
+  toggleSolo(
+    productionId: string,
+    input?: string | number,
+  ): Promise<{ success: boolean }> {
+    this.logger.debug(
+      `toggleSolo (OBS) - Production: ${productionId}, Input: ${input}`,
+    );
+    return Promise.resolve({ success: true });
   }
 
-  async setGain(productionId: string, input?: any, value?: number) {
-    this.logger.debug(`setGain (OBS) - Production: ${productionId}, Input: ${input}, Value: ${value}`);
-    return { success: true };
+  setGain(
+    productionId: string,
+    input?: string | number,
+    value?: number,
+  ): Promise<{ success: boolean }> {
+    this.logger.debug(
+      `setGain (OBS) - Production: ${productionId}, Input: ${input}, Value: ${value}`,
+    );
+    return Promise.resolve({ success: true });
   }
 
-  async toggleBus(productionId: string, input?: any, bus?: string) {
-    this.logger.debug(`toggleBus (OBS) - Production: ${productionId}, Input: ${input}, Bus: ${bus}`);
-    return { success: true };
+  toggleBus(
+    productionId: string,
+    input?: string | number,
+    bus?: string,
+  ): Promise<{ success: boolean }> {
+    this.logger.debug(
+      `toggleBus (OBS) - Production: ${productionId}, Input: ${input}, Bus: ${bus}`,
+    );
+    return Promise.resolve({ success: true });
   }
 }

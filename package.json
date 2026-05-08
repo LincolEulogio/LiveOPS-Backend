@@ -23,8 +23,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.33",
+    "@ai-sdk/google": "^3.0.70",
     "@google/generative-ai": "^0.24.1",
+    "@hocuspocus/server": "^4.0.0",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/cache-manager": "^3.1.0",
     "@nestjs/cli": "^11.0.0",
@@ -41,6 +42,7 @@
     "@nestjs/terminus": "^11.1.1",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^11.1.14",
+    "@novu/node": "^2.6.6",
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",
     "@types/bcrypt": "^6.0.0",
@@ -51,7 +53,7 @@
     "@types/pg": "^8.16.0",
     "@types/web-push": "^3.6.4",
     "@types/xml2js": "^0.4.14",
-    "ai": "^6.0.103",
+    "ai": "^6.0.176",
     "axios": "^1.13.6",
     "bcrypt": "^6.0.0",
     "cache-manager": "^7.2.8",
@@ -79,7 +81,8 @@
     "uploadthing": "^7.7.4",
     "web-push": "^3.6.7",
     "xml2js": "^0.6.2",
-    "yjs": "^13.6.29",
+    "y-protocols": "^1.0.7",
+    "yjs": "^13.6.30",
     "zod": "^4.3.6"
   },
   "devDependencies": {

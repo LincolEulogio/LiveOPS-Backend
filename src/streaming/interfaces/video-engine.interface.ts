@@ -12,19 +12,19 @@ export interface IVideoEngine {
   // Audio Controls
   setVolume?(
     productionId: string,
-    input?: any,
+    input?: string | number,
     value?: number,
   ): Promise<{ success: boolean }>;
-  toggleMute?(productionId: string, input?: any): Promise<{ success: boolean }>;
-  toggleSolo?(productionId: string, input?: any): Promise<{ success: boolean }>;
+  toggleMute?(productionId: string, input?: string | number): Promise<{ success: boolean }>;
+  toggleSolo?(productionId: string, input?: string | number): Promise<{ success: boolean }>;
   setGain?(
     productionId: string,
-    input?: any,
+    input?: string | number,
     value?: number,
   ): Promise<{ success: boolean }>;
   toggleBus?(
     productionId: string,
-    input?: any,
+    input?: string | number,
     bus?: string,
   ): Promise<{ success: boolean }>;
 }
