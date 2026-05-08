@@ -578,84 +578,98 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
   private startScreenshotPolling(productionId: string, instance: ObsInstance) {
     this.stopScreenshotPolling(instance);
 
-    instance.screenshotInterval = setInterval(() => {
-      void (async () => {
-        if (!instance.isConnected) return;
+    const poll = async () => {
+      if (!instance.isConnected) return;
 
-        try {
-          const sceneList = await instance.obs.call('GetSceneList');
+      try {
+        const sceneList = await instance.obs.call('GetSceneList');
 
-          const programScene = sceneList.currentProgramSceneName;
-          const previewScene = sceneList.currentPreviewSceneName;
+        const programScene = sceneList.currentProgramSceneName;
+        const previewScene = sceneList.currentPreviewSceneName;
 
-          const screenshotOptions = {
-            imageFormat: 'jpeg',
-            imageWidth: 480,
-            imageHeight: 270,
-            imageCompressionQuality: 80,
-          };
+        const screenshotOptions = {
+          imageFormat: 'jpeg',
+          imageWidth: 400,
+          imageHeight: 225,
+          imageCompressionQuality: 50,
+        };
 
-          const requests: Promise<{ imageData: string }>[] = [];
-          if (programScene) {
-            requests.push(
-              instance.obs.call('GetSourceScreenshot', {
-                sourceName: programScene,
-                ...screenshotOptions,
-              }) as Promise<{ imageData: string }>,
-            );
-          }
-          if (previewScene) {
-            requests.push(
-              instance.obs.call('GetSourceScreenshot', {
-                sourceName: previewScene,
-                ...screenshotOptions,
-              }) as Promise<{ imageData: string }>,
-            );
-          }
-
-          const results = await Promise.allSettled(requests);
-
-          const payload: {
-            productionId: string;
-            programScene: string;
-            previewScene?: string;
-            program?: string;
-            preview?: string;
-          } = {
-            productionId,
-            programScene: programScene ?? '',
-            previewScene: previewScene ?? undefined,
-          };
-
-          if (results[0]?.status === 'fulfilled') {
-            const data = results[0].value.imageData;
-            payload.program = data.startsWith('data:')
-              ? data
-              : `data:image/jpeg;base64,${data}`;
-          }
-
-          if (results[1] && results[1].status === 'fulfilled') {
-            const data = results[1].value.imageData;
-            payload.preview = data.startsWith('data:')
-              ? data
-              : `data:image/jpeg;base64,${data}`;
-          } else if (!previewScene && payload.program) {
-            payload.preview = payload.program;
-          }
-
-          if (payload.program || payload.preview) {
-            this.eventEmitter.emit('obs.screenshot.update', payload);
-          }
-        } catch {
-          // Silent error for screenshots to avoid spamming logs
+        const requests: Promise<{ imageData: string }>[] = [];
+        if (programScene) {
+          requests.push(
+            instance.obs.call('GetSourceScreenshot', {
+              sourceName: programScene,
+              ...screenshotOptions,
+            }) as Promise<{ imageData: string }>,
+          );
         }
-      })();
-    }, 2000);
+        if (previewScene && previewScene !== programScene) {
+          requests.push(
+            instance.obs.call('GetSourceScreenshot', {
+              sourceName: previewScene,
+              ...screenshotOptions,
+            }) as Promise<{ imageData: string }>,
+          );
+        }
+
+        const results = await Promise.allSettled(requests);
+
+        const payload: {
+          productionId: string;
+          programScene: string;
+          previewScene?: string;
+          program?: string;
+          preview?: string;
+        } = {
+          productionId,
+          programScene: programScene ?? '',
+          previewScene: previewScene ?? undefined,
+        };
+
+        if (results[0]?.status === 'fulfilled') {
+          const data = results[0].value.imageData;
+          payload.program = data.startsWith('data:')
+            ? data
+            : `data:image/jpeg;base64,${data}`;
+        }
+
+        if (results[1] && results[1].status === 'fulfilled') {
+          const data = (
+            results[1] as PromiseFulfilledResult<{ imageData: string }>
+          ).value.imageData;
+          payload.preview = data.startsWith('data:')
+            ? data
+            : `data:image/jpeg;base64,${data}`;
+        } else if (!previewScene && payload.program) {
+          payload.preview = payload.program;
+        } else if (previewScene === programScene && payload.program) {
+          payload.preview = payload.program;
+        }
+
+        if (payload.program || payload.preview) {
+          this.eventEmitter.emit('obs.screenshot.update', payload);
+        }
+      } catch {
+        // Silent error for screenshots to avoid spamming logs
+      } finally {
+        // Schedule next poll if still connected
+        if (instance.isConnected) {
+          instance.screenshotInterval = setTimeout(() => {
+            void poll();
+          }, 60);
+        }
+      }
+    };
+
+    // Start first poll
+    instance.screenshotInterval = setTimeout(() => {
+      void poll();
+    }, 60);
   }
 
   private stopScreenshotPolling(instance: ObsInstance) {
     if (instance.screenshotInterval) {
-      clearInterval(instance.screenshotInterval);
+      clearTimeout(instance.screenshotInterval);
       instance.screenshotInterval = undefined;
     }
   }
