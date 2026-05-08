@@ -419,11 +419,11 @@ export class AutomationEngineService {
         details: { ruleName: rule.name, ruleId: rule.id, context },
       });
     } catch (error: unknown) {
-      const err = error as Error;
+      const message = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `Rule execution failed for rule ${rule.id}: ${err.message}`,
+        `Rule execution failed for rule ${rule.id}: ${message}`,
       );
-      await this.logExecution(rule.id, rule.productionId, 'ERROR', err.message);
+      await this.logExecution(rule.id, rule.productionId, 'ERROR', message);
     }
   }
 

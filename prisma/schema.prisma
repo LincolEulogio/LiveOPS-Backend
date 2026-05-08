@@ -179,6 +179,7 @@ model Production {
   scriptHistory         ScriptHistory[]
   showReport            ShowReport?
   socialMessages        SocialMessage[]
+  restreamConnection    RestreamConnection?
   socialPolls           SocialPoll[]
   streamingDestinations StreamingDestination[]
   telemetryLogs         TelemetryLog[]
@@ -488,6 +489,17 @@ model Webhook {
   production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
 
   @@index([productionId])
+}
+
+model RestreamConnection {
+  id           String     @id @default(uuid()) @db.Uuid
+  productionId String     @unique @db.Uuid
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
 }
 
 model OverlayTemplate {

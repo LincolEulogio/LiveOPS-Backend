@@ -13,7 +13,9 @@ const TENANT_MODELS = [
 ];
 
 type FilterArgs = { where?: Record<string, unknown> };
-type MutationArgs = { data: Record<string, unknown> | Record<string, unknown>[] };
+type MutationArgs = {
+  data: Record<string, unknown> | Record<string, unknown>[];
+};
 
 function buildTenantExtension(base: PrismaClient) {
   return base.$extends({
@@ -23,13 +25,20 @@ function buildTenantExtension(base: PrismaClient) {
           const tenantId = TenantContext.getTenantId();
 
           if (tenantId && TENANT_MODELS.includes(model)) {
-            if (['findMany', 'findFirst', 'findUnique', 'count'].includes(operation)) {
+            if (
+              ['findMany', 'findFirst', 'findUnique', 'count'].includes(
+                operation,
+              )
+            ) {
               const typedArgs = args as FilterArgs;
               typedArgs.where = { ...typedArgs.where, tenantId };
             } else if (['create', 'createMany'].includes(operation)) {
               const typedArgs = args as MutationArgs;
               if (Array.isArray(typedArgs.data)) {
-                typedArgs.data = typedArgs.data.map((item) => ({ ...item, tenantId }));
+                typedArgs.data = typedArgs.data.map((item) => ({
+                  ...item,
+                  tenantId,
+                }));
               } else {
                 typedArgs.data = { ...typedArgs.data, tenantId };
               }

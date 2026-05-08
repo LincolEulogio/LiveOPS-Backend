@@ -245,8 +245,8 @@ export class AuthService {
         },
       })
       .catch((e: unknown) => {
-        const err = e as Error;
-        console.error('Failed to write audit log', err.message);
+        const message = e instanceof Error ? e.message : String(e);
+        console.error('Failed to write audit log', message);
       });
 
     const tokens = await this.generateTokens(user.id, user.tenantId);

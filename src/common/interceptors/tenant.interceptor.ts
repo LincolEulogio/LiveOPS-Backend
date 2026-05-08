@@ -7,15 +7,24 @@ import {
 import { Observable } from 'rxjs';
 import { TenantContext } from '../utils/tenant-context';
 
+import { Request } from 'express';
+
+interface RequestWithUser extends Request {
+  user?: {
+    tenantId?: string;
+  };
+}
+
 @Injectable()
 export class TenantInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
     const user = request.user;
 
-    if (user && user.tenantId) {
+    const tenantId = user?.tenantId;
+    if (tenantId) {
       return new Observable((observer) => {
-        TenantContext.run(user.tenantId, () => {
+        TenantContext.run(tenantId, () => {
           next.handle().subscribe(observer);
         });
       });

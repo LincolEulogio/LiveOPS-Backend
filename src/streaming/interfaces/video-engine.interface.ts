@@ -15,8 +15,14 @@ export interface IVideoEngine {
     input?: string | number,
     value?: number,
   ): Promise<{ success: boolean }>;
-  toggleMute?(productionId: string, input?: string | number): Promise<{ success: boolean }>;
-  toggleSolo?(productionId: string, input?: string | number): Promise<{ success: boolean }>;
+  toggleMute?(
+    productionId: string,
+    input?: string | number,
+  ): Promise<{ success: boolean }>;
+  toggleSolo?(
+    productionId: string,
+    input?: string | number,
+  ): Promise<{ success: boolean }>;
   setGain?(
     productionId: string,
     input?: string | number,

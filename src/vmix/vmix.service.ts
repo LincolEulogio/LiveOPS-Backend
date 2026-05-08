@@ -90,11 +90,9 @@ export class VmixService implements IInputEngine {
 
       return { success: true, input, action: 'preview' };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to change input: ${error.message}`);
-      throw new BadRequestException(
-        `vMix Error: ${error.message || 'Unknown'}`,
-      );
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.error(`Failed to change input: ${message}`);
+      throw new BadRequestException(`vMix Error: ${message || 'Unknown'}`);
     }
   }
 
@@ -112,11 +110,9 @@ export class VmixService implements IInputEngine {
 
       return { success: true, action: 'cut' };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to trigger cut: ${error.message}`);
-      throw new BadRequestException(
-        `vMix Error: ${error.message || 'Unknown'}`,
-      );
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.error(`Failed to trigger cut: ${message}`);
+      throw new BadRequestException(`vMix Error: ${message || 'Unknown'}`);
     }
   }
 
@@ -140,11 +136,9 @@ export class VmixService implements IInputEngine {
 
       return { success: true, action: 'fade', duration: duration };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to trigger fade: ${error.message}`);
-      throw new BadRequestException(
-        `vMix Error: ${error.message || 'Unknown'}`,
-      );
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.error(`Failed to trigger fade: ${message}`);
+      throw new BadRequestException(`vMix Error: ${message || 'Unknown'}`);
     }
   }
 
@@ -165,11 +159,9 @@ export class VmixService implements IInputEngine {
       }
       return { success: true, input, value };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to set volume: ${error.message}`);
-      throw new BadRequestException(
-        `vMix Error: ${error.message || 'Unknown'}`,
-      );
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.error(`Failed to set volume: ${message}`);
+      throw new BadRequestException(`vMix Error: ${message || 'Unknown'}`);
     }
   }
 
@@ -186,11 +178,9 @@ export class VmixService implements IInputEngine {
       }
       return { success: true, input };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to toggle mute: ${error.message}`);
-      throw new BadRequestException(
-        `vMix Error: ${error.message || 'Unknown'}`,
-      );
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.error(`Failed to toggle mute: ${message}`);
+      throw new BadRequestException(`vMix Error: ${message || 'Unknown'}`);
     }
   }
 
@@ -204,11 +194,9 @@ export class VmixService implements IInputEngine {
       });
       return { success: true, input };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to toggle solo: ${error.message}`);
-      throw new BadRequestException(
-        `vMix Error: ${error.message || 'Unknown'}`,
-      );
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.error(`Failed to toggle solo: ${message}`);
+      throw new BadRequestException(`vMix Error: ${message || 'Unknown'}`);
     }
   }
 
@@ -224,11 +212,9 @@ export class VmixService implements IInputEngine {
       });
       return { success: true, input, value };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to set gain: ${error.message}`);
-      throw new BadRequestException(
-        `vMix Error: ${error.message || 'Unknown'}`,
-      );
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.error(`Failed to set gain: ${message}`);
+      throw new BadRequestException(`vMix Error: ${message || 'Unknown'}`);
     }
   }
 
@@ -246,11 +232,9 @@ export class VmixService implements IInputEngine {
       });
       return { success: true, input, bus };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to toggle bus: ${error.message}`);
-      throw new BadRequestException(
-        `vMix Error: ${error.message || 'Unknown'}`,
-      );
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.error(`Failed to toggle bus: ${message}`);
+      throw new BadRequestException(`vMix Error: ${message || 'Unknown'}`);
     }
   }
 
@@ -279,11 +263,9 @@ export class VmixService implements IInputEngine {
       });
       return { success: true, action: 'videoDelaySave' };
     } catch (e: unknown) {
-      const error = e as Error;
-      this.logger.error(`Failed to save video delay: ${error.message}`);
-      throw new BadRequestException(
-        `vMix Error: ${error.message || 'Unknown'}`,
-      );
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.error(`Failed to save video delay: ${message}`);
+      throw new BadRequestException(`vMix Error: ${message || 'Unknown'}`);
     }
   }
 

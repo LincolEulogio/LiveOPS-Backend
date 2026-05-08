@@ -128,9 +128,8 @@ export class PushNotificationsService implements OnModuleInit {
           // We don't have the endpoint directly here easily without more mapping,
           // but we can log the failure. In a real scenario, we'd delete the invalid sub.
         } else {
-          this.logger.error(
-            `Failed to send push notification: ${error.message}`,
-          );
+          const message = error.message || 'Unknown push error';
+          this.logger.error(`Failed to send push notification: ${message}`);
         }
       }
     }
