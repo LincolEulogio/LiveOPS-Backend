@@ -21,6 +21,8 @@ import { Permissions } from '@/common/decorators/permissions.decorator';
 
 import { LiveKitService } from '@/streaming/livekit.service';
 
+import { SkipThrottle } from '@nestjs/throttler';
+
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('streaming')
 export class StreamingController {
@@ -54,6 +56,7 @@ export class StreamingController {
     return this.streamingService.getStreamingState(productionId);
   }
 
+  @SkipThrottle()
   @Post(':id/command')
   @Permissions('streaming:control')
   sendCommand(

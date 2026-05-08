@@ -37,6 +37,14 @@ interface ObsInstance {
     bitrate?: number;
     outputSkippedFrames?: number;
     outputTotalFrames?: number;
+    audio?: {
+      master?: {
+        volume: number;
+        muted: boolean;
+        meterF1: number;
+        meterF2: number;
+      };
+    };
   };
 }
 
@@ -133,27 +141,107 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       });
     });
 
-    obs.on('StreamStateChanged', (data) => {
-      if (instance.lastState) {
-        instance.lastState.isStreaming = data.outputActive;
-      }
-      this.eventEmitter.emit('obs.stream.state', {
-        productionId,
-        active: data.outputActive,
-        state: data.outputState,
-      });
-    });
+    obs.on(
+      'StreamStateChanged',
+      (data: { outputActive: boolean; outputState: string }) => {
+        if (instance.lastState) {
+          instance.lastState.isStreaming = data.outputActive;
+        }
+        this.eventEmitter.emit('obs.stream.state', {
+          productionId,
+          active: data.outputActive,
+          state: data.outputState,
+        });
+      },
+    );
 
-    obs.on('RecordStateChanged', (data) => {
-      if (instance.lastState) {
-        instance.lastState.isRecording = data.outputActive;
-      }
-      this.eventEmitter.emit('obs.record.state', {
-        productionId,
-        active: data.outputActive,
-        state: data.outputState,
-      });
-    });
+    obs.on(
+      'InputVolumeChanged',
+      (data: {
+        inputName: string;
+        inputVolumeMul: number;
+        inputVolumeDb: number;
+      }) => {
+        if (
+          (data.inputName === 'Desktop Audio' ||
+            data.inputName === 'Audio de Escritorio' ||
+            data.inputName === 'Mic/Aux') &&
+          instance.lastState?.audio?.master
+        ) {
+          instance.lastState.audio.master.volume = Math.round(
+            data.inputVolumeMul * 100,
+          );
+        }
+        this.eventEmitter.emit('obs.audio.volume', {
+          productionId,
+          inputName: data.inputName,
+          volumeMul: data.inputVolumeMul,
+          volumeDb: data.inputVolumeDb,
+        });
+      },
+    );
+
+    obs.on(
+      'InputMuteStateChanged',
+      (data: { inputName: string; inputMuted: boolean }) => {
+        if (
+          (data.inputName === 'Desktop Audio' ||
+            data.inputName === 'Audio de Escritorio' ||
+            data.inputName === 'Mic/Aux') &&
+          instance.lastState?.audio?.master
+        ) {
+          instance.lastState.audio.master.muted = data.inputMuted;
+        }
+        this.eventEmitter.emit('obs.audio.mute', {
+          productionId,
+          inputName: data.inputName,
+          muted: data.inputMuted,
+        });
+      },
+    );
+
+    obs.on(
+      'InputVolumeMeters',
+      (data: {
+        inputs: {
+          inputName: string;
+          inputLevelsMul: number[][];
+          inputLevelsDb: number[][];
+        }[];
+      }) => {
+        const masterMeter = data.inputs.find(
+          (i) =>
+            i.inputName === 'Desktop Audio' ||
+            i.inputName === 'Audio de Escritorio' ||
+            i.inputName === 'Mic/Aux',
+        );
+
+        if (masterMeter && instance.lastState?.audio?.master) {
+          // OBS returns levels as linear multiplier (0 to 1)
+          // [0][0] is usually Left channel, [0][1] is Right channel peak
+          instance.lastState.audio.master.meterF1 =
+            masterMeter.inputLevelsMul?.[0]?.[0] ?? 0;
+          instance.lastState.audio.master.meterF2 =
+            masterMeter.inputLevelsMul?.[1]?.[0] ??
+            masterMeter.inputLevelsMul?.[0]?.[1] ??
+            0;
+        }
+      },
+    );
+
+    obs.on(
+      'RecordStateChanged',
+      (data: { outputActive: boolean; outputState: string }) => {
+        if (instance.lastState) {
+          instance.lastState.isRecording = data.outputActive;
+        }
+        this.eventEmitter.emit('obs.record.state', {
+          productionId,
+          active: data.outputActive,
+          state: data.outputState,
+        });
+      },
+    );
 
     obs.on('SceneListChanged', () => {
       void (async () => {
@@ -237,6 +325,27 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
             )
           : 0;
 
+        // Attempt to get initial audio state for 'Master'
+        let masterVol = 100;
+        let masterMuted = false;
+        try {
+          // Try English and Spanish defaults
+          const names = ['Desktop Audio', 'Audio de Escritorio', 'Mic/Aux'];
+          for (const name of names) {
+            try {
+              const vol = await obs.call('GetInputVolume', { inputName: name });
+              const mute = await obs.call('GetInputMute', { inputName: name });
+              masterVol = Math.round(vol.inputVolumeMul * 100);
+              masterMuted = mute.inputMuted;
+              break;
+            } catch {
+              continue;
+            }
+          }
+        } catch {
+          /* ignore */
+        }
+
         instance.lastState = {
           currentScene: sceneList?.currentProgramSceneName || 'Unknown',
           scenes: sceneList
@@ -250,6 +359,14 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
           fps,
           bitrate:
             streamStatus?.outputSkippedFrames !== undefined ? 0 : undefined,
+          audio: {
+            master: {
+              volume: masterVol,
+              muted: masterMuted,
+              meterF1: 0,
+              meterF2: 0,
+            },
+          },
         };
 
         if (sceneList?.currentProgramSceneName) {
@@ -511,11 +628,17 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
           };
 
           if (results[0]?.status === 'fulfilled') {
-            payload.program = `data:image/jpeg;base64,${results[0].value.imageData}`;
+            const data = results[0].value.imageData;
+            payload.program = data.startsWith('data:')
+              ? data
+              : `data:image/jpeg;base64,${data}`;
           }
 
           if (results[1] && results[1].status === 'fulfilled') {
-            payload.preview = `data:image/jpeg;base64,${results[1].value.imageData}`;
+            const data = results[1].value.imageData;
+            payload.preview = data.startsWith('data:')
+              ? data
+              : `data:image/jpeg;base64,${data}`;
           } else if (!previewScene && payload.program) {
             payload.preview = payload.program;
           }

@@ -67,7 +67,7 @@ import { NdiModule } from '@/ndi/ndi.module';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 100,
+        limit: 1000,
       },
     ]),
     EventEmitterModule.forRoot({ wildcard: true }),

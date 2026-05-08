@@ -8,6 +8,25 @@ export interface IVideoEngine {
   startRecord(productionId: string): Promise<{ success: boolean }>;
   stopRecord(productionId: string): Promise<{ success: boolean }>;
   saveReplayBuffer?(productionId: string): Promise<{ success: boolean }>;
+
+  // Audio Controls
+  setVolume?(
+    productionId: string,
+    input?: any,
+    value?: number,
+  ): Promise<{ success: boolean }>;
+  toggleMute?(productionId: string, input?: any): Promise<{ success: boolean }>;
+  toggleSolo?(productionId: string, input?: any): Promise<{ success: boolean }>;
+  setGain?(
+    productionId: string,
+    input?: any,
+    value?: number,
+  ): Promise<{ success: boolean }>;
+  toggleBus?(
+    productionId: string,
+    input?: any,
+    bus?: string,
+  ): Promise<{ success: boolean }>;
 }
 
 export interface ISceneEngine extends IVideoEngine {

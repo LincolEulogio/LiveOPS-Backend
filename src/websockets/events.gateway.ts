@@ -775,6 +775,29 @@ export class EventsGateway
       .emit('obs.screenshot.update', payload);
   }
 
+  @OnEvent('obs.audio.volume')
+  handleObsAudioVolume(payload: {
+    productionId: string;
+    inputName: string;
+    volumeMul: number;
+    volumeDb: number;
+  }) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('obs.audio.volume', payload);
+  }
+
+  @OnEvent('obs.audio.mute')
+  handleObsAudioMute(payload: {
+    productionId: string;
+    inputName: string;
+    muted: boolean;
+  }) {
+    this.server
+      .to(`production_${payload.productionId}`)
+      .emit('obs.audio.mute', payload);
+  }
+
   @OnEvent('vmix.input.changed')
   handleVmixInputChanged(payload: {
     productionId: string;
