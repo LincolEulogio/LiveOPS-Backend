@@ -27,8 +27,11 @@ interface ObsInstance {
   screenshotInterval?: NodeJS.Timeout;
   isConnected: boolean;
   reconnectAttempts: number;
+  currentProgramSceneName?: string;
+  currentPreviewSceneName?: string;
   lastState?: {
     currentScene: string;
+    previewScene?: string;
     scenes: string[];
     isStreaming: boolean;
     isRecording: boolean;
@@ -137,7 +140,20 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       }
       this.eventEmitter.emit('obs.scene.changed', {
         productionId,
-        sceneName: data.sceneName,
+        programScene: data.sceneName,
+        previewScene: instance.currentPreviewSceneName,
+      });
+    });
+
+    obs.on('CurrentPreviewSceneChanged', (data) => {
+      instance.currentPreviewSceneName = data.sceneName || undefined;
+      if (instance.lastState) {
+        instance.lastState.previewScene = data.sceneName || undefined;
+      }
+      this.eventEmitter.emit('obs.scene.changed', {
+        productionId,
+        programScene: instance.currentProgramSceneName,
+        previewScene: data.sceneName || undefined,
       });
     });
 
@@ -346,8 +362,14 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
           /* ignore */
         }
 
+        instance.currentProgramSceneName =
+          sceneList?.currentProgramSceneName || 'Unknown';
+        instance.currentPreviewSceneName =
+          sceneList?.currentPreviewSceneName || undefined;
+
         instance.lastState = {
-          currentScene: sceneList?.currentProgramSceneName || 'Unknown',
+          currentScene: instance.currentProgramSceneName,
+          previewScene: instance.currentPreviewSceneName,
           scenes: sceneList
             ? (sceneList.scenes as unknown as ObsScene[]).map(
                 (s) => s.sceneName,
@@ -582,10 +604,8 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       if (!instance.isConnected) return;
 
       try {
-        const sceneList = await instance.obs.call('GetSceneList');
-
-        const programScene = sceneList.currentProgramSceneName;
-        const previewScene = sceneList.currentPreviewSceneName;
+        const programScene = instance.currentProgramSceneName;
+        const previewScene = instance.currentPreviewSceneName;
 
         const screenshotOptions = {
           imageFormat: 'jpeg',
@@ -656,7 +676,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
         if (instance.isConnected) {
           instance.screenshotInterval = setTimeout(() => {
             void poll();
-          }, 60);
+          }, 33);
         }
       }
     };
@@ -664,7 +684,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     // Start first poll
     instance.screenshotInterval = setTimeout(() => {
       void poll();
-    }, 60);
+    }, 33);
   }
 
   private stopScreenshotPolling(instance: ObsInstance) {
