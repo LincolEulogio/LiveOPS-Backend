@@ -23,6 +23,7 @@ const USER_SELECT = {
   id: true,
   email: true,
   name: true,
+  avatarUrl: true,
   isVerified: true,
   createdAt: true,
   tenantId: true,
@@ -56,10 +57,11 @@ export class AuthService {
 
   async updateProfile(
     userId: string,
-    data: { name?: string; password?: string },
+    data: { name?: string; password?: string; avatarUrl?: string },
   ) {
     const updateData: Prisma.UserUpdateInput = {};
     if (data.name) updateData.name = data.name;
+    if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
     if (data.password)
       updateData.password = await bcrypt.hash(data.password, 10);
 

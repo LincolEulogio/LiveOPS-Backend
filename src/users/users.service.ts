@@ -14,7 +14,10 @@ import {
 } from '@/users/dto/users.dto';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
-import { PermissionAction, StandardRoles } from '@/common/constants/rbac.constants';
+import {
+  PermissionAction,
+  StandardRoles,
+} from '@/common/constants/rbac.constants';
 import { Role } from '@/common/constants/roles.enum';
 
 @Injectable()
@@ -110,10 +113,14 @@ export class UsersService implements OnModuleInit {
     // Assign VIEWER its base read-only permissions
     const viewerPermissions = StandardRoles.VIEWER?.permissions ?? [];
     for (const action of viewerPermissions) {
-      const perm = await this.prisma.permission.findUnique({ where: { action } });
+      const perm = await this.prisma.permission.findUnique({
+        where: { action },
+      });
       if (!perm) continue;
       await this.prisma.rolePermission.upsert({
-        where: { roleId_permissionId: { roleId: viewerRole.id, permissionId: perm.id } },
+        where: {
+          roleId_permissionId: { roleId: viewerRole.id, permissionId: perm.id },
+        },
         create: { roleId: viewerRole.id, permissionId: perm.id },
         update: {},
       });
@@ -204,6 +211,7 @@ export class UsersService implements OnModuleInit {
         id: true,
         email: true,
         name: true,
+        avatarUrl: true,
         updatedAt: true,
         globalRoleId: true,
         globalRole: { select: { name: true } },

@@ -24,35 +24,39 @@ import { Role } from '@/common/constants/roles.enum';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
-@Roles(Role.ADMIN, Role.SUPERADMIN)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
+  @Roles(Role.ADMIN, Role.SUPERADMIN)
   @Permissions('user:manage')
   findAllUsers() {
     return this.usersService.findAllUsers();
   }
 
   @Post()
+  @Roles(Role.ADMIN, Role.SUPERADMIN)
   @Permissions('user:manage')
   createUser(@Body() dto: CreateUserDto) {
     return this.usersService.createUser(dto);
   }
 
   @Patch(':id')
+  @Roles(Role.ADMIN, Role.SUPERADMIN)
   @Permissions('user:manage')
   updateUser(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return this.usersService.updateUser(id, dto);
   }
 
   @Delete(':id')
+  @Roles(Role.ADMIN, Role.SUPERADMIN)
   @Permissions('user:manage')
   deleteUser(@Param('id') id: string) {
     return this.usersService.deleteUser(id);
   }
 
   @Get('roles')
+  @Roles(Role.ADMIN, Role.SUPERADMIN)
   @Permissions('role:manage')
   findAllRoles() {
     return this.usersService.findAllRoles();

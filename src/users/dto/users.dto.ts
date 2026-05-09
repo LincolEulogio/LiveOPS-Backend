@@ -36,6 +36,10 @@ export class UpdateUserDto {
   @IsString()
   @IsOptional()
   globalRoleId?: string;
+
+  @IsString()
+  @IsOptional()
+  avatarUrl?: string;
 }
 
 export class CreateRoleDto {

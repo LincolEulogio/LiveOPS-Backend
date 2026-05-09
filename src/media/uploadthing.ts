@@ -20,6 +20,17 @@ export const ourFileRouter = {
       // !!! Everything returned here is sent to the clientside onUploadComplete callback
       return { uploadedBy: metadata.userId, url: file.ufsUrl };
     }),
+
+  userAvatar: f({
+    image: { maxFileSize: '2MB', maxFileCount: 1 },
+  })
+    .middleware(() => {
+      return { userId: 'auth_user' };
+    })
+    .onUploadComplete(({ file }) => {
+      console.log('Avatar upload complete:', file.ufsUrl);
+      return { url: file.ufsUrl };
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

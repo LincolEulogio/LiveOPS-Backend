@@ -72,7 +72,7 @@ export class AuthController {
   @Patch('profile')
   updateProfile(
     @Req() req: RequestWithUser,
-    @Body() data: { name?: string; password?: string },
+    @Body() data: { name?: string; password?: string; avatarUrl?: string },
   ) {
     return this.authService.updateProfile(req.user.userId, data);
   }
