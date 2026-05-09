@@ -33,6 +33,7 @@ export class PermissionsGuard implements CanActivate {
     const user = request.user;
 
     if (!user) {
+      console.log('[PermissionsGuard] No user in request');
       throw new ForbiddenException('User not authenticated');
     }
 
@@ -53,9 +54,25 @@ export class PermissionsGuard implements CanActivate {
         throw new ForbiddenException('User record not found');
       }
 
-      const globalRoleName = dbUser.globalRole?.name?.toUpperCase();
-      if (globalRoleName === 'SUPERADMIN' || globalRoleName === 'ADMIN') {
-        return true;
+      const globalRoleName = dbUser.globalRole?.name?.toUpperCase()?.trim();
+      console.log(`[PermissionsGuard] User Global Role: "${globalRoleName}"`);
+      if (
+        globalRoleName === 'SUPERADMIN' ||
+        globalRoleName === 'ADMIN' ||
+        globalRoleName === 'VIEWER'
+      ) {
+        // Grant baseline read permissions to viewers globally if they are in this role
+        const isReadAction = requiredPermissions.every(
+          (p) =>
+            p.endsWith(':view') || p.endsWith(':logs') || p === 'audit:view',
+        );
+        if (globalRoleName === 'VIEWER' && !isReadAction) {
+          console.log(
+            `[PermissionsGuard] VIEWER attempted non-read action: ${requiredPermissions.join(', ')}`,
+          );
+        } else {
+          return true;
+        }
       }
 
       const globalPermissions =
@@ -135,6 +152,7 @@ export class PermissionsGuard implements CanActivate {
           const hasProdPermission = requiredPermissions.every((perm) =>
             allPermissions.includes(perm),
           );
+
           if (hasProdPermission) {
             return true;
           }
