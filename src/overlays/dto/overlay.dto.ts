@@ -6,6 +6,10 @@ export class CreateOverlayDto {
 
   @IsString()
   @IsOptional()
+  type?: string;
+
+  @IsString()
+  @IsOptional()
   description?: string;
 
   @IsObject()
@@ -20,6 +24,10 @@ export class UpdateOverlayDto {
   @IsString()
   @IsOptional()
   name?: string;
+
+  @IsString()
+  @IsOptional()
+  type?: string;
 
   @IsString()
   @IsOptional()

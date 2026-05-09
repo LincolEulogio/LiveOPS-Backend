@@ -188,6 +188,7 @@ model Production {
   webhooks              Webhook[]
   activeEgressId        String?
   activeRecordingId     String?
+  activeState           Json?      @default("{}")
 
   @@index([deletedAt])
   @@index([status])
@@ -508,6 +509,7 @@ model OverlayTemplate {
   id           String     @id @default(uuid()) @db.Uuid
   productionId String     @db.Uuid
   name         String
+  type         String     @default("GENERIC")
   description  String?
   config       Json
   isActive     Boolean    @default(false)

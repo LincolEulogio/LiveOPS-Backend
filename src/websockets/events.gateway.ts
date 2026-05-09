@@ -22,6 +22,7 @@ interface CustomSocket extends Socket {
 import { Logger } from '@nestjs/common';
 import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '@/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { IntercomService } from '@/intercom/intercom.service';
 import { ChatService } from '@/chat/chat.service';
 import { ScriptService } from '@/script/script.service';
@@ -107,6 +108,7 @@ export class EventsGateway
       'graphics.social.hide',
       'overlay.list_updated',
       'production.updated',
+      'production.state_updated',
       'guest.slots.updated',
       'guest.returnfeed.updated',
       'social.viewers_update',
@@ -209,6 +211,42 @@ export class EventsGateway
     this.broadcastPresence(data.productionId);
 
     return { status: 'joined', room: `production_${data.productionId}` };
+  }
+
+  @SubscribeMessage('production.state_update')
+  async handleProductionStateUpdate(
+    @MessageBody() data: { productionId: string; state: unknown },
+    @ConnectedSocket() client: CustomSocket,
+  ) {
+    this.logger.debug(`Updating state for production ${data.productionId}`);
+
+    // Persist to DB
+    await this.prisma.production.update({
+      where: { id: data.productionId },
+      data: { activeState: data.state as Prisma.InputJsonValue },
+    });
+
+    // Broadcast to others in the room
+    client
+      .to(`production_${data.productionId}`)
+      .emit('production.state_updated', {
+        productionId: data.productionId,
+        state: data.state,
+      });
+
+    return { status: 'ok' };
+  }
+
+  @SubscribeMessage('production.state_sync')
+  async handleProductionStateSync(
+    @MessageBody() data: { productionId: string },
+  ) {
+    const production = await this.prisma.production.findUnique({
+      where: { id: data.productionId },
+      select: { activeState: true },
+    });
+
+    return { state: (production?.activeState as unknown) || {} };
   }
 
   @SubscribeMessage('production.leave')
