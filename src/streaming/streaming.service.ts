@@ -34,9 +34,9 @@ export class StreamingService {
   }
 
   async getStreamingState(productionId: string) {
-    const production = await this.prisma.production.findUnique({
+    const production = (await this.prisma.production.findUnique({
       where: { id: productionId },
-    });
+    })) as (Production & { activeRecordingId?: string | null }) | null;
 
     if (!production) {
       throw new NotFoundException('Production not found');
@@ -51,6 +51,7 @@ export class StreamingService {
       status: production.status,
       isConnected: state.isConnected,
       activeEgressId: production.activeEgressId || null,
+      activeRecordingId: production.activeRecordingId || null,
       obs: production.engineType === 'OBS' ? state : null,
       vmix: production.engineType === 'VMIX' ? state : null,
       lastUpdate: new Date().toISOString(),
@@ -124,9 +125,7 @@ export class StreamingService {
     }
 
     try {
-      if (production.activeEgressId) {
-        await this.liveKitService.stopEgress(production.activeEgressId);
-      }
+      await this.liveKitService.stopEgress(production.activeEgressId);
 
       await this.prisma.production.update({
         where: { id: productionId },
@@ -138,10 +137,86 @@ export class StreamingService {
     } catch (error: unknown) {
       const message = getErrorMessage(error);
       this.logger.error(`Failed to stop cloud stream: ${message}`);
-      // Even if LiveKit fails to stop it (e.g. already stopped), we reset our local state
       await this.prisma.production.update({
         where: { id: productionId },
         data: { activeEgressId: null },
+      });
+      return {
+        success: true,
+        warning: 'Local state reset but LiveKit reported error',
+      };
+    }
+  }
+
+  async startCloudRecording(productionId: string, layout?: string) {
+    const production = (await this.prisma.production.findUnique({
+      where: { id: productionId },
+    })) as (Production & { activeRecordingId?: string | null }) | null;
+
+    if (!production) {
+      throw new NotFoundException('Production not found');
+    }
+
+    if (production.activeRecordingId) {
+      throw new BadRequestException('Cloud recording already active');
+    }
+
+    try {
+      const roomName = `production_${productionId}`;
+      await this.liveKitService.ensureRoomExists(roomName);
+
+      const egressInfo = await this.liveKitService.startRoomCompositeRecording(
+        roomName,
+        layout,
+      );
+
+      await this.prisma.production.update({
+        where: { id: productionId },
+        data: { activeRecordingId: egressInfo.egressId },
+      });
+
+      this.logger.log(
+        `Cloud recording started for production ${productionId} with egressId ${egressInfo.egressId}`,
+      );
+      return { success: true, egressId: egressInfo.egressId };
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      this.logger.error(`Failed to start cloud recording: ${message}`);
+      throw new BadRequestException(
+        `Failed to start cloud recording: ${message}`,
+      );
+    }
+  }
+
+  async stopCloudRecording(productionId: string) {
+    const production = (await this.prisma.production.findUnique({
+      where: { id: productionId },
+    })) as (Production & { activeRecordingId?: string | null }) | null;
+
+    if (!production) {
+      throw new NotFoundException('Production not found');
+    }
+
+    if (!production.activeRecordingId) {
+      throw new BadRequestException('No active cloud recording found');
+    }
+
+    try {
+      await this.liveKitService.stopEgress(production.activeRecordingId);
+
+      await this.prisma.production.update({
+        where: { id: productionId },
+        data: { activeRecordingId: null },
+      });
+
+      this.logger.log(`Cloud recording stopped for production ${productionId}`);
+      return { success: true };
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      this.logger.error(`Failed to stop cloud recording: ${message}`);
+      await this.prisma.production.update({
+        where: { id: productionId },
+        data: { activeRecordingId: null },
       });
       return {
         success: true,
@@ -157,27 +232,61 @@ export class StreamingService {
     if (!production) throw new NotFoundException('Production not found');
 
     const engine = this.getEngine(production);
-    const p = dto.payload as Record<string, any>;
+    const p = dto.payload as Record<string, unknown>;
 
-    type CommandHandler = () => Promise<unknown> | unknown;
+    type CommandHandler = () => unknown;
     const commands: Partial<Record<string, CommandHandler>> = {
-      CHANGE_SCENE:      () => this.handleChangeScene(engine, productionId, dto.sceneName),
-      START_STREAM:      () => engine.startStream(productionId),
-      STOP_STREAM:       () => engine.stopStream(productionId),
-      START_CLOUD_STREAM:() => this.startCloudStream(productionId, p?.layout as string),
+      CHANGE_SCENE: () =>
+        this.handleChangeScene(engine, productionId, dto.sceneName),
+      START_STREAM: () => engine.startStream(productionId),
+      STOP_STREAM: () => engine.stopStream(productionId),
+      START_CLOUD_STREAM: () =>
+        this.startCloudStream(productionId, p?.layout as string),
       STOP_CLOUD_STREAM: () => this.stopCloudStream(productionId),
-      START_RECORD:      () => engine.startRecord(productionId),
-      STOP_RECORD:       () => engine.stopRecord(productionId),
-      VMIX_CUT:          () => this.executeEngineMethod(engine, 'cut', productionId),
-      VMIX_FADE:         () => this.executeEngineMethod(engine, 'fade', productionId),
-      VMIX_SELECT_INPUT: () => this.executeEngineMethod(engine, 'changeInput', productionId, p?.input as number),
-      VMIX_SET_VOLUME:   () => this.executeEngineMethod(engine, 'setVolume', productionId, p?.input, p?.value),
-      VMIX_TOGGLE_MUTE:  () => this.executeEngineMethod(engine, 'toggleMute', productionId, p?.input),
-      VMIX_TOGGLE_SOLO:  () => this.executeEngineMethod(engine, 'toggleSolo', productionId, p?.input),
-      VMIX_SET_GAIN:     () => this.executeEngineMethod(engine, 'setGain', productionId, p?.input, p?.value),
-      VMIX_TOGGLE_BUS:   () => this.executeEngineMethod(engine, 'toggleBus', productionId, p?.input, p?.bus),
+      START_CLOUD_RECORDING: () =>
+        this.startCloudRecording(productionId, p?.layout as string),
+      STOP_CLOUD_RECORDING: () => this.stopCloudRecording(productionId),
+      START_RECORD: () => engine.startRecord(productionId),
+      STOP_RECORD: () => engine.stopRecord(productionId),
+      VMIX_CUT: () => this.executeEngineMethod(engine, 'cut', productionId),
+      VMIX_FADE: () => this.executeEngineMethod(engine, 'fade', productionId),
+      VMIX_SELECT_INPUT: () =>
+        this.executeEngineMethod(
+          engine,
+          'changeInput',
+          productionId,
+          p?.input as number,
+        ),
+      VMIX_SET_VOLUME: () =>
+        this.executeEngineMethod(
+          engine,
+          'setVolume',
+          productionId,
+          p?.input,
+          p?.value,
+        ),
+      VMIX_TOGGLE_MUTE: () =>
+        this.executeEngineMethod(engine, 'toggleMute', productionId, p?.input),
+      VMIX_TOGGLE_SOLO: () =>
+        this.executeEngineMethod(engine, 'toggleSolo', productionId, p?.input),
+      VMIX_SET_GAIN: () =>
+        this.executeEngineMethod(
+          engine,
+          'setGain',
+          productionId,
+          p?.input,
+          p?.value,
+        ),
+      VMIX_TOGGLE_BUS: () =>
+        this.executeEngineMethod(
+          engine,
+          'toggleBus',
+          productionId,
+          p?.input,
+          p?.bus,
+        ),
       START_DESTINATION: () => ({ success: true, destId: p?.destId as string }),
-      STOP_DESTINATION:  () => ({ success: true, destId: p?.destId as string }),
+      STOP_DESTINATION: () => ({ success: true, destId: p?.destId as string }),
     };
 
     const handler = commands[dto.type];

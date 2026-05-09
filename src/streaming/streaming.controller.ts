@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller,
   Get,
   Post,
@@ -16,9 +16,7 @@ import {
   UpdateStreamingDestinationDto,
 } from '@/streaming/dto/streaming-destination.dto';
 import { Permissions } from '@/common/decorators/permissions.decorator';
-
 import { LiveKitService } from '@/streaming/livekit.service';
-
 import { SkipThrottle } from '@nestjs/throttler';
 
 @Protected()
@@ -96,7 +94,7 @@ export class StreamingController {
     return this.destinationsService.remove(id);
   }
 
-  // --- Cloud Mixing (RTMP Egress) --- //
+  // --- Cloud Mixing & Recording --- //
 
   @Post(':id/start-cloud')
   @Permissions('streaming:control')
@@ -112,5 +110,19 @@ export class StreamingController {
   stopCloudStream(@Param('id') productionId: string) {
     return this.streamingService.stopCloudStream(productionId);
   }
-}
 
+  @Post(':id/start-recording')
+  @Permissions('streaming:control')
+  startCloudRecording(
+    @Param('id') productionId: string,
+    @Body('layout') layout?: string,
+  ) {
+    return this.streamingService.startCloudRecording(productionId, layout);
+  }
+
+  @Post(':id/stop-recording')
+  @Permissions('streaming:control')
+  stopCloudRecording(@Param('id') productionId: string) {
+    return this.streamingService.stopCloudRecording(productionId);
+  }
+}

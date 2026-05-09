@@ -187,6 +187,7 @@ model Production {
   vmixConnection        VmixConnection?
   webhooks              Webhook[]
   activeEgressId        String?
+  activeRecordingId     String?
 
   @@index([deletedAt])
   @@index([status])

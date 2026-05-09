@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   AccessToken,
   EgressClient,
+  EncodedFileOutput,
   RoomServiceClient,
   StreamOutput,
   StreamProtocol,
@@ -103,12 +104,35 @@ export class LiveKitService {
       urls: rtmpUrls,
     });
 
-    // We use a predefined template for the mixer or a simple room composite
-    // Note: In a real environment, you might want to specify a custom layout URL
     const info = await this.egressClient.startRoomCompositeEgress(
       roomId,
       output,
-      layout || 'speaker-dark', // Default layout for the cloud mixer
+      { layout: layout || 'speaker-dark' },
+    );
+
+    return info;
+  }
+
+  /**
+   * Starts a room composite egress to a file (MP4).
+   */
+  async startRoomCompositeRecording(roomId: string, layout?: string) {
+    this.logger.log(
+      `Starting Room Composite Recording for room ${roomId} with layout: ${layout || 'default'}`,
+    );
+
+    // Note: This requires LiveKit Egress to be configured with a storage provider (S3, GCS, etc.)
+    // or a local directory. For now we use a timestamped filename.
+    const filename = `recording_${roomId}_${Date.now()}.mp4`;
+
+    const output = new EncodedFileOutput({
+      filepath: filename,
+    });
+
+    const info = await this.egressClient.startRoomCompositeEgress(
+      roomId,
+      output,
+      { layout: layout || 'speaker-dark' },
     );
 
     return info;
