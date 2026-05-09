@@ -109,6 +109,7 @@ export class EventsGateway
       'production.updated',
       'guest.slots.updated',
       'guest.returnfeed.updated',
+      'social.viewers_update',
       'analytics.log',
     ];
 

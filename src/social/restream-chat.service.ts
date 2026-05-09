@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/prisma/prisma.service';
 import { SocialService } from '@/social/social.service';
 import { WebSocket, RawData } from 'ws';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 interface RestreamTokenResponse {
   access_token: string;
@@ -40,15 +41,27 @@ const PLATFORM_MAP: Record<string, string> = {
 
 interface RestreamChatEvent {
   action: string;
-  payload?: {
-    eventPayload?: {
-      author?: { displayName?: string; name?: string; avatarUrl?: string };
-      text?: string;
-      id?: string;
-      platform?: string;
-    };
-    connectionIdentifier?: string;
+  payload?: any; // Keep as any inside the interface for flexibility but cast safely in code
+}
+
+interface RestreamMessagePayload {
+  text?: string;
+  id?: string;
+  platform?: string;
+  author?: {
+    displayName?: string;
+    name?: string;
+    username?: string;
+    avatarUrl?: string;
+    avatar?: string;
   };
+  eventPayload?: RestreamMessagePayload; // For 'event' action
+  connectionIdentifier?: string;
+}
+
+interface RestreamConnectionInfo {
+  viewers?: number;
+  [key: string]: any;
 }
 
 @Injectable()
@@ -62,6 +75,7 @@ export class RestreamChatService implements OnModuleDestroy {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly socialService: SocialService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   onModuleDestroy() {
@@ -187,25 +201,59 @@ export class RestreamChatService implements OnModuleDestroy {
     productionId: string,
     data: RestreamChatEvent,
   ): Promise<void> {
-    if (data.action !== 'event') return;
+    const action = data.action;
 
-    const ep = data.payload?.eventPayload;
-    if (!ep?.text) return;
+    if (action === 'connection_info' || action === 'viewers_count') {
+      let totalViewers = 0;
+      if (action === 'connection_info' && Array.isArray(data.payload)) {
+        const connections = data.payload as RestreamConnectionInfo[];
+        totalViewers = connections.reduce(
+          (acc, conn) => acc + (conn.viewers || 0),
+          0,
+        );
+      } else if (action === 'viewers_count' && data.payload) {
+        const vPayload = data.payload as { viewers?: number };
+        if (typeof vPayload.viewers === 'number') {
+          totalViewers = vPayload.viewers;
+        }
+      }
+
+      this.eventEmitter.emit('social.viewers_update', {
+        productionId,
+        viewers: totalViewers,
+      });
+      return;
+    }
+
+    let payload: RestreamMessagePayload | undefined;
+    if (action === 'message') {
+      payload = data.payload as RestreamMessagePayload;
+    } else if (action === 'event') {
+      payload = (data.payload as RestreamMessagePayload)?.eventPayload;
+    }
+
+    if (!payload || !payload.text) return;
 
     const rawPlatform =
-      ep.platform ?? data.payload?.connectionIdentifier ?? 'unknown';
+      payload.platform ??
+      (data.payload as RestreamMessagePayload)?.connectionIdentifier ??
+      'unknown';
     const platform =
       PLATFORM_MAP[rawPlatform.toLowerCase()] ?? rawPlatform.toLowerCase();
-    const author = ep.author?.displayName ?? ep.author?.name ?? 'Unknown';
-    const avatarUrl = ep.author?.avatarUrl;
+    const author =
+      payload.author?.displayName ??
+      payload.author?.name ??
+      payload.author?.username ??
+      'Unknown';
+    const avatarUrl = payload.author?.avatarUrl ?? payload.author?.avatar;
 
     await this.socialService.ingestMessage(productionId, {
       productionId,
       platform,
       author,
       avatarUrl,
-      content: ep.text,
-      externalId: ep.id,
+      content: payload.text,
+      externalId: payload.id,
     });
 
     this.logger.debug(
