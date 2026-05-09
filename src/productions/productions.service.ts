@@ -166,8 +166,8 @@ export class ProductionsService {
         orderBy: { createdAt: 'desc' },
         include: {
           users: {
-            where: { userId },
             include: {
+              user: { select: { id: true, name: true, email: true } },
               role: {
                 include: {
                   permissions: {
