@@ -16,6 +16,11 @@ import {
 } from './interfaces/video-engine.interface';
 import { Production, StreamingDestination } from '@prisma/client';
 
+interface ProductionWithCloud extends Production {
+  activeEgressId: string | null;
+  activeRecordingId: string | null;
+}
+
 @Injectable()
 export class StreamingService {
   private readonly logger = new Logger(StreamingService.name);
@@ -36,7 +41,7 @@ export class StreamingService {
   async getStreamingState(productionId: string) {
     const production = (await this.prisma.production.findUnique({
       where: { id: productionId },
-    })) as (Production & { activeRecordingId?: string | null }) | null;
+    })) as ProductionWithCloud | null;
 
     if (!production) {
       throw new NotFoundException('Production not found');
@@ -50,8 +55,8 @@ export class StreamingService {
       engineType: production.engineType,
       status: production.status,
       isConnected: state.isConnected,
-      activeEgressId: production.activeEgressId || null,
-      activeRecordingId: production.activeRecordingId || null,
+      activeEgressId: production.activeEgressId ?? null,
+      activeRecordingId: production.activeRecordingId ?? null,
       obs: production.engineType === 'OBS' ? state : null,
       vmix: production.engineType === 'VMIX' ? state : null,
       lastUpdate: new Date().toISOString(),
@@ -59,10 +64,14 @@ export class StreamingService {
   }
 
   async startCloudStream(productionId: string, layout?: string) {
-    const production = await this.prisma.production.findUnique({
+    const production = (await this.prisma.production.findUnique({
       where: { id: productionId },
       include: { streamingDestinations: true },
-    });
+    })) as
+      | (ProductionWithCloud & {
+          streamingDestinations: StreamingDestination[];
+        })
+      | null;
 
     if (!production) {
       throw new NotFoundException('Production not found');
@@ -151,7 +160,7 @@ export class StreamingService {
   async startCloudRecording(productionId: string, layout?: string) {
     const production = (await this.prisma.production.findUnique({
       where: { id: productionId },
-    })) as (Production & { activeRecordingId?: string | null }) | null;
+    })) as ProductionWithCloud | null;
 
     if (!production) {
       throw new NotFoundException('Production not found');
@@ -191,7 +200,7 @@ export class StreamingService {
   async stopCloudRecording(productionId: string) {
     const production = (await this.prisma.production.findUnique({
       where: { id: productionId },
-    })) as (Production & { activeRecordingId?: string | null }) | null;
+    })) as ProductionWithCloud | null;
 
     if (!production) {
       throw new NotFoundException('Production not found');
@@ -202,6 +211,9 @@ export class StreamingService {
     }
 
     try {
+      if (!production.activeRecordingId) {
+        throw new BadRequestException('No active recording ID found');
+      }
       await this.liveKitService.stopEgress(production.activeRecordingId);
 
       await this.prisma.production.update({
@@ -225,7 +237,10 @@ export class StreamingService {
     }
   }
 
-  async handleCommand(productionId: string, dto: StreamingCommandDto) {
+  async handleCommand(
+    productionId: string,
+    dto: StreamingCommandDto,
+  ): Promise<void | Record<string, unknown>> {
     const production = await this.prisma.production.findUnique({
       where: { id: productionId },
     });
@@ -234,7 +249,7 @@ export class StreamingService {
     const engine = this.getEngine(production);
     const p = dto.payload as Record<string, unknown>;
 
-    type CommandHandler = () => unknown;
+    type CommandHandler = () => Promise<void | Record<string, unknown>>;
     const commands: Partial<Record<string, CommandHandler>> = {
       CHANGE_SCENE: () =>
         this.handleChangeScene(engine, productionId, dto.sceneName),
@@ -248,15 +263,17 @@ export class StreamingService {
       STOP_CLOUD_RECORDING: () => this.stopCloudRecording(productionId),
       START_RECORD: () => engine.startRecord(productionId),
       STOP_RECORD: () => engine.stopRecord(productionId),
-      VMIX_CUT: () => this.executeEngineMethod(engine, 'cut', productionId),
-      VMIX_FADE: () => this.executeEngineMethod(engine, 'fade', productionId),
+      VMIX_CUT: () =>
+        this.executeEngineMethod(engine, 'cut', productionId) as Promise<void>,
+      VMIX_FADE: () =>
+        this.executeEngineMethod(engine, 'fade', productionId) as Promise<void>,
       VMIX_SELECT_INPUT: () =>
         this.executeEngineMethod(
           engine,
           'changeInput',
           productionId,
           p?.input as number,
-        ),
+        ) as Promise<void>,
       VMIX_SET_VOLUME: () =>
         this.executeEngineMethod(
           engine,
@@ -264,11 +281,21 @@ export class StreamingService {
           productionId,
           p?.input,
           p?.value,
-        ),
+        ) as Promise<void>,
       VMIX_TOGGLE_MUTE: () =>
-        this.executeEngineMethod(engine, 'toggleMute', productionId, p?.input),
+        this.executeEngineMethod(
+          engine,
+          'toggleMute',
+          productionId,
+          p?.input,
+        ) as Promise<void>,
       VMIX_TOGGLE_SOLO: () =>
-        this.executeEngineMethod(engine, 'toggleSolo', productionId, p?.input),
+        this.executeEngineMethod(
+          engine,
+          'toggleSolo',
+          productionId,
+          p?.input,
+        ) as Promise<void>,
       VMIX_SET_GAIN: () =>
         this.executeEngineMethod(
           engine,
@@ -276,7 +303,7 @@ export class StreamingService {
           productionId,
           p?.input,
           p?.value,
-        ),
+        ) as Promise<void>,
       VMIX_TOGGLE_BUS: () =>
         this.executeEngineMethod(
           engine,
@@ -284,9 +311,17 @@ export class StreamingService {
           productionId,
           p?.input,
           p?.bus,
-        ),
-      START_DESTINATION: () => ({ success: true, destId: p?.destId as string }),
-      STOP_DESTINATION: () => ({ success: true, destId: p?.destId as string }),
+        ) as Promise<void>,
+      START_DESTINATION: () =>
+        Promise.resolve({
+          success: true,
+          destId: p?.destId as string,
+        }),
+      STOP_DESTINATION: () =>
+        Promise.resolve({
+          success: true,
+          destId: p?.destId as string,
+        }),
     };
 
     const handler = commands[dto.type];
@@ -298,7 +333,7 @@ export class StreamingService {
     engine: IVideoEngine,
     productionId: string,
     sceneName?: string,
-  ) {
+  ): Promise<void | Record<string, unknown>> {
     if (!sceneName) {
       throw new BadRequestException('sceneName is required');
     }
@@ -316,12 +351,15 @@ export class StreamingService {
     method: string,
     productionId: string,
     ...args: unknown[]
-  ) {
+  ): Promise<void | Record<string, unknown>> {
     if (method in engine) {
       return (
         engine as unknown as Record<
           string,
-          (id: string, ...a: unknown[]) => Promise<unknown>
+          (
+            id: string,
+            ...a: unknown[]
+          ) => Promise<void | Record<string, unknown>>
         >
       )[method](productionId, ...args);
     }

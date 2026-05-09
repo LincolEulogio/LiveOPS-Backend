@@ -28,6 +28,7 @@ export class RestreamOAuthController {
   @Get('connect')
   connect(
     @Query('productionId') productionId: string,
+    @Query('redirect') redirect: string,
     @Res() res: Response,
   ): void {
     if (!productionId) {
@@ -37,12 +38,17 @@ export class RestreamOAuthController {
     const clientId = this.configService.get<string>('RESTREAM_CLIENT_ID');
     const redirectUri = this.configService.get<string>('RESTREAM_REDIRECT_URI');
 
+    const state = JSON.stringify({
+      productionId,
+      redirect: redirect || 'social',
+    });
+
     const params = new URLSearchParams({
       client_id: clientId ?? '',
       redirect_uri: redirectUri ?? '',
       response_type: 'code',
       scope: 'chat.read',
-      state: productionId,
+      state,
     });
 
     res.redirect(
@@ -53,15 +59,41 @@ export class RestreamOAuthController {
   @Get('callback')
   async callback(
     @Query('code') code: string,
-    @Query('state') productionId: string,
+    @Query('state') stateJson: string,
     @Query('error') error: string,
     @Res() res: Response,
   ): Promise<void> {
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
 
+    let productionId = '';
+    let redirectPath = 'social';
+
+    interface OAuthState {
+      productionId: string;
+      redirect: string;
+    }
+
+    try {
+      const state = JSON.parse(stateJson) as OAuthState;
+      productionId = state.productionId;
+      redirectPath = state.redirect;
+      this.logger.log(
+        `Restream callback state: productionId=[${productionId}] (${typeof productionId}), redirect=${redirectPath}`,
+      );
+    } catch {
+      // Fallback if stateJson is just the productionId (old flow)
+      productionId = stateJson;
+      this.logger.warn(
+        `Restream callback fallback: using raw state as productionId=${productionId}`,
+      );
+    }
+
     if (error || !code) {
-      res.redirect(`${frontendUrl}/productions/${productionId}?restream=error`);
+      this.logger.error(`Restream OAuth error: ${error || 'no code provided'}`);
+      res.redirect(
+        `${frontendUrl}/productions/${productionId}/${redirectPath}?restream=error`,
+      );
       return;
     }
 
@@ -74,12 +106,16 @@ export class RestreamOAuthController {
       );
 
       if (!json) {
+        this.logger.error('Restream token exchange failed (null response)');
         res.redirect(
-          `${frontendUrl}/productions/${productionId}?restream=error`,
+          `${frontendUrl}/productions/${productionId}/${redirectPath}?restream=error`,
         );
         return;
       }
 
+      this.logger.log(
+        `Upserting Restream connection for production ${productionId}`,
+      );
       const expiresAt = new Date(Date.now() + json.expires_in * 1000);
 
       await this.prisma.restreamConnection.upsert({
@@ -97,31 +133,43 @@ export class RestreamOAuthController {
         },
       });
 
+      this.logger.log(
+        `Restream connection saved. Connecting production chat...`,
+      );
       await this.restreamChatService.connectProduction(productionId);
 
       res.redirect(
-        `${frontendUrl}/productions/${productionId}?restream=connected`,
+        `${frontendUrl}/productions/${productionId}/${redirectPath}?restream=connected`,
       );
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
       this.logger.error(`Restream OAuth callback failed: ${message}`);
-      res.redirect(`${frontendUrl}/productions/${productionId}?restream=error`);
+      res.redirect(
+        `${frontendUrl}/productions/${productionId}/${redirectPath}?restream=error`,
+      );
     }
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('status/:productionId')
   async status(@Param('productionId') productionId: string) {
+    this.logger.debug(
+      `Checking Restream status for production ${productionId}`,
+    );
     try {
       const conn = await this.prisma.restreamConnection.findUnique({
         where: { productionId },
         select: { id: true, expiresAt: true },
       });
 
+      const wsActive = this.restreamChatService.isConnected(productionId);
+      this.logger.debug(
+        `Status for ${productionId}: connected=${!!conn}, wsActive=${wsActive}`,
+      );
+
       return {
         connected: !!conn,
-        wsActive: this.restreamChatService.isConnected(productionId),
-
+        wsActive,
         expiresAt: conn?.expiresAt ?? null,
       };
     } catch (e: unknown) {
