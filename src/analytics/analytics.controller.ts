@@ -1,4 +1,4 @@
-﻿import { Controller, Get, Post, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query } from '@nestjs/common';
 import { Protected } from '@/common/decorators/protected.decorator';
 import { AnalyticsService } from '@/analytics/analytics.service';
 import { Permissions } from '@/common/decorators/permissions.decorator';
@@ -40,5 +40,10 @@ export class AnalyticsController {
   async getSeoPackage(@Param('id') id: string) {
     return this.analyticsService.getPostShowSeo(id);
   }
-}
 
+  @Get('metrics')
+  @Permissions('production:view')
+  async getMetrics(@Param('id') id: string) {
+    return this.analyticsService.getDashboardMetrics(id);
+  }
+}

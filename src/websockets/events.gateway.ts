@@ -52,16 +52,6 @@ interface IntercomCommand {
   sender?: { id: string; name: string };
 }
 
-interface HealthStatsPayload {
-  productionId: string;
-  cpuUsage: number;
-  memoryUsage: number;
-  bitrate: number;
-  fps: number;
-  skippedFrames: number;
-  timestamp: string;
-}
-
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -119,10 +109,21 @@ export class EventsGateway
       'production.updated',
       'guest.slots.updated',
       'guest.returnfeed.updated',
+      'analytics.log',
     ];
+
+    interface BaseEventPayload {
+      productionId: string;
+    }
+
     for (const event of passthrough) {
-      this.eventEmitter.on(event, (payload: { productionId: string }) => {
-        this.forwardToRoom(event, payload);
+      this.eventEmitter.on(event, (payload: BaseEventPayload) => {
+        if (payload?.productionId) {
+          this.forwardToRoom(event, payload);
+        } else {
+          // Broadcast global system events to everyone (Admin Dashboard)
+          this.server.emit(event, payload);
+        }
       });
     }
   }
@@ -589,12 +590,16 @@ export class EventsGateway
     const now = Date.now();
     const last = this.commandRateMap.get(data.senderId) || 0;
     if (now - last < this.COMMAND_RATE_LIMIT_MS) {
-      client.emit('command.error', { message: 'Demasiados comandos. Espera un momento.' });
+      client.emit('command.error', {
+        message: 'Demasiados comandos. Espera un momento.',
+      });
       return { status: 'rate_limited' };
     }
     this.commandRateMap.set(data.senderId, now);
 
-    this.logger.log(`[Intercom] Command from ${data.senderId} → production ${data.productionId}`);
+    this.logger.log(
+      `[Intercom] Command from ${data.senderId} → production ${data.productionId}`,
+    );
     const command = await this.intercomService.sendCommand(data);
 
     const room = `production_${data.productionId}`;
@@ -607,7 +612,8 @@ export class EventsGateway
           const rId = socket.handshake.query.roleId as string;
           const isTargeted =
             (data.targetUserId && uId === data.targetUserId) ||
-            (!data.targetUserId && (rId === data.targetRoleId || !data.targetRoleId));
+            (!data.targetUserId &&
+              (rId === data.targetRoleId || !data.targetRoleId));
           if (isTargeted) {
             this.presenceService.updateStatus(sid, data.message);
           }
@@ -635,7 +641,9 @@ export class EventsGateway
     const now = Date.now();
     const last = this.commandRateMap.get(data.senderId) || 0;
     if (now - last < this.COMMAND_RATE_LIMIT_MS) {
-      client.emit('command.error', { message: 'Demasiados comandos. Espera un momento.' });
+      client.emit('command.error', {
+        message: 'Demasiados comandos. Espera un momento.',
+      });
       return { status: 'rate_limited' };
     }
     this.commandRateMap.set(data.senderId, now);
@@ -659,7 +667,12 @@ export class EventsGateway
 
   @SubscribeMessage('command.delivered')
   async handleCommandDelivered(
-    @MessageBody() data: { commandId: string; productionId: string; userId: string },
+    @MessageBody()
+    data: {
+      commandId: string;
+      productionId: string;
+      userId: string;
+    },
   ) {
     // Update status to DELIVERED in DB
     try {
@@ -672,11 +685,13 @@ export class EventsGateway
     }
 
     // Notify the room so the sender sees "Visto"
-    this.server.to(`production_${data.productionId}`).emit('command.delivered_ack', {
-      commandId: data.commandId,
-      deliveredBy: data.userId,
-      deliveredAt: new Date().toISOString(),
-    });
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('command.delivered_ack', {
+        commandId: data.commandId,
+        deliveredBy: data.userId,
+        deliveredAt: new Date().toISOString(),
+      });
   }
 
   @SubscribeMessage('crew.status_update')

@@ -180,4 +180,47 @@ export class AnalyticsService {
 
     return this.aiService.generatePostShowSEO(data);
   }
+
+  async getDashboardMetrics(productionId: string) {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+    // 1. Get recent telemetry for system integrity
+    const recentTelemetry = await this.prisma.telemetryLog.findMany({
+      where: { productionId, timestamp: { gte: oneHourAgo } },
+      orderBy: { timestamp: 'desc' },
+      take: 20,
+    });
+
+    const avgDroppedFrames = recentTelemetry.length
+      ? recentTelemetry.reduce((sum, t) => sum + (t.droppedFrames || 0), 0) /
+        recentTelemetry.length
+      : 0;
+
+    const integrity =
+      avgDroppedFrames > 10
+        ? 'CRITICAL'
+        : avgDroppedFrames > 2
+          ? 'DEGRADED'
+          : 'OPTIMAL';
+
+    // 2. Get human activity count (unique users from production logs)
+    const recentLogs = await this.prisma.productionLog.findMany({
+      where: { productionId, createdAt: { gte: oneHourAgo } },
+    });
+
+    const uniqueUsers = new Set(recentLogs.map((l) => l.userId).filter(Boolean))
+      .size;
+
+    // 3. Count security alerts (e.g., AUTH_FAILURE)
+    const securityAlerts = recentLogs.filter(
+      (l) => l.eventType.includes('AUTH') || l.eventType.includes('FAILURE'),
+    ).length;
+
+    return {
+      systemIntegrity: integrity,
+      humanActivityCount: uniqueUsers || 1, // At least the current user
+      securityAlertsCount: securityAlerts,
+      lastSyncAt: new Date().toISOString(),
+    };
+  }
 }

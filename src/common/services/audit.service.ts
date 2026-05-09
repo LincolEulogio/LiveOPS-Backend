@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 export enum AuditAction {
   INTERCOM_SEND = 'INTERCOM_SEND',
@@ -22,7 +23,10 @@ export enum AuditAction {
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private eventEmitter: EventEmitter2,
+  ) {}
 
   async log(payload: {
     productionId?: string;
@@ -33,13 +37,14 @@ export class AuditService {
   }) {
     try {
       // 1. Log to AuditLog (Global/System Level)
-      await this.prisma.auditLog.create({
+      const auditLog = await this.prisma.auditLog.create({
         data: {
           userId: payload.userId,
           action: payload.action,
           details: payload.details as Prisma.InputJsonValue,
           ipAddress: payload.ipAddress,
         },
+        include: { user: { select: { id: true, name: true, email: true } } },
       });
 
       // 2. If productionId is provided, also log to ProductionLog (Show Specific)
@@ -54,8 +59,19 @@ export class AuditService {
         });
       }
 
+      // 3. Emit Real-time event for Analytics Dashboard
+      this.eventEmitter.emit('analytics.log', {
+        id: auditLog.id,
+        productionId: payload.productionId,
+        userId: payload.userId,
+        eventType: payload.action,
+        details: payload.details,
+        createdAt: auditLog.createdAt,
+        user: auditLog.user,
+      });
+
       this.logger.debug(
-        `Audit log created: ${payload.action} for production ${payload.productionId || 'GLOBAL'}`,
+        `Audit log created & emitted: ${payload.action} for production ${payload.productionId || 'GLOBAL'}`,
       );
     } catch (error: unknown) {
       this.logger.error(
