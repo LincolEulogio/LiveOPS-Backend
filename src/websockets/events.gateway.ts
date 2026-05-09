@@ -118,10 +118,15 @@ export class EventsGateway
 
     for (const event of passthrough) {
       this.eventEmitter.on(event, (payload: BaseEventPayload) => {
+        // 1. If it has a productionId, always send it to that specific room
         if (payload?.productionId) {
           this.forwardToRoom(event, payload);
-        } else {
-          // Broadcast global system events to everyone (Admin Dashboard)
+        }
+
+        // 2. CRITICAL: For analytics logs, ALWAYS emit globally so the Master Matrix
+        // can monitor everything happening in the app in real-time.
+        // Also emit globally if there is no productionId (system events).
+        if (event === 'analytics.log' || !payload?.productionId) {
           this.server.emit(event, payload);
         }
       });

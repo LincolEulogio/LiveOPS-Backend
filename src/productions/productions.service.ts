@@ -17,6 +17,7 @@ import { ObsService } from '@/obs/obs.service';
 import { VmixService } from '@/vmix/vmix.service';
 import { Prisma, ProductionStatus } from '@prisma/client';
 import { Role } from '@/common/constants/roles.enum';
+import { AuditService } from '@/common/services/audit.service';
 
 @Injectable()
 export class ProductionsService {
@@ -25,6 +26,7 @@ export class ProductionsService {
     private eventEmitter: EventEmitter2,
     private obsService: ObsService,
     private vmixService: VmixService,
+    private auditService: AuditService,
   ) {}
 
   async create(userId: string, dto: CreateProductionDto) {
@@ -104,7 +106,17 @@ export class ProductionsService {
         }
       }
 
-      return production;
+      const result = production;
+
+      // Audit Log
+      void this.auditService.log({
+        productionId: result.id,
+        userId,
+        action: 'PRODUCTION_CREATE',
+        details: { name: result.name, engine: result.engineType },
+      });
+
+      return result;
     });
   }
 
@@ -266,6 +278,13 @@ export class ProductionsService {
       })
       .then((prod) => {
         this.eventEmitter.emit('production.updated', { productionId });
+        // Audit Log
+        void this.auditService.log({
+          productionId,
+          action: 'PRODUCTION_UPDATE',
+          details: { name: prod.name, status: prod.status },
+        });
+
         return prod;
       });
   }
@@ -276,6 +295,14 @@ export class ProductionsService {
       data: { status: dto.status },
     });
     this.eventEmitter.emit('production.updated', { productionId });
+
+    // Audit Log
+    void this.auditService.log({
+      productionId,
+      action: 'PRODUCTION_STATE_CHANGE',
+      details: { status: updated.status },
+    });
+
     return updated;
   }
 
@@ -372,14 +399,30 @@ export class ProductionsService {
       userId: userIdToRemove,
     });
 
+    // Audit Log
+    void this.auditService.log({
+      productionId,
+      action: 'PRODUCTION_MEMBER_REMOVE',
+      details: { userId: userIdToRemove },
+    });
+
     return result;
   }
 
   async remove(productionId: string) {
-    return this.prisma.production.update({
+    const result = await this.prisma.production.update({
       where: { id: productionId },
       data: { deletedAt: new Date() },
     });
+
+    // Audit Log
+    void this.auditService.log({
+      productionId,
+      action: 'PRODUCTION_DELETE',
+      details: { name: result.name },
+    });
+
+    return result;
   }
 
   async toggleRehearsal(productionId: string, enabled: boolean) {

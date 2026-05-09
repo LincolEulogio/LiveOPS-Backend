@@ -17,6 +17,7 @@ import * as crypto from 'crypto';
 import { UsersService } from '@/users/users.service';
 import { MailerService } from '@/common/services/mailer.service';
 import { Role } from '@/common/constants/roles.enum';
+import { AuditService } from '@/common/services/audit.service';
 
 const USER_SELECT = {
   id: true,
@@ -43,6 +44,7 @@ export class AuthService {
     private jwtService: JwtService,
     private usersService: UsersService,
     private mailerService: MailerService,
+    private auditService: AuditService,
   ) {}
 
   async getProfile(userId: string) {
@@ -206,6 +208,13 @@ export class AuthService {
       verificationToken,
     );
 
+    // Audit Log
+    void this.auditService.log({
+      userId: user.id,
+      action: 'USER_REGISTER',
+      details: { email: user.email, name: user.name },
+    });
+
     const tokens = await this.generateTokens(user.id, user.tenantId);
     const fullUser = await this.prisma.user.findUnique({
       where: { id: user.id },
@@ -235,19 +244,13 @@ export class AuthService {
       );
     }
 
-    // Attempt to log audit event
-    await this.prisma.auditLog
-      .create({
-        data: {
-          userId: user.id,
-          action: 'login',
-          ipAddress,
-        },
-      })
-      .catch((e: unknown) => {
-        const message = e instanceof Error ? e.message : String(e);
-        console.error('Failed to write audit log', message);
-      });
+    // Audit Log (Using the unified service)
+    void this.auditService.log({
+      userId: user.id,
+      action: 'USER_LOGIN',
+      ipAddress,
+      details: { email: user.email, name: user.name },
+    });
 
     const tokens = await this.generateTokens(user.id, user.tenantId);
     const fullUser = await this.prisma.user.findUnique({

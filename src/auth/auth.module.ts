@@ -7,11 +7,13 @@ import { AuthController } from '@/auth/auth.controller';
 import { JwtStrategy } from '@/auth/jwt.strategy';
 import { UsersModule } from '@/users/users.module';
 import { MailerService } from '@/common/services/mailer.service';
+import { AuditModule } from '@/audit/audit.module';
 
 @Module({
   imports: [
     PassportModule,
     UsersModule,
+    AuditModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
