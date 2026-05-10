@@ -263,6 +263,28 @@ export class StreamingService {
       STOP_CLOUD_RECORDING: () => this.stopCloudRecording(productionId),
       START_RECORD: () => engine.startRecord(productionId),
       STOP_RECORD: () => engine.stopRecord(productionId),
+      START_REPLAY_BUFFER: () =>
+        this.executeEngineMethod(engine, 'startReplayBuffer', productionId) as Promise<void>,
+      STOP_REPLAY_BUFFER: () =>
+        this.executeEngineMethod(engine, 'stopReplayBuffer', productionId) as Promise<void>,
+      SAVE_REPLAY_BUFFER: () =>
+        this.executeEngineMethod(engine, 'saveReplayBuffer', productionId) as Promise<void>,
+      START_VIRTUAL_CAM: () =>
+        this.executeEngineMethod(engine, 'startVirtualCam', productionId) as Promise<void>,
+      STOP_VIRTUAL_CAM: () =>
+        this.executeEngineMethod(engine, 'stopVirtualCam', productionId) as Promise<void>,
+      SET_TBAR: () =>
+        this.executeEngineMethod(engine, 'setTBarPosition', productionId, p?.position) as Promise<void>,
+      RELEASE_TBAR: () =>
+        this.executeEngineMethod(engine, 'releaseTBar', productionId) as Promise<void>,
+      TRIGGER_TRANSITION: () =>
+        this.executeEngineMethod(engine, 'triggerTransition', productionId) as Promise<void>,
+      SET_TRANSITION: () =>
+        this.executeEngineMethod(engine, 'setCurrentTransition', productionId, p?.transitionName, p?.transitionDuration) as Promise<void>,
+      SET_SCENE_COLLECTION: () =>
+        this.executeEngineMethod(engine, 'setCurrentSceneCollection', productionId, p?.sceneCollectionName) as Promise<void>,
+      SET_STUDIO_MODE: () =>
+        this.executeEngineMethod(engine, 'setStudioMode', productionId, p?.enabled) as Promise<void>,
       VMIX_CUT: () =>
         this.executeEngineMethod(engine, 'cut', productionId) as Promise<void>,
       VMIX_FADE: () =>

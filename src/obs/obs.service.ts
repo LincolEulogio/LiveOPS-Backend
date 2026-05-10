@@ -179,6 +179,30 @@ export class ObsService implements ISceneEngine {
     }
   }
 
+  async startReplayBuffer(productionId: string) {
+    const obs = this.getObs(productionId);
+    try {
+      await obs.call('StartReplayBuffer');
+      return { success: true };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to start replay buffer: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
+  async stopReplayBuffer(productionId: string) {
+    const obs = this.getObs(productionId);
+    try {
+      await obs.call('StopReplayBuffer');
+      return { success: true };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to stop replay buffer: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
   async saveReplayBuffer(productionId: string) {
     const obs = this.getObs(productionId);
     try {
@@ -187,6 +211,143 @@ export class ObsService implements ISceneEngine {
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
       this.logger.error(`Failed to save replay buffer: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
+  async startVirtualCam(productionId: string) {
+    const obs = this.getObs(productionId);
+    try {
+      await obs.call('StartVirtualCam');
+      void this.auditService.log({ productionId, action: AuditAction.VIRTUAL_CAM_START });
+      return { success: true };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to start virtual cam: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
+  async stopVirtualCam(productionId: string) {
+    const obs = this.getObs(productionId);
+    try {
+      await obs.call('StopVirtualCam');
+      void this.auditService.log({ productionId, action: AuditAction.VIRTUAL_CAM_STOP });
+      return { success: true };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to stop virtual cam: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
+  async getSceneCollections(productionId: string) {
+    const obs = this.getObs(productionId);
+    try {
+      const result = await obs.call('GetSceneCollectionList');
+      return {
+        sceneCollections: result.sceneCollections as unknown as string[],
+        currentSceneCollectionName: result.currentSceneCollectionName,
+      };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to get scene collections: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
+  async setCurrentSceneCollection(productionId: string, sceneCollectionName: string) {
+    const obs = this.getObs(productionId);
+    try {
+      await obs.call('SetCurrentSceneCollection', { sceneCollectionName });
+      void this.auditService.log({ productionId, action: AuditAction.SCENE_COLLECTION_CHANGE, details: { sceneCollectionName } });
+      return { success: true, sceneCollectionName };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to set scene collection: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
+  async getTransitions(productionId: string) {
+    const obs = this.getObs(productionId);
+    try {
+      const [list, current] = await Promise.all([
+        obs.call('GetSceneTransitionList'),
+        obs.call('GetCurrentSceneTransition'),
+      ]);
+      return {
+        transitions: (list.transitions as unknown as { transitionName: string }[]).map((t) => t.transitionName),
+        currentTransition: current.transitionName,
+        transitionDuration: current.transitionDuration as number | undefined,
+      };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to get transitions: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
+  async setCurrentTransition(productionId: string, transitionName: string, transitionDuration?: number) {
+    const obs = this.getObs(productionId);
+    try {
+      await obs.call('SetCurrentSceneTransition', { transitionName });
+      if (transitionDuration !== undefined) {
+        await obs.call('SetCurrentSceneTransitionDuration', { transitionDuration });
+      }
+      return { success: true, transitionName };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to set transition: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
+  async setStudioMode(productionId: string, enabled: boolean) {
+    const obs = this.getObs(productionId);
+    try {
+      await obs.call('SetStudioModeEnabled', { studioModeEnabled: enabled });
+      return { success: true, studioModeEnabled: enabled };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to set studio mode: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
+  async setTBarPosition(productionId: string, position: number) {
+    const obs = this.getObs(productionId);
+    try {
+      const clamped = Math.max(0, Math.min(1, position));
+      await obs.call('SetTBarPosition', { position: clamped, release: false });
+      return { success: true, position: clamped };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to set T-Bar position: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
+  async releaseTBar(productionId: string) {
+    const obs = this.getObs(productionId);
+    try {
+      await obs.call('SetTBarPosition', { position: 1.0, release: true });
+      return { success: true };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to release T-Bar: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
+  async triggerTransition(productionId: string) {
+    const obs = this.getObs(productionId);
+    try {
+      await obs.call('TriggerStudioModeTransition');
+      return { success: true };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to trigger transition: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }

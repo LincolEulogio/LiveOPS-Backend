@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Patch } from '@nestjs/common';
 import { NdiService } from './ndi.service';
 import { NdiActionDto, NdiToolsType } from './dto/ndi-action.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -11,6 +11,21 @@ export class NdiController {
   @Get('discovery')
   getDiscovery() {
     return this.ndiService.getDiscoveryOverview();
+  }
+
+  @Get('sources')
+  getSources() {
+    return this.ndiService.getSources();
+  }
+
+  @Post('sources')
+  addSource(@Body() data: { name: string; address: string; type: 'input' | 'output' }) {
+    return this.ndiService.addSource(data);
+  }
+
+  @Delete('sources/:id')
+  removeSource(@Param('id') id: string) {
+    return this.ndiService.removeSource(id);
   }
 
   @Post('remote/generate')
@@ -26,6 +41,33 @@ export class NdiController {
   @Patch('access-manager')
   updateAccess(@Body() config: Record<string, unknown>) {
     return this.ndiService.updateAccessControl(config);
+  }
+
+  // --- SRT ---
+
+  @Get('srt')
+  getSrtStreams() {
+    return this.ndiService.getSrtStreams();
+  }
+
+  @Post('srt')
+  createSrtStream(@Body() data: { name: string; url: string; mode: 'caller' | 'listener'; port: number }) {
+    return this.ndiService.createSrtStream(data);
+  }
+
+  @Post('srt/:id/start')
+  startSrtStream(@Param('id') id: string) {
+    return this.ndiService.startSrtStream(id);
+  }
+
+  @Post('srt/:id/stop')
+  stopSrtStream(@Param('id') id: string) {
+    return this.ndiService.stopSrtStream(id);
+  }
+
+  @Delete('srt/:id')
+  deleteSrtStream(@Param('id') id: string) {
+    return this.ndiService.deleteSrtStream(id);
   }
 
   @Post('command')

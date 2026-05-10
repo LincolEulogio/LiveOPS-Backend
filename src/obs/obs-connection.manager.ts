@@ -40,6 +40,14 @@ interface ObsInstance {
     bitrate?: number;
     outputSkippedFrames?: number;
     outputTotalFrames?: number;
+    isReplayBufferActive: boolean;
+    isVirtualCamActive: boolean;
+    studioModeEnabled: boolean;
+    sceneCollections: string[];
+    currentSceneCollection: string;
+    transitions: string[];
+    currentTransition: string;
+    tBarPosition: number;
     audio?: {
       master?: {
         volume: number;
@@ -259,6 +267,70 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       },
     );
 
+    obs.on(
+      'ReplayBufferStateChanged',
+      (data: { outputActive: boolean; outputState: string }) => {
+        if (instance.lastState) {
+          instance.lastState.isReplayBufferActive = data.outputActive;
+        }
+        this.eventEmitter.emit('obs.replaybuffer.state', {
+          productionId,
+          active: data.outputActive,
+          state: data.outputState,
+        });
+      },
+    );
+
+    obs.on(
+      'VirtualcamStateChanged',
+      (data: { outputActive: boolean; outputState: string }) => {
+        if (instance.lastState) {
+          instance.lastState.isVirtualCamActive = data.outputActive;
+        }
+        this.eventEmitter.emit('obs.virtualcam.state', {
+          productionId,
+          active: data.outputActive,
+          state: data.outputState,
+        });
+      },
+    );
+
+    obs.on('CurrentSceneCollectionChanged', (data: { sceneCollectionName: string }) => {
+      if (instance.lastState) {
+        instance.lastState.currentSceneCollection = data.sceneCollectionName;
+      }
+      this.eventEmitter.emit('obs.scenecollection.changed', {
+        productionId,
+        sceneCollectionName: data.sceneCollectionName,
+      });
+    });
+
+    obs.on('SceneCollectionListChanged', (data: { sceneCollections: string[] }) => {
+      if (instance.lastState) {
+        instance.lastState.sceneCollections = data.sceneCollections;
+      }
+    });
+
+    obs.on('CurrentSceneTransitionChanged', (data: { transitionName: string }) => {
+      if (instance.lastState) {
+        instance.lastState.currentTransition = data.transitionName;
+      }
+      this.eventEmitter.emit('obs.transition.changed', {
+        productionId,
+        transitionName: data.transitionName,
+      });
+    });
+
+    obs.on('StudioModeStateChanged', (data: { studioModeEnabled: boolean }) => {
+      if (instance.lastState) {
+        instance.lastState.studioModeEnabled = data.studioModeEnabled;
+      }
+      this.eventEmitter.emit('obs.studiomode.changed', {
+        productionId,
+        studioModeEnabled: data.studioModeEnabled,
+      });
+    });
+
     obs.on('SceneListChanged', () => {
       void (async () => {
         try {
@@ -310,12 +382,26 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
           recordStatusRes,
           statsRes,
           videoSettingsRes,
+          replayBufferStatusRes,
+          virtualCamStatusRes,
+          sceneCollectionListRes,
+          currentSceneCollectionRes,
+          transitionListRes,
+          currentTransitionRes,
+          studioModeRes,
         ] = await Promise.allSettled([
           obs.call('GetSceneList'),
           obs.call('GetStreamStatus'),
           obs.call('GetRecordStatus'),
           obs.call('GetStats'),
           obs.call('GetVideoSettings'),
+          obs.call('GetReplayBufferStatus'),
+          obs.call('GetVirtualCamStatus'),
+          obs.call('GetSceneCollectionList'),
+          obs.call('GetSceneCollectionList'),
+          obs.call('GetSceneTransitionList'),
+          obs.call('GetCurrentSceneTransition'),
+          obs.call('GetStudioModeEnabled'),
         ]);
 
         const sceneList =
@@ -334,6 +420,32 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
           videoSettingsRes.status === 'fulfilled'
             ? videoSettingsRes.value
             : undefined;
+        const replayBufferStatus =
+          replayBufferStatusRes.status === 'fulfilled'
+            ? replayBufferStatusRes.value
+            : undefined;
+        const virtualCamStatus =
+          virtualCamStatusRes.status === 'fulfilled'
+            ? virtualCamStatusRes.value
+            : undefined;
+        const sceneCollectionList =
+          sceneCollectionListRes.status === 'fulfilled'
+            ? sceneCollectionListRes.value
+            : undefined;
+        const currentSceneCollection =
+          currentSceneCollectionRes.status === 'fulfilled'
+            ? currentSceneCollectionRes.value
+            : undefined;
+        const transitionList =
+          transitionListRes.status === 'fulfilled'
+            ? transitionListRes.value
+            : undefined;
+        const currentTransition =
+          currentTransitionRes.status === 'fulfilled'
+            ? currentTransitionRes.value
+            : undefined;
+        const studioModeState =
+          studioModeRes.status === 'fulfilled' ? studioModeRes.value : undefined;
 
         const fps = videoSettings
           ? Math.round(
@@ -381,6 +493,14 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
           fps,
           bitrate:
             streamStatus?.outputSkippedFrames !== undefined ? 0 : undefined,
+          isReplayBufferActive: !!(replayBufferStatus as { outputActive?: boolean } | undefined)?.outputActive,
+          isVirtualCamActive: !!(virtualCamStatus as { outputActive?: boolean } | undefined)?.outputActive,
+          studioModeEnabled: !!(studioModeState as { studioModeEnabled?: boolean } | undefined)?.studioModeEnabled,
+          sceneCollections: ((sceneCollectionList as { sceneCollections?: string[] } | undefined)?.sceneCollections) ?? [],
+          currentSceneCollection: ((currentSceneCollection as { currentSceneCollectionName?: string } | undefined)?.currentSceneCollectionName) ?? '',
+          transitions: ((transitionList as { transitions?: { transitionName: string }[] } | undefined)?.transitions ?? []).map((t) => t.transitionName),
+          currentTransition: ((currentTransition as { transitionName?: string } | undefined)?.transitionName) ?? '',
+          tBarPosition: 0,
           audio: {
             master: {
               volume: masterVol,

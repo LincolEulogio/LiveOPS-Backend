@@ -38,3 +38,27 @@ export class ChangeSceneDto {
   @IsNotEmpty()
   sceneName: string;
 }
+
+export class SetSceneCollectionDto {
+  @IsString()
+  @IsNotEmpty()
+  sceneCollectionName: string;
+}
+
+export class SetTransitionDto {
+  @IsString()
+  @IsNotEmpty()
+  transitionName: string;
+
+  @IsOptional()
+  transitionDuration?: number;
+}
+
+export class SetStudioModeDto {
+  @IsBoolean()
+  enabled: boolean;
+}
+
+export class SetTBarDto {
+  position: number;
+}

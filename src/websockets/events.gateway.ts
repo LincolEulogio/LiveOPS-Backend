@@ -914,6 +914,31 @@ export class EventsGateway
       .emit('chat.received', msg);
   }
 
+  @OnEvent('obs.replaybuffer.state')
+  handleObsReplayBufferState(payload: { productionId: string; active: boolean; state: string }) {
+    this.server.to(`production_${payload.productionId}`).emit('obs.replaybuffer.state', payload);
+  }
+
+  @OnEvent('obs.virtualcam.state')
+  handleObsVirtualCamState(payload: { productionId: string; active: boolean; state: string }) {
+    this.server.to(`production_${payload.productionId}`).emit('obs.virtualcam.state', payload);
+  }
+
+  @OnEvent('obs.studiomode.changed')
+  handleObsStudioModeChanged(payload: { productionId: string; studioModeEnabled: boolean }) {
+    this.server.to(`production_${payload.productionId}`).emit('obs.studiomode.changed', payload);
+  }
+
+  @OnEvent('obs.scenecollection.changed')
+  handleObsSceneCollectionChanged(payload: { productionId: string; sceneCollectionName: string }) {
+    this.server.to(`production_${payload.productionId}`).emit('obs.scenecollection.changed', payload);
+  }
+
+  @OnEvent('obs.transition.changed')
+  handleObsTransitionChanged(payload: { productionId: string; transitionName: string }) {
+    this.server.to(`production_${payload.productionId}`).emit('obs.transition.changed', payload);
+  }
+
   @OnEvent('obs.connection.state')
   async handleObsConnectionState(payload: {
     productionId: string;
