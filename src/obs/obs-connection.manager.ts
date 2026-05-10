@@ -25,7 +25,6 @@ interface ObsInstance {
   statsInterval?: NodeJS.Timeout;
   heartbeatInterval?: NodeJS.Timeout;
   screenshotInterval?: NodeJS.Timeout;
-  thumbnailInterval?: NodeJS.Timeout;
   isConnected: boolean;
   reconnectAttempts: number;
   currentProgramSceneName?: string;
@@ -376,7 +375,6 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       this.startStatsPolling(productionId, instance);
       this.startHeartbeat(productionId, instance);
       this.startScreenshotPolling(productionId, instance);
-      this.startThumbnailPolling(productionId, instance);
 
       try {
         const [
@@ -554,7 +552,6 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     this.stopStatsPolling(instance);
     this.stopHeartbeat(instance);
     this.stopScreenshotPolling(instance);
-    this.stopThumbnailPolling(instance);
     instance.obs.removeAllListeners();
     instance.obs.disconnect().catch(() => {});
     this.connections.delete(productionId);
@@ -724,14 +721,22 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
   private startScreenshotPolling(productionId: string, instance: ObsInstance) {
     this.stopScreenshotPolling(instance);
 
+    // Round-robin index for capturing non-active scene thumbnails one per tick
+    let thumbRoundRobinIdx = 0;
+    // Every N ticks capture one extra scene thumbnail (33ms × 5 = ~165ms per scene → ~6fps per card)
+    const THUMB_EVERY_N_TICKS = 5;
+    let tickCount = 0;
+
     const poll = async () => {
       if (!instance.isConnected) return;
 
       try {
         const programScene = instance.currentProgramSceneName;
         const previewScene = instance.currentPreviewSceneName;
+        tickCount++;
 
-        const screenshotOptions = {
+        // ── High-priority: program + preview at full quality ──────────────
+        const hiResOptions = {
           imageFormat: 'jpeg',
           imageWidth: 1280,
           imageHeight: 720,
@@ -743,7 +748,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
           requests.push(
             instance.obs.call('GetSourceScreenshot', {
               sourceName: programScene,
-              ...screenshotOptions,
+              ...hiResOptions,
             }) as Promise<{ imageData: string }>,
           );
         }
@@ -751,7 +756,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
           requests.push(
             instance.obs.call('GetSourceScreenshot', {
               sourceName: previewScene,
-              ...screenshotOptions,
+              ...hiResOptions,
             }) as Promise<{ imageData: string }>,
           );
         }
@@ -793,6 +798,35 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
         if (payload.program || payload.preview) {
           this.eventEmitter.emit('obs.screenshot.update', payload);
         }
+
+        // ── Low-priority: one non-active scene thumbnail per N ticks ─────
+        if (tickCount % THUMB_EVERY_N_TICKS === 0) {
+          const scenes = instance.lastState?.scenes ?? [];
+          const inactive = scenes.filter(
+            (s) => s !== programScene && s !== previewScene,
+          );
+          if (inactive.length > 0) {
+            const scene = inactive[thumbRoundRobinIdx % inactive.length];
+            thumbRoundRobinIdx++;
+            try {
+              const res = await instance.obs.call('GetSourceScreenshot', {
+                sourceName: scene,
+                imageFormat: 'jpeg',
+                imageWidth: 320,
+                imageHeight: 180,
+                imageCompressionQuality: 60,
+              }) as { imageData: string };
+              const data = res.imageData;
+              const url = data.startsWith('data:') ? data : `data:image/jpeg;base64,${data}`;
+              this.eventEmitter.emit('obs.scene.thumbnails', {
+                productionId,
+                thumbnails: { [scene]: url },
+              });
+            } catch {
+              // Scene unavailable — skip silently
+            }
+          }
+        }
       } catch {
         // Silent error for screenshots to avoid spamming logs
       } finally {
@@ -818,45 +852,4 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private startThumbnailPolling(productionId: string, instance: ObsInstance) {
-    this.stopThumbnailPolling(instance);
-
-    instance.thumbnailInterval = setInterval(() => {
-      void (async () => {
-        if (!instance.isConnected || !instance.lastState) return;
-        const scenes = instance.lastState.scenes ?? [];
-        if (!scenes.length) return;
-
-        const thumbnails: Record<string, string> = {};
-        await Promise.allSettled(
-          scenes.map(async (scene) => {
-            try {
-              const res = await instance.obs.call('GetSourceScreenshot', {
-                sourceName: scene,
-                imageFormat: 'jpeg',
-                imageWidth: 320,
-                imageHeight: 180,
-                imageCompressionQuality: 60,
-              }) as { imageData: string };
-              const data = res.imageData;
-              thumbnails[scene] = data.startsWith('data:') ? data : `data:image/jpeg;base64,${data}`;
-            } catch {
-              // Scene may be unavailable; skip silently
-            }
-          }),
-        );
-
-        if (Object.keys(thumbnails).length > 0) {
-          this.eventEmitter.emit('obs.scene.thumbnails', { productionId, thumbnails });
-        }
-      })();
-    }, 1000);
-  }
-
-  private stopThumbnailPolling(instance: ObsInstance) {
-    if (instance.thumbnailInterval) {
-      clearInterval(instance.thumbnailInterval);
-      instance.thumbnailInterval = undefined;
-    }
-  }
 }
