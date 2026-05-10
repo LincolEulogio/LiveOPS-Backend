@@ -274,6 +274,13 @@ export class ProductionsService {
           });
         }
 
+        if (dto.engineType === EngineType.APP) {
+          await tx.obsConnection.updateMany({ where: { productionId }, data: { isEnabled: false } });
+          await tx.vmixConnection.updateMany({ where: { productionId }, data: { isEnabled: false } });
+          this.eventEmitter.emit('engine.connection.update', { productionId, type: EngineType.OBS, isEnabled: false });
+          this.eventEmitter.emit('engine.connection.update', { productionId, type: EngineType.VMIX, isEnabled: false });
+        }
+
         return production;
       })
       .then((prod) => {

@@ -13,6 +13,7 @@ import { Type } from 'class-transformer';
 export enum EngineType {
   OBS = 'OBS',
   VMIX = 'VMIX',
+  APP = 'APP',
 }
 
 export enum ProductionStatus {
