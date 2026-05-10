@@ -25,6 +25,7 @@ interface ObsInstance {
   statsInterval?: NodeJS.Timeout;
   heartbeatInterval?: NodeJS.Timeout;
   screenshotInterval?: NodeJS.Timeout;
+  thumbnailInterval?: NodeJS.Timeout;
   isConnected: boolean;
   reconnectAttempts: number;
   currentProgramSceneName?: string;
@@ -375,6 +376,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       this.startStatsPolling(productionId, instance);
       this.startHeartbeat(productionId, instance);
       this.startScreenshotPolling(productionId, instance);
+      this.startThumbnailPolling(productionId, instance);
 
       try {
         const [
@@ -552,6 +554,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     this.stopStatsPolling(instance);
     this.stopHeartbeat(instance);
     this.stopScreenshotPolling(instance);
+    this.stopThumbnailPolling(instance);
     instance.obs.removeAllListeners();
     instance.obs.disconnect().catch(() => {});
     this.connections.delete(productionId);
@@ -812,6 +815,48 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     if (instance.screenshotInterval) {
       clearTimeout(instance.screenshotInterval);
       instance.screenshotInterval = undefined;
+    }
+  }
+
+  private startThumbnailPolling(productionId: string, instance: ObsInstance) {
+    this.stopThumbnailPolling(instance);
+
+    instance.thumbnailInterval = setInterval(() => {
+      void (async () => {
+        if (!instance.isConnected || !instance.lastState) return;
+        const scenes = instance.lastState.scenes ?? [];
+        if (!scenes.length) return;
+
+        const thumbnails: Record<string, string> = {};
+        await Promise.allSettled(
+          scenes.map(async (scene) => {
+            try {
+              const res = await instance.obs.call('GetSourceScreenshot', {
+                sourceName: scene,
+                imageFormat: 'jpeg',
+                imageWidth: 320,
+                imageHeight: 180,
+                imageCompressionQuality: 60,
+              }) as { imageData: string };
+              const data = res.imageData;
+              thumbnails[scene] = data.startsWith('data:') ? data : `data:image/jpeg;base64,${data}`;
+            } catch {
+              // Scene may be unavailable; skip silently
+            }
+          }),
+        );
+
+        if (Object.keys(thumbnails).length > 0) {
+          this.eventEmitter.emit('obs.scene.thumbnails', { productionId, thumbnails });
+        }
+      })();
+    }, 1000);
+  }
+
+  private stopThumbnailPolling(instance: ObsInstance) {
+    if (instance.thumbnailInterval) {
+      clearInterval(instance.thumbnailInterval);
+      instance.thumbnailInterval = undefined;
     }
   }
 }

@@ -93,6 +93,7 @@ export class EventsGateway
   private registerForwardEvents() {
     const passthrough = [
       'obs.screenshot.update',
+      'obs.scene.thumbnails',
       'obs.audio.volume',
       'obs.audio.mute',
       'vmix.connection.state',
