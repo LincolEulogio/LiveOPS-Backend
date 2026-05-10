@@ -213,27 +213,30 @@ export class EventsGateway
     return { status: 'joined', room: `production_${data.productionId}` };
   }
 
-  @SubscribeMessage('production.state_update')
-  async handleProductionStateUpdate(
+  @SubscribeMessage('production.state_update_broadcast')
+  handleProductionStateBroadcast(
     @MessageBody() data: { productionId: string; state: unknown },
     @ConnectedSocket() client: CustomSocket,
   ) {
-    this.logger.debug(`Updating state for production ${data.productionId}`);
-
-    // Persist to DB
-    await this.prisma.production.update({
-      where: { id: data.productionId },
-      data: { activeState: data.state as Prisma.InputJsonValue },
-    });
-
-    // Broadcast to others in the room
+    // Immediate broadcast to others in the room for real-time UI sync
     client
       .to(`production_${data.productionId}`)
       .emit('production.state_updated', {
         productionId: data.productionId,
         state: data.state,
       });
+    return { status: 'ok' };
+  }
 
+  @SubscribeMessage('production.state_update_persist')
+  async handleProductionStatePersist(
+    @MessageBody() data: { productionId: string; state: unknown },
+  ) {
+    // Debounced persistence to DB
+    await this.prisma.production.update({
+      where: { id: data.productionId },
+      data: { activeState: data.state as Prisma.InputJsonValue },
+    });
     return { status: 'ok' };
   }
 
