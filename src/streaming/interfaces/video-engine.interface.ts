@@ -42,6 +42,10 @@ export interface ISceneEngine extends IVideoEngine {
     productionId: string,
     sceneName: string,
   ): Promise<{ success: boolean; sceneName: string }>;
+  setPreviewScene?(
+    productionId: string,
+    sceneName: string,
+  ): Promise<{ success: boolean; sceneName: string }>;
 }
 
 export interface IInputEngine extends IVideoEngine {

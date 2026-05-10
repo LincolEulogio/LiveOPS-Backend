@@ -274,6 +274,8 @@ export class StreamingService {
     const commands: Partial<Record<string, CommandHandler>> = {
       CHANGE_SCENE: () => engineRequired(() =>
         this.handleChangeScene(engine!, productionId, dto.sceneName)),
+      SET_PREVIEW_SCENE: () => engineRequired(() =>
+        this.handleSetPreviewScene(engine!, productionId, dto.sceneName)),
       START_STREAM: () => engineRequired(() => engine!.startStream(productionId)),
       STOP_STREAM: () => engineRequired(() => engine!.stopStream(productionId)),
       START_CLOUD_STREAM: () =>
@@ -433,12 +435,28 @@ export class StreamingService {
       throw new BadRequestException('sceneName is required');
     }
     if ('changeScene' in engine) {
-      return (engine as unknown as ISceneEngine).changeScene(
-        productionId,
-        sceneName,
-      );
+      return (engine as unknown as ISceneEngine).changeScene(productionId, sceneName);
     }
     throw new BadRequestException('CHANGE_SCENE not supported by this engine');
+  }
+
+  private async handleSetPreviewScene(
+    engine: IVideoEngine,
+    productionId: string,
+    sceneName?: string,
+  ): Promise<void | Record<string, unknown>> {
+    if (!sceneName) {
+      throw new BadRequestException('sceneName is required');
+    }
+    const sceneEngine = engine as unknown as ISceneEngine;
+    if (sceneEngine.setPreviewScene) {
+      return sceneEngine.setPreviewScene(productionId, sceneName);
+    }
+    // Fallback: use changeScene if no preview scene support (e.g. non-studio-mode)
+    if ('changeScene' in engine) {
+      return sceneEngine.changeScene(productionId, sceneName);
+    }
+    throw new BadRequestException('SET_PREVIEW_SCENE not supported by this engine');
   }
 
   private async executeEngineMethod(

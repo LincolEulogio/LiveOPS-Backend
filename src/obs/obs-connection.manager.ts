@@ -729,9 +729,9 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
 
         const screenshotOptions = {
           imageFormat: 'jpeg',
-          imageWidth: 400,
-          imageHeight: 225,
-          imageCompressionQuality: 50,
+          imageWidth: 1280,
+          imageHeight: 720,
+          imageCompressionQuality: 80,
         };
 
         const requests: Promise<{ imageData: string }>[] = [];

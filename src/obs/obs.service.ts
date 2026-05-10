@@ -87,18 +87,23 @@ export class ObsService implements ISceneEngine {
     const obs = this.getObs(productionId);
     try {
       await obs.call('SetCurrentProgramScene', { sceneName });
-
-      // Audit Log
-      void this.auditService.log({
-        productionId,
-        action: AuditAction.SCENE_CHANGE,
-        details: { sceneName },
-      });
-
+      void this.auditService.log({ productionId, action: AuditAction.SCENE_CHANGE, details: { sceneName } });
       return { success: true, sceneName };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
       this.logger.error(`Failed to change scene: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
+  async setPreviewScene(productionId: string, sceneName: string) {
+    const obs = this.getObs(productionId);
+    try {
+      await obs.call('SetCurrentPreviewScene', { sceneName });
+      return { success: true, sceneName };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to set preview scene: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
