@@ -243,6 +243,22 @@ export class VmixService implements IInputEngine {
     await this.vmixManager.sendCommand(productionId, 'StartStreaming');
     return { success: true };
   }
+
+  async startStreamToDestination(productionId: string, rtmpUrl: string, streamKey: string) {
+    // vMix API: configure destination 1 then start streaming
+    await this.vmixManager.sendCommand(productionId, 'StreamingSetURL', {
+      Destination: '1',
+      Value: `${rtmpUrl}${streamKey}`,
+    });
+    await this.vmixManager.sendCommand(productionId, 'StartStreaming', { Destination: '1' });
+    return { success: true };
+  }
+
+  async stopStreamFromDestination(productionId: string) {
+    await this.vmixManager.sendCommand(productionId, 'StopStreaming');
+    return { success: true };
+  }
+
   async stopStream(productionId: string) {
     await this.vmixManager.sendCommand(productionId, 'StopStreaming');
     return { success: true };

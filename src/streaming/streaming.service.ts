@@ -41,7 +41,8 @@ export class StreamingService {
   async getStreamingState(productionId: string) {
     const production = (await this.prisma.production.findUnique({
       where: { id: productionId },
-    })) as ProductionWithCloud | null;
+      include: { streamingDestinations: { orderBy: { createdAt: 'asc' } } },
+    })) as (ProductionWithCloud & { streamingDestinations: StreamingDestination[] }) | null;
 
     if (!production) {
       throw new NotFoundException('Production not found');
@@ -57,6 +58,7 @@ export class StreamingService {
       isConnected: state.isConnected,
       activeEgressId: production.activeEgressId ?? null,
       activeRecordingId: production.activeRecordingId ?? null,
+      destinations: production.streamingDestinations,
       obs: production.engineType === 'OBS' ? state : null,
       vmix: production.engineType === 'VMIX' ? state : null,
       lastUpdate: new Date().toISOString(),
@@ -344,20 +346,103 @@ export class StreamingService {
           p?.bus,
         ) as Promise<void>,
       START_DESTINATION: () =>
-        Promise.resolve({
-          success: true,
-          destId: p?.destId as string,
-        }),
+        this.startDestination(productionId, p?.destId as string),
       STOP_DESTINATION: () =>
-        Promise.resolve({
-          success: true,
-          destId: p?.destId as string,
-        }),
+        this.stopDestination(productionId, p?.destId as string),
     };
 
     const handler = commands[dto.type];
     if (!handler) throw new BadRequestException(`Unknown command: ${dto.type}`);
     return handler();
+  }
+
+  async startDestination(productionId: string, destId: string) {
+    if (!destId) throw new BadRequestException('destId is required');
+
+    const [destination, production] = await Promise.all([
+      this.prisma.streamingDestination.findUnique({ where: { id: destId } }),
+      this.prisma.production.findUnique({ where: { id: productionId } }),
+    ]);
+
+    if (!destination) throw new NotFoundException('Destination not found');
+    if (!production) throw new NotFoundException('Production not found');
+    if (destination.productionId !== productionId)
+      throw new BadRequestException('Destination does not belong to this production');
+    if (destination.isActive)
+      throw new BadRequestException(`${destination.name} ya está transmitiendo`);
+
+    const engine = this.getEngine(production);
+
+    if (engine.startStreamToDestination) {
+      // Engine-native path: OBS/vMix streams directly to the platform RTMP
+      await engine.startStreamToDestination(productionId, destination.rtmpUrl, destination.streamKey);
+    } else {
+      // Fallback: LiveKit Egress (requires video published in the LiveKit room)
+      const activeState = ((production.activeState as Record<string, unknown>) ?? {}) as Record<string, unknown>;
+      const destEgresses = ((activeState.destinationEgresses ?? {}) as Record<string, string>);
+
+      const roomName = `production_${productionId}`;
+      await this.liveKitService.ensureRoomExists(roomName);
+      const rtmpTarget = `${destination.rtmpUrl}${destination.streamKey}`;
+      const egressInfo = await this.liveKitService.startRoomCompositeEgress(roomName, [rtmpTarget]);
+      destEgresses[destId] = egressInfo.egressId;
+
+      await this.prisma.production.update({
+        where: { id: productionId },
+        data: { activeState: { ...activeState, destinationEgresses: destEgresses } },
+      });
+    }
+
+    await this.prisma.streamingDestination.update({
+      where: { id: destId },
+      data: { isActive: true },
+    });
+
+    this.logger.log(`Destination "${destination.name}" (${destination.platform}) started for production ${productionId}`);
+    return { success: true, destId, platform: destination.platform, name: destination.name };
+  }
+
+  async stopDestination(productionId: string, destId: string) {
+    if (!destId) throw new BadRequestException('destId is required');
+
+    const [destination, production] = await Promise.all([
+      this.prisma.streamingDestination.findUnique({ where: { id: destId } }),
+      this.prisma.production.findUnique({ where: { id: productionId } }),
+    ]);
+
+    if (!destination) throw new NotFoundException('Destination not found');
+    if (!production) throw new NotFoundException('Production not found');
+    if (!destination.isActive)
+      throw new BadRequestException('Este destino no está transmitiendo');
+
+    const engine = this.getEngine(production);
+
+    if (engine.stopStreamFromDestination) {
+      await engine.stopStreamFromDestination(productionId);
+    } else {
+      // LiveKit Egress fallback
+      const activeState = ((production.activeState as Record<string, unknown>) ?? {}) as Record<string, unknown>;
+      const destEgresses = ((activeState.destinationEgresses ?? {}) as Record<string, string>);
+      const egressId = destEgresses[destId];
+      if (egressId) {
+        try { await this.liveKitService.stopEgress(egressId); } catch (err) {
+          this.logger.warn(`Could not stop egress ${egressId}: ${getErrorMessage(err)}`);
+        }
+        delete destEgresses[destId];
+        await this.prisma.production.update({
+          where: { id: productionId },
+          data: { activeState: { ...activeState, destinationEgresses: destEgresses } },
+        });
+      }
+    }
+
+    await this.prisma.streamingDestination.update({
+      where: { id: destId },
+      data: { isActive: false },
+    });
+
+    this.logger.log(`Destination "${destination.name}" stopped for production ${productionId}`);
+    return { success: true, destId };
   }
 
   private async handleChangeScene(

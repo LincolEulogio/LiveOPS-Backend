@@ -107,17 +107,41 @@ export class ObsService implements ISceneEngine {
     const obs = this.getObs(productionId);
     try {
       await obs.call('StartStream');
-
-      // Audit Log
-      void this.auditService.log({
-        productionId,
-        action: AuditAction.STREAM_START,
-      });
-
+      void this.auditService.log({ productionId, action: AuditAction.STREAM_START });
       return { success: true };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
       this.logger.error(`Failed to start stream: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
+  async startStreamToDestination(productionId: string, rtmpUrl: string, streamKey: string) {
+    const obs = this.getObs(productionId);
+    try {
+      await obs.call('SetStreamServiceSettings', {
+        streamServiceType: 'rtmp_custom',
+        streamServiceSettings: { server: rtmpUrl, key: streamKey },
+      });
+      await obs.call('StartStream');
+      void this.auditService.log({ productionId, action: AuditAction.STREAM_START });
+      return { success: true };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to start stream to destination: ${message}`);
+      throw new BadRequestException(`OBS Error: ${message}`);
+    }
+  }
+
+  async stopStreamFromDestination(productionId: string) {
+    const obs = this.getObs(productionId);
+    try {
+      await obs.call('StopStream');
+      void this.auditService.log({ productionId, action: AuditAction.STREAM_STOP });
+      return { success: true };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      this.logger.error(`Failed to stop stream: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }

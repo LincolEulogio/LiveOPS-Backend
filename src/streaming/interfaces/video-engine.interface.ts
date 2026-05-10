@@ -8,6 +8,8 @@ export interface IVideoEngine {
   startRecord(productionId: string): Promise<{ success: boolean }>;
   stopRecord(productionId: string): Promise<{ success: boolean }>;
   saveReplayBuffer?(productionId: string): Promise<{ success: boolean }>;
+  startStreamToDestination?(productionId: string, rtmpUrl: string, streamKey: string): Promise<{ success: boolean }>;
+  stopStreamFromDestination?(productionId: string): Promise<{ success: boolean }>;
 
   // Audio Controls
   setVolume?(
