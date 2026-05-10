@@ -35,7 +35,8 @@ export class StreamingService {
   private getEngine(production: Production): IVideoEngine {
     if (production.engineType === 'OBS') return this.obsService;
     if (production.engineType === 'VMIX') return this.vmixService;
-    throw new BadRequestException('Unsupported engine type');
+    // APP mode has no local engine; callers must handle null
+    return null as unknown as IVideoEngine;
   }
 
   async getStreamingState(productionId: string) {
@@ -48,8 +49,11 @@ export class StreamingService {
       throw new NotFoundException('Production not found');
     }
 
-    const engine = this.getEngine(production);
-    const state = await engine.getRealTimeState(productionId);
+    const isAppMode = production.engineType === 'APP';
+    const engine = isAppMode ? null : this.getEngine(production);
+    const state = engine
+      ? await engine.getRealTimeState(productionId)
+      : { isConnected: true };
 
     return {
       productionId,
@@ -257,94 +261,67 @@ export class StreamingService {
     });
     if (!production) throw new NotFoundException('Production not found');
 
-    const engine = this.getEngine(production);
+    const isAppMode = production.engineType === 'APP';
+    const engine = isAppMode ? null : this.getEngine(production);
     const p = dto.payload as Record<string, unknown>;
+
+    const engineRequired = (fn: () => Promise<void | Record<string, unknown>>) => {
+      if (!engine) throw new BadRequestException('Este comando requiere OBS o vMix conectado. Esta producción usa modo App.');
+      return fn();
+    };
 
     type CommandHandler = () => Promise<void | Record<string, unknown>>;
     const commands: Partial<Record<string, CommandHandler>> = {
-      CHANGE_SCENE: () =>
-        this.handleChangeScene(engine, productionId, dto.sceneName),
-      START_STREAM: () => engine.startStream(productionId),
-      STOP_STREAM: () => engine.stopStream(productionId),
+      CHANGE_SCENE: () => engineRequired(() =>
+        this.handleChangeScene(engine!, productionId, dto.sceneName)),
+      START_STREAM: () => engineRequired(() => engine!.startStream(productionId)),
+      STOP_STREAM: () => engineRequired(() => engine!.stopStream(productionId)),
       START_CLOUD_STREAM: () =>
         this.startCloudStream(productionId, p?.layout as string),
       STOP_CLOUD_STREAM: () => this.stopCloudStream(productionId),
       START_CLOUD_RECORDING: () =>
         this.startCloudRecording(productionId, p?.layout as string),
       STOP_CLOUD_RECORDING: () => this.stopCloudRecording(productionId),
-      START_RECORD: () => engine.startRecord(productionId),
-      STOP_RECORD: () => engine.stopRecord(productionId),
-      START_REPLAY_BUFFER: () =>
-        this.executeEngineMethod(engine, 'startReplayBuffer', productionId) as Promise<void>,
-      STOP_REPLAY_BUFFER: () =>
-        this.executeEngineMethod(engine, 'stopReplayBuffer', productionId) as Promise<void>,
-      SAVE_REPLAY_BUFFER: () =>
-        this.executeEngineMethod(engine, 'saveReplayBuffer', productionId) as Promise<void>,
-      START_VIRTUAL_CAM: () =>
-        this.executeEngineMethod(engine, 'startVirtualCam', productionId) as Promise<void>,
-      STOP_VIRTUAL_CAM: () =>
-        this.executeEngineMethod(engine, 'stopVirtualCam', productionId) as Promise<void>,
-      SET_TBAR: () =>
-        this.executeEngineMethod(engine, 'setTBarPosition', productionId, p?.position) as Promise<void>,
-      RELEASE_TBAR: () =>
-        this.executeEngineMethod(engine, 'releaseTBar', productionId) as Promise<void>,
-      TRIGGER_TRANSITION: () =>
-        this.executeEngineMethod(engine, 'triggerTransition', productionId) as Promise<void>,
-      SET_TRANSITION: () =>
-        this.executeEngineMethod(engine, 'setCurrentTransition', productionId, p?.transitionName, p?.transitionDuration) as Promise<void>,
-      SET_SCENE_COLLECTION: () =>
-        this.executeEngineMethod(engine, 'setCurrentSceneCollection', productionId, p?.sceneCollectionName) as Promise<void>,
-      SET_STUDIO_MODE: () =>
-        this.executeEngineMethod(engine, 'setStudioMode', productionId, p?.enabled) as Promise<void>,
-      VMIX_CUT: () =>
-        this.executeEngineMethod(engine, 'cut', productionId) as Promise<void>,
-      VMIX_FADE: () =>
-        this.executeEngineMethod(engine, 'fade', productionId) as Promise<void>,
-      VMIX_SELECT_INPUT: () =>
-        this.executeEngineMethod(
-          engine,
-          'changeInput',
-          productionId,
-          p?.input as number,
-        ) as Promise<void>,
-      VMIX_SET_VOLUME: () =>
-        this.executeEngineMethod(
-          engine,
-          'setVolume',
-          productionId,
-          p?.input,
-          p?.value,
-        ) as Promise<void>,
-      VMIX_TOGGLE_MUTE: () =>
-        this.executeEngineMethod(
-          engine,
-          'toggleMute',
-          productionId,
-          p?.input,
-        ) as Promise<void>,
-      VMIX_TOGGLE_SOLO: () =>
-        this.executeEngineMethod(
-          engine,
-          'toggleSolo',
-          productionId,
-          p?.input,
-        ) as Promise<void>,
-      VMIX_SET_GAIN: () =>
-        this.executeEngineMethod(
-          engine,
-          'setGain',
-          productionId,
-          p?.input,
-          p?.value,
-        ) as Promise<void>,
-      VMIX_TOGGLE_BUS: () =>
-        this.executeEngineMethod(
-          engine,
-          'toggleBus',
-          productionId,
-          p?.input,
-          p?.bus,
-        ) as Promise<void>,
+      START_RECORD: () => engineRequired(() => engine!.startRecord(productionId)),
+      STOP_RECORD: () => engineRequired(() => engine!.stopRecord(productionId)),
+      START_REPLAY_BUFFER: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'startReplayBuffer', productionId) as Promise<void>),
+      STOP_REPLAY_BUFFER: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'stopReplayBuffer', productionId) as Promise<void>),
+      SAVE_REPLAY_BUFFER: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'saveReplayBuffer', productionId) as Promise<void>),
+      START_VIRTUAL_CAM: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'startVirtualCam', productionId) as Promise<void>),
+      STOP_VIRTUAL_CAM: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'stopVirtualCam', productionId) as Promise<void>),
+      SET_TBAR: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'setTBarPosition', productionId, p?.position) as Promise<void>),
+      RELEASE_TBAR: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'releaseTBar', productionId) as Promise<void>),
+      TRIGGER_TRANSITION: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'triggerTransition', productionId) as Promise<void>),
+      SET_TRANSITION: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'setCurrentTransition', productionId, p?.transitionName, p?.transitionDuration) as Promise<void>),
+      SET_SCENE_COLLECTION: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'setCurrentSceneCollection', productionId, p?.sceneCollectionName) as Promise<void>),
+      SET_STUDIO_MODE: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'setStudioMode', productionId, p?.enabled) as Promise<void>),
+      VMIX_CUT: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'cut', productionId) as Promise<void>),
+      VMIX_FADE: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'fade', productionId) as Promise<void>),
+      VMIX_SELECT_INPUT: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'changeInput', productionId, p?.input as number) as Promise<void>),
+      VMIX_SET_VOLUME: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'setVolume', productionId, p?.input, p?.value) as Promise<void>),
+      VMIX_TOGGLE_MUTE: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'toggleMute', productionId, p?.input) as Promise<void>),
+      VMIX_TOGGLE_SOLO: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'toggleSolo', productionId, p?.input) as Promise<void>),
+      VMIX_SET_GAIN: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'setGain', productionId, p?.input, p?.value) as Promise<void>),
+      VMIX_TOGGLE_BUS: () => engineRequired(() =>
+        this.executeEngineMethod(engine!, 'toggleBus', productionId, p?.input, p?.bus) as Promise<void>),
       START_DESTINATION: () =>
         this.startDestination(productionId, p?.destId as string),
       STOP_DESTINATION: () =>
@@ -371,13 +348,14 @@ export class StreamingService {
     if (destination.isActive)
       throw new BadRequestException(`${destination.name} ya está transmitiendo`);
 
-    const engine = this.getEngine(production);
+    const isAppMode = production.engineType === 'APP';
+    const engine = isAppMode ? null : this.getEngine(production);
 
-    if (engine.startStreamToDestination) {
+    if (engine?.startStreamToDestination) {
       // Engine-native path: OBS/vMix streams directly to the platform RTMP
       await engine.startStreamToDestination(productionId, destination.rtmpUrl, destination.streamKey);
     } else {
-      // Fallback: LiveKit Egress (requires video published in the LiveKit room)
+      // APP mode or fallback: LiveKit Egress composites the room and pushes to RTMP
       const activeState = ((production.activeState as Record<string, unknown>) ?? {}) as Record<string, unknown>;
       const destEgresses = ((activeState.destinationEgresses ?? {}) as Record<string, string>);
 
@@ -415,9 +393,10 @@ export class StreamingService {
     if (!destination.isActive)
       throw new BadRequestException('Este destino no está transmitiendo');
 
-    const engine = this.getEngine(production);
+    const isAppMode = production.engineType === 'APP';
+    const engine = isAppMode ? null : this.getEngine(production);
 
-    if (engine.stopStreamFromDestination) {
+    if (engine?.stopStreamFromDestination) {
       await engine.stopStreamFromDestination(productionId);
     } else {
       // LiveKit Egress fallback

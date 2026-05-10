@@ -623,6 +623,7 @@ enum BlockStatus {
 enum EngineType {
   OBS
   VMIX
+  APP
 }
 
 enum ProductionStatus {
