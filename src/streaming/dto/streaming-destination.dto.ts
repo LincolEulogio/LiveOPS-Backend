@@ -27,6 +27,10 @@ export class CreateStreamingDestinationDto {
   @IsNotEmpty()
   streamKey: string;
 
+  @IsString()
+  @IsOptional()
+  viewUrl?: string;
+
   @IsBoolean()
   @IsOptional()
   isEnabled?: boolean;
@@ -49,6 +53,10 @@ export class UpdateStreamingDestinationDto {
   @IsString()
   @IsOptional()
   streamKey?: string;
+
+  @IsString()
+  @IsOptional()
+  viewUrl?: string;
 
   @IsBoolean()
   @IsOptional()
