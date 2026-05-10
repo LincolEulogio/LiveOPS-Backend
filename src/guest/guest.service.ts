@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  UnauthorizedException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -80,6 +79,8 @@ export class GuestService {
 
   async validateToken(token: string) {
     this.logger.debug(`validateToken called for: ${token.substring(0, 8)}...`);
+
+    // 1. Try to find an explicit invitation by token
     const invitation = await this.prisma.guestInvitation.findUnique({
       where: { token },
       include: {
@@ -93,21 +94,44 @@ export class GuestService {
       },
     });
 
+    // 2. If not found, check if the token is actually a Production ID (Public Link Mode)
+    if (!invitation) {
+      const production = await this.prisma.production.findUnique({
+        where: { id: token },
+        select: { id: true, name: true, status: true },
+      });
+
+      if (production) {
+        this.logger.log(
+          `Public access validated for production: ${production.name}`,
+        );
+        // Return a virtual invitation for this production
+        return {
+          id: `public-${production.id}`,
+          token: production.id,
+          guestName: 'Invitado Público',
+          productionId: production.id,
+          status: 'PENDING' as const,
+          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Far future
+          production,
+        };
+      }
+    }
+
     if (!invitation) {
       this.logger.warn(`Token not found: ${token.substring(0, 8)}...`);
-      throw new UnauthorizedException('Token de invitado inválido');
+      throw new NotFoundException(
+        'Enlace de invitado no encontrado o inválido',
+      );
     }
 
     if (invitation.expiresAt < new Date()) {
       this.logger.warn(`Token expired: ${token.substring(0, 8)}...`);
-      throw new UnauthorizedException('El token de invitado ha expirado');
+      throw new BadRequestException('El enlace de invitado ha expirado');
     }
 
-    // Permitimos reutilizar el mismo link mientras no haya expirado.
-    // Esto habilita reingreso tras recarga o reconexión del invitado sin bloquear el acceso.
-
     this.logger.log(
-      `Token validated successfully for: ${invitation.guestName}`,
+      `Token validated successfully for: ${invitation.guestName || 'Anonymous Guest'}`,
     );
     return invitation;
   }
@@ -118,6 +142,13 @@ export class GuestService {
         `Attempting to activate token: ${token.substring(0, 8)}...`,
       );
       const invitation = await this.validateToken(token);
+
+      // If it's a virtual public invitation, we don't update DB
+      if (invitation.id.startsWith('public-')) {
+        this.logger.log(`Public guest bypass: ${invitation.id}`);
+        return invitation;
+      }
+
       const updated = await this.prisma.guestInvitation.update({
         where: { token: token },
         data: { status: 'ACTIVE' },
@@ -143,7 +174,17 @@ export class GuestService {
       where: { token },
       select: { id: true, productionId: true, status: true },
     });
-    if (!invitation) throw new UnauthorizedException('Token de invitado inválido');
+
+    if (!invitation) {
+      // Check if it was a public session
+      const production = await this.prisma.production.findUnique({
+        where: { id: token },
+      });
+      if (production) return { success: true };
+
+      throw new NotFoundException('Token de invitado inválido');
+    }
+
     return this.releaseInvitation(invitation, { token });
   }
 
@@ -158,12 +199,15 @@ export class GuestService {
 
   private async releaseInvitation(
     invitation: { id: string; productionId: string },
-    deleteWhere: { token?: string; id?: string },
+    deleteWhere: Prisma.GuestInvitationWhereUniqueInput,
   ) {
     await this.prisma.guestInvitation.delete({ where: deleteWhere });
     const envelope = await this.getSlotConfigEnvelope(invitation.productionId);
     if (envelope.slots[invitation.id]) {
-      envelope.slots[invitation.id] = { ...envelope.slots[invitation.id], status: 'FREE' };
+      envelope.slots[invitation.id] = {
+        ...envelope.slots[invitation.id],
+        status: 'FREE',
+      };
       await this.saveSlotConfigEnvelope(invitation.productionId, envelope);
     }
     await this.emitGuestSlotsUpdated(invitation.productionId);
