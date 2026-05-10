@@ -7,6 +7,8 @@
   Body,
   Param,
   Query,
+  ParseIntPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { Protected } from '@/common/decorators/protected.decorator';
 import { SocialService } from '@/social/social.service';
@@ -22,8 +24,10 @@ export class SocialController {
   getMessages(
     @Param('productionId') productionId: string,
     @Query('status') status?: string,
+    @Query('limit', new DefaultValuePipe(100), ParseIntPipe) limit?: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset?: number,
   ) {
-    return this.socialService.getMessages(productionId, status);
+    return this.socialService.getMessages(productionId, status, limit, offset);
   }
 
   @Get('ai-highlights')

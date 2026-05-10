@@ -27,17 +27,7 @@ async function fetchRestreamToken(
   }
 }
 
-const PLATFORM_MAP: Record<string, string> = {
-  youtube: 'youtube',
-  facebook: 'facebook',
-  twitch: 'twitch',
-  tiktok: 'tiktok',
-  instagram: 'instagram',
-  twitter: 'twitter',
-  linkedin: 'linkedin',
-  kick: 'kick',
-  trovo: 'trovo',
-};
+import { normalizePlatform } from './constants/platforms';
 
 interface RestreamChatEvent {
   action: string;
@@ -96,7 +86,8 @@ export class RestreamChatService implements OnModuleDestroy {
       return;
     }
 
-    if (new Date() >= conn.expiresAt) {
+    const expiryBuffer = 60 * 1000; // refresh 60s before actual expiry
+    if (Date.now() + expiryBuffer >= conn.expiresAt.getTime()) {
       await this.refreshAccessToken(productionId, conn.refreshToken);
       const updated = await this.prisma.restreamConnection.findUnique({
         where: { productionId },
@@ -236,10 +227,8 @@ export class RestreamChatService implements OnModuleDestroy {
 
     const rawPlatform =
       payload.platform ??
-      (data.payload as RestreamMessagePayload)?.connectionIdentifier ??
-      'unknown';
-    const platform =
-      PLATFORM_MAP[rawPlatform.toLowerCase()] ?? rawPlatform.toLowerCase();
+      (data.payload as RestreamMessagePayload)?.connectionIdentifier;
+    const platform = normalizePlatform(rawPlatform);
     const author =
       payload.author?.displayName ??
       payload.author?.name ??

@@ -6,6 +6,7 @@ import {
   Param,
   Delete,
   Put,
+  Patch,
 } from '@nestjs/common';
 import { Protected } from '@/common/decorators/protected.decorator';
 import { StreamingService } from '@/streaming/streaming.service';
@@ -92,6 +93,15 @@ export class StreamingController {
   @Permissions('streaming:manage')
   removeDestination(@Param('destId') id: string) {
     return this.destinationsService.remove(id);
+  }
+
+  @Patch('destinations/:destId/toggle')
+  @Permissions('streaming:manage')
+  toggleDestination(
+    @Param('destId') id: string,
+    @Body('isActive') isActive: boolean,
+  ) {
+    return this.destinationsService.toggleActive(id, isActive);
   }
 
   // --- Cloud Mixing & Recording --- //

@@ -223,9 +223,6 @@ export class StreamingService {
     }
 
     try {
-      if (!production.activeRecordingId) {
-        throw new BadRequestException('No active recording ID found');
-      }
       await this.liveKitService.stopEgress(production.activeRecordingId);
 
       await this.prisma.production.update({

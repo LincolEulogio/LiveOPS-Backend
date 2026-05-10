@@ -3,18 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { SocialService } from '@/social/social.service';
 import { RestreamWebhookDto } from '@/social/dto/restream-webhook.dto';
-
-const PLATFORM_MAP: Record<string, string> = {
-  youtube: 'youtube',
-  facebook: 'facebook',
-  twitch: 'twitch',
-  tiktok: 'tiktok',
-  instagram: 'instagram',
-  twitter: 'twitter',
-  linkedin: 'linkedin',
-  kick: 'kick',
-  trovo: 'trovo',
-};
+import { normalizePlatform } from './constants/platforms';
 
 @Injectable()
 export class RestreamWebhookService {
@@ -29,8 +18,14 @@ export class RestreamWebhookService {
     const secret = this.configService.get<string>('RESTREAM_WEBHOOK_SECRET');
 
     if (!secret) {
+      const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+      if (isProduction) {
+        throw new UnauthorizedException(
+          'RESTREAM_WEBHOOK_SECRET is not configured. Webhook validation is required in production.',
+        );
+      }
       this.logger.warn(
-        'RESTREAM_WEBHOOK_SECRET not configured — skipping signature validation',
+        'RESTREAM_WEBHOOK_SECRET not configured — skipping signature validation (development only)',
       );
       return;
     }
@@ -59,10 +54,7 @@ export class RestreamWebhookService {
 
     await this.socialService.ingestMessage(productionId, {
       productionId,
-      platform:
-        PLATFORM_MAP[channel.platform?.toLowerCase()] ??
-        channel.platform?.toLowerCase() ??
-        'unknown',
+      platform: normalizePlatform(channel.platform),
       author: author.displayName || author.username,
       avatarUrl: author.avatar,
       content: text,
@@ -70,7 +62,7 @@ export class RestreamWebhookService {
     });
 
     this.logger.debug(
-      `Restream message ingested — platform: ${channel.platform}, author: ${author.displayName}`,
+      `Restream webhook message ingested — platform: ${channel.platform}, author: ${author.displayName}`,
     );
   }
 }

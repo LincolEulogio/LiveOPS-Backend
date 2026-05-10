@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AiService } from '@/ai/ai.service';
@@ -18,6 +23,15 @@ interface PollOption {
   text: string;
   votes: number;
 }
+
+export type MessageStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ON_AIR';
+
+const VALID_STATUSES = new Set<MessageStatus>([
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+  'ON_AIR',
+]);
 
 @Injectable()
 export class SocialService {
@@ -50,7 +64,6 @@ export class SocialService {
       payload.content.toLowerCase().includes(word),
     );
 
-    // Mandatory AI analysis for moderation
     let aiSentiment = 'NEUTRAL';
     let aiCategory = 'COMENTARIO';
     let isToxic = false;
@@ -66,7 +79,7 @@ export class SocialService {
       this.logger.warn('AI social analysis failed, continuing with defaults');
     }
 
-    const status = !isClean || isToxic ? 'REJECTED' : 'PENDING';
+    const status: MessageStatus = !isClean || isToxic ? 'REJECTED' : 'PENDING';
 
     const message = await this.prisma.socialMessage.create({
       data: {
@@ -93,14 +106,20 @@ export class SocialService {
     return message;
   }
 
-  async getMessages(productionId: string, status?: string) {
+  async getMessages(
+    productionId: string,
+    status?: string,
+    limit = 100,
+    offset = 0,
+  ) {
     return this.prisma.socialMessage.findMany({
       where: {
         productionId,
         ...(status ? { status } : {}),
       },
       orderBy: { timestamp: 'desc' },
-      take: 100,
+      take: Math.min(limit, 500),
+      skip: offset,
     });
   }
 
@@ -109,8 +128,13 @@ export class SocialService {
     messageId: string,
     status: string,
   ) {
+    if (!VALID_STATUSES.has(status as MessageStatus)) {
+      throw new BadRequestException(
+        `Invalid status "${status}". Must be one of: ${[...VALID_STATUSES].join(', ')}`,
+      );
+    }
+
     if (status === 'ON_AIR') {
-      // Unset previous on-air messages
       await this.prisma.socialMessage.updateMany({
         where: { productionId, status: 'ON_AIR' },
         data: { status: 'APPROVED' },
@@ -127,7 +151,6 @@ export class SocialService {
     if (status === 'ON_AIR') {
       this.eventEmitter.emit('graphics.social.show', message);
 
-      // Also broadcast for general Overlay Data Binding
       this.eventEmitter.emit('overlay.broadcast_data', {
         productionId,
         data: {
@@ -142,22 +165,19 @@ export class SocialService {
       status === 'REJECTED' ||
       status === 'PENDING'
     ) {
-      // If it was on-air and moved to something else, clear overlay
       this.eventEmitter.emit('graphics.social.hide', { productionId });
     }
 
     return message;
   }
 
-  // Poll logic
   async createPoll(productionId: string, question: string, options: string[]) {
-    // Deactivate previous active polls
     await this.prisma.socialPoll.updateMany({
       where: { productionId, isActive: true },
       data: { isActive: false },
     });
 
-    const pollOptions = options.map((opt, index) => ({
+    const pollOptions: PollOption[] = options.map((opt, index) => ({
       id: `opt-${index}`,
       text: opt,
       votes: 0,
@@ -184,29 +204,31 @@ export class SocialService {
   }
 
   async votePoll(pollId: string, optionId: string) {
-    const poll = await this.prisma.socialPoll.findUnique({
-      where: { id: pollId },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const poll = await tx.socialPoll.findUnique({
+        where: { id: pollId },
+      });
 
-    if (!poll || !poll.isActive) {
-      throw new NotFoundException('Poll not found or inactive');
-    }
+      if (!poll || !poll.isActive) {
+        throw new NotFoundException('Poll not found or inactive');
+      }
 
-    const options = poll.options as unknown as PollOption[];
-    const option = options.find((o) => o.id === optionId);
+      const options = poll.options as unknown as PollOption[];
+      const option = options.find((o) => o.id === optionId);
 
-    if (option) {
+      if (!option) {
+        throw new NotFoundException('Option not found');
+      }
+
       option.votes += 1;
-      const updatedPoll = await this.prisma.socialPoll.update({
+      const updatedPoll = await tx.socialPoll.update({
         where: { id: pollId },
         data: { options: options as unknown as Prisma.InputJsonValue },
       });
 
       this.eventEmitter.emit('social.poll.updated', updatedPoll);
       return updatedPoll;
-    }
-
-    throw new NotFoundException('Option not found');
+    });
   }
 
   async closePoll(productionId: string, pollId: string) {

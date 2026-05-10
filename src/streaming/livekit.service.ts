@@ -15,23 +15,29 @@ export class LiveKitService {
   private readonly apiKey: string;
   private readonly apiSecret: string;
   private readonly livekitUrl: string;
+  private readonly defaultLayout: string;
   private readonly egressClient: EgressClient;
   private readonly roomClient: RoomServiceClient;
 
   constructor(private configService: ConfigService) {
-    this.apiKey = this.configService.get<string>('LIVEKIT_API_KEY') || 'devkey';
+    this.apiKey = this.configService.get<string>('LIVEKIT_API_KEY') ?? 'devkey';
     this.apiSecret =
-      this.configService.get<string>('LIVEKIT_API_SECRET') || 'secret';
+      this.configService.get<string>('LIVEKIT_API_SECRET') ?? 'secret';
     this.livekitUrl =
-      this.configService.get<string>('LIVEKIT_URL') || 'ws://localhost:7880';
+      this.configService.get<string>('LIVEKIT_URL') ?? 'ws://localhost:7880';
 
-    // LiveKit expects http/https for Egress/RoomServiceClient
+    this.defaultLayout =
+      this.configService.get<string>('LIVEKIT_DEFAULT_LAYOUT') ?? 'speaker-dark';
+
+    if (this.apiKey === 'devkey' || this.apiSecret === 'secret') {
+      this.logger.warn(
+        'LiveKit is using default development credentials. Set LIVEKIT_API_KEY, LIVEKIT_API_SECRET, and LIVEKIT_URL in production.',
+      );
+    }
+
     const httpUrl = this.livekitUrl.replace(/^ws/, 'http');
 
-    // Initialize EgressClient
     this.egressClient = new EgressClient(httpUrl, this.apiKey, this.apiSecret);
-
-    // Initialize RoomServiceClient
     this.roomClient = new RoomServiceClient(
       httpUrl,
       this.apiKey,
@@ -39,21 +45,23 @@ export class LiveKitService {
     );
   }
 
-  /**
-   * Ensures a room exists by creating it if it doesn't.
-   */
-  async ensureRoomExists(roomId: string) {
+  async ensureRoomExists(roomId: string): Promise<void> {
     try {
       await this.roomClient.createRoom({
         name: roomId,
-        emptyTimeout: 10 * 60, // 10 minutes
+        emptyTimeout: 10 * 60,
         maxParticipants: 50,
       });
       this.logger.log(`Room ${roomId} created or verified.`);
     } catch (error: unknown) {
-      this.logger.error(
-        `Error ensuring room exists: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const msg = error instanceof Error ? error.message : String(error);
+      // LiveKit returns AlreadyExists when the room is already open — that's fine.
+      if (msg.includes('already exists') || msg.includes('AlreadyExists')) {
+        this.logger.debug(`Room ${roomId} already exists, continuing.`);
+        return;
+      }
+      this.logger.error(`Failed to ensure room ${roomId}: ${msg}`);
+      throw error;
     }
   }
 
@@ -107,7 +115,7 @@ export class LiveKitService {
     const info = await this.egressClient.startRoomCompositeEgress(
       roomId,
       output,
-      { layout: layout || 'speaker-dark' },
+      { layout: layout || this.defaultLayout },
     );
 
     return info;
@@ -132,7 +140,7 @@ export class LiveKitService {
     const info = await this.egressClient.startRoomCompositeEgress(
       roomId,
       output,
-      { layout: layout || 'speaker-dark' },
+      { layout: layout || this.defaultLayout },
     );
 
     return info;

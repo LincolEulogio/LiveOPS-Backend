@@ -3,8 +3,11 @@ import {
   IsNotEmpty,
   IsOptional,
   IsBoolean,
-  IsUrl,
+  Matches,
 } from 'class-validator';
+
+// Matches rtmp:// or rtmps:// URLs
+const RTMP_URL_REGEX = /^rtmps?:\/\/.+/i;
 
 export class CreateStreamingDestinationDto {
   @IsString()
@@ -17,11 +20,11 @@ export class CreateStreamingDestinationDto {
 
   @IsString()
   @IsNotEmpty()
+  @Matches(RTMP_URL_REGEX, { message: 'rtmpUrl must start with rtmp:// or rtmps://' })
   rtmpUrl: string;
 
   @IsString()
   @IsNotEmpty()
-  /*   @IsUrl() */
   streamKey: string;
 
   @IsBoolean()
@@ -40,7 +43,7 @@ export class UpdateStreamingDestinationDto {
 
   @IsString()
   @IsOptional()
-  @IsUrl()
+  @Matches(RTMP_URL_REGEX, { message: 'rtmpUrl must start with rtmp:// or rtmps://' })
   rtmpUrl?: string;
 
   @IsString()
