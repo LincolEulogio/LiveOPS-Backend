@@ -143,6 +143,7 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     });
 
     obs.on('CurrentProgramSceneChanged', (data) => {
+      instance.currentProgramSceneName = data.sceneName;
       if (instance.lastState) {
         instance.lastState.currentScene = data.sceneName;
       }
