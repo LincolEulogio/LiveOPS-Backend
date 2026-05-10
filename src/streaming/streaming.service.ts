@@ -92,10 +92,10 @@ export class StreamingService {
       (d: StreamingDestination) => `${d.rtmpUrl}${d.streamKey}`,
     );
 
+    let egressId: string | undefined;
     try {
       const roomName = `production_${productionId}`;
 
-      // Ensure that the room exists before trying to start an egress
       await this.liveKitService.ensureRoomExists(roomName);
 
       const egressInfo = await this.liveKitService.startRoomCompositeEgress(
@@ -103,19 +103,31 @@ export class StreamingService {
         rtmpUrls,
         layout,
       );
+      egressId = egressInfo.egressId;
 
       await this.prisma.production.update({
         where: { id: productionId },
-        data: { activeEgressId: egressInfo.egressId },
+        data: { activeEgressId: egressId },
       });
 
       this.logger.log(
-        `Cloud stream started for production ${productionId} with egressId ${egressInfo.egressId}`,
+        `Cloud stream started for production ${productionId} with egressId ${egressId}`,
       );
-      return { success: true, egressId: egressInfo.egressId };
+      return { success: true, egressId };
     } catch (error: unknown) {
       const message = getErrorMessage(error);
       this.logger.error(`Failed to start cloud stream: ${message}`);
+
+      // Rollback: stop egress if it was started but DB write failed
+      if (egressId) {
+        try {
+          await this.liveKitService.stopEgress(egressId);
+          this.logger.warn(`Rolled back egress ${egressId} after DB failure`);
+        } catch (rollbackErr) {
+          this.logger.error(`Rollback failed for egress ${egressId}: ${getErrorMessage(rollbackErr)}`);
+        }
+      }
+
       throw new BadRequestException(`Failed to start cloud stream: ${message}`);
     }
   }
