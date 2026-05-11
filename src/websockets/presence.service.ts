@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Server } from 'socket.io';
 import { PresenceMember } from '@/common/types/webrtc.types';
 
 export interface UserPresence extends PresenceMember {
@@ -9,6 +10,7 @@ export interface UserPresence extends PresenceMember {
 @Injectable()
 export class PresenceService {
   private readonly logger = new Logger(PresenceService.name);
+  private server: Server | null = null;
   // clientId (socketId) -> Presence data
   private activeSockets: Map<string, UserPresence> = new Map();
   // userId -> Set of clientIds (socketIds)
@@ -16,6 +18,16 @@ export class PresenceService {
   private userToSockets: Map<string, Set<string>> = new Map();
   // productionId -> Set of clientIds (socketIds)
   private productionToSockets: Map<string, Set<string>> = new Map();
+
+  setServer(server: Server): void {
+    this.server = server;
+  }
+
+  broadcastToProduction(productionId: string): void {
+    if (!this.server) return;
+    const members = this.getPresenceForProduction(productionId);
+    this.server.to(`production_${productionId}`).emit('presence.update', { members });
+  }
 
   upsertPresence(clientId: string, data: UserPresence, productionId?: string) {
     this.activeSockets.set(clientId, {

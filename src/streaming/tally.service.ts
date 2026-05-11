@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { EventsGateway } from '@/websockets/events.gateway';
+import { CoreGateway } from '@/websockets/gateways/core.gateway';
 
 export interface TallyUpdate {
   productionId: string;
   engineType: 'OBS' | 'VMIX';
-  program: string; // Scene name or Input number
+  program: string;
   preview?: string;
 }
 
@@ -13,10 +13,10 @@ export interface TallyUpdate {
 export class TallyService {
   private readonly logger = new Logger(TallyService.name);
 
-  constructor(private eventsGateway: EventsGateway) {}
+  constructor(private readonly coreGateway: CoreGateway) {}
 
   @OnEvent('obs.scene.changed')
-  handleObsTally(payload: { productionId: string; sceneName: string }) {
+  handleObsTally(payload: { productionId: string; sceneName: string }): void {
     this.broadcastTally({
       productionId: payload.productionId,
       engineType: 'OBS',
@@ -29,7 +29,7 @@ export class TallyService {
     productionId: string;
     activeInput: number;
     previewInput: number;
-  }) {
+  }): void {
     this.broadcastTally({
       productionId: payload.productionId,
       engineType: 'VMIX',
@@ -38,9 +38,9 @@ export class TallyService {
     });
   }
 
-  private broadcastTally(update: TallyUpdate) {
-    this.eventsGateway.server
-      .to(`production:${update.productionId}`)
+  private broadcastTally(update: TallyUpdate): void {
+    this.coreGateway.server
+      .to(`production_${update.productionId}`)
       .emit('streaming.tally', update);
   }
 }
