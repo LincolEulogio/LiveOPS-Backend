@@ -10,7 +10,10 @@ import { Server } from 'socket.io';
 import { ChatService } from '@/chat/chat.service';
 import { IntercomService } from '@/intercom/intercom.service';
 import { WsAuthGuard } from '@/websockets/guards/ws-auth.guard';
-import type { AuthenticatedSocket, SocialCommentPayload } from '@/websockets/types/socket.types';
+import type {
+  AuthenticatedSocket,
+  SocialCommentPayload,
+} from '@/websockets/types/socket.types';
 
 @WebSocketGateway()
 @UseGuards(WsAuthGuard)
@@ -28,13 +31,21 @@ export class ChatGateway {
 
   @SubscribeMessage('chat.send')
   async handleChatSend(
-    @MessageBody() data: { productionId: string; message: string },
+    @MessageBody()
+    data: {
+      productionId: string;
+      message: string;
+      parentId?: string;
+      mentionUserIds?: string[];
+    },
     @ConnectedSocket() client: AuthenticatedSocket,
   ) {
     const userId = client.data.userId;
-    this.logger.log(`Chat in production ${data.productionId} by user ${userId}`);
+    this.logger.log(
+      `Chat in production ${data.productionId} by user ${userId}`,
+    );
 
-    if (data.message.startsWith('/')) {
+    if (data.message.startsWith('/') && !data.parentId) {
       const parts = data.message.split(' ');
       const command = parts[0].toLowerCase();
       const args = parts.slice(1).join(' ');
@@ -59,9 +70,76 @@ export class ChatGateway {
       }
     }
 
-    const message = await this.chatService.saveMessage(data.productionId, userId, data.message);
-    this.server.to(`production_${data.productionId}`).emit('chat.received', message);
+    const message = await this.chatService.saveMessage(
+      data.productionId,
+      userId,
+      data.message,
+      data.parentId,
+      data.mentionUserIds,
+    );
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('chat.received', message);
     return { status: 'ok', messageId: message.id };
+  }
+
+  @SubscribeMessage('chat.reaction.add')
+  async handleReactionAdd(
+    @MessageBody()
+    data: { productionId: string; messageId: string; emoji: string },
+    @ConnectedSocket() client: AuthenticatedSocket,
+  ) {
+    const userId = client.data.userId;
+    const reaction = await this.chatService.addReaction(
+      data.messageId,
+      userId,
+      data.emoji,
+    );
+
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('chat.reaction_added', {
+        messageId: data.messageId,
+        reaction,
+      });
+
+    return { status: 'ok' };
+  }
+
+  @SubscribeMessage('chat.reaction.remove')
+  async handleReactionRemove(
+    @MessageBody()
+    data: { productionId: string; messageId: string; emoji: string },
+    @ConnectedSocket() client: AuthenticatedSocket,
+  ) {
+    const userId = client.data.userId;
+    await this.chatService.removeReaction(data.messageId, userId, data.emoji);
+
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('chat.reaction_removed', {
+        messageId: data.messageId,
+        userId,
+        emoji: data.emoji,
+      });
+
+    return { status: 'ok' };
+  }
+
+  @SubscribeMessage('chat.pin.toggle')
+  async handlePinToggle(
+    @MessageBody() data: { productionId: string; messageId: string },
+  ) {
+    const message = await this.chatService.togglePin(data.messageId);
+    if (message) {
+      this.server
+        .to(`production_${data.productionId}`)
+        .emit('chat.pinned_updated', {
+          messageId: data.messageId,
+          isPinned: message.isPinned,
+        });
+    }
+    return { status: 'ok' };
   }
 
   @SubscribeMessage('chat.direct')
@@ -90,7 +168,9 @@ export class ChatGateway {
       createdAt: new Date().toISOString(),
     };
 
-    this.server.to(`production_${data.productionId}`).emit('chat.received', payload);
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('chat.received', payload);
     return { status: 'ok', messageId: payload.id };
   }
 
@@ -108,7 +188,11 @@ export class ChatGateway {
 
   @SubscribeMessage('social.overlay')
   handleSocialOverlay(
-    @MessageBody() data: { productionId: string; comment: SocialCommentPayload | null },
+    @MessageBody()
+    data: {
+      productionId: string;
+      comment: SocialCommentPayload | null;
+    },
   ): void {
     this.server
       .to(`production_${data.productionId}`)

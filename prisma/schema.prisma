@@ -37,13 +37,48 @@ model ChatMessage {
   productionId String     @db.Uuid
   userId       String?    @db.Uuid
   message      String
+  isPinned     Boolean    @default(false)
+  parentId     String?    @db.Uuid
   createdAt    DateTime   @default(now())
+  
   production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
   user         User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  parent       ChatMessage?  @relation("Thread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies      ChatMessage[] @relation("Thread")
+  
+  reactions    MessageReaction[]
+  mentions     MessageMention[]
 
   @@index([createdAt])
   @@index([productionId])
   @@index([userId])
+  @@index([parentId])
+}
+
+model MessageReaction {
+  id        String      @id @default(uuid()) @db.Uuid
+  messageId String      @db.Uuid
+  userId    String      @db.Uuid
+  emoji     String
+  createdAt DateTime    @default(now())
+  
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+}
+
+model MessageMention {
+  id        String      @id @default(uuid()) @db.Uuid
+  messageId String      @db.Uuid
+  userId    String      @db.Uuid
+  createdAt DateTime    @default(now())
+  
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
 }
 
 model Command {
@@ -390,6 +425,8 @@ model User {
   productions        ProductionUser[]
   pushSubscriptions  PushSubscription[]
   sessions           Session[]
+  reactions          MessageReaction[]
+  mentions           MessageMention[]
   globalRole         Role?              @relation(fields: [globalRoleId], references: [id])
   tenant             Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   videoCalls         VideoCall[]
