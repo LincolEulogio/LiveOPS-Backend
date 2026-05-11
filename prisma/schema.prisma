@@ -54,6 +54,7 @@ model Command {
   targetUserId String?           @db.Uuid
   templateId   String?           @db.Uuid
   message      String
+  priority     String            @default("NORMAL")
   requiresAck  Boolean           @default(true)
   status       String            @default("SENT")
   createdAt    DateTime          @default(now())

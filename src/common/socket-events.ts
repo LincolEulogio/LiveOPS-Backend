@@ -41,6 +41,7 @@ export enum SocketEvents {
   COMMAND_DELIVERED_ACK = 'command.delivered_ack',
   COMMAND_GROUP_SEND = 'command.group_send',
   COMMAND_EXPIRED = 'command.expired',
+  COMMAND_BROADCAST = 'command.broadcast',
 
   // Crew Status
   CREW_STATUS_UPDATE = 'crew.status_update',

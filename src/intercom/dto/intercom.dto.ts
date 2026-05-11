@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsIn } from 'class-validator';
 
 export class CreateCommandTemplateDto {
   @IsString()
@@ -47,4 +47,12 @@ export class SendCommandDto {
 
   @IsOptional()
   requiresAck?: boolean;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['NORMAL', 'HIGH', 'CRITICAL'])
+  priority?: string;
+
+  @IsOptional()
+  isBroadcast?: boolean;
 }

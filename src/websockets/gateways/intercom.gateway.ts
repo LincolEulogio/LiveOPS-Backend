@@ -42,15 +42,13 @@ export class IntercomGateway {
     return false;
   }
 
-  @SubscribeMessage('command.send')
-  async handleCommandSend(
+  @SubscribeMessage('command.broadcast')
+  async handleCommandBroadcast(
     @MessageBody()
     data: {
       productionId: string;
-      targetUserId?: string;
-      targetRoleId?: string;
-      templateId?: string;
       message: string;
+      priority?: string;
       requiresAck?: boolean;
     },
     @ConnectedSocket() client: AuthenticatedSocket,
@@ -62,7 +60,39 @@ export class IntercomGateway {
       return { status: 'rate_limited' };
     }
 
-    this.logger.log(`[Intercom] Command from ${senderId} → production ${data.productionId}`);
+    this.logger.log(`[Intercom] Broadcast from ${senderId} → production ${data.productionId} [${data.priority || 'NORMAL'}]`);
+    const command = await this.intercomService.sendCommand({
+      ...data,
+      senderId,
+      isBroadcast: true,
+    });
+
+    this.presenceService.broadcastToProduction(data.productionId);
+    return { status: 'ok', commandId: command.id };
+  }
+
+  @SubscribeMessage('command.send')
+  async handleCommandSend(
+    @MessageBody()
+    data: {
+      productionId: string;
+      targetUserId?: string;
+      targetRoleId?: string;
+      templateId?: string;
+      message: string;
+      priority?: string;
+      requiresAck?: boolean;
+    },
+    @ConnectedSocket() client: AuthenticatedSocket,
+  ) {
+    const senderId = client.data.userId;
+
+    if (this.isRateLimited(senderId)) {
+      client.emit('command.error', { message: 'Demasiados comandos. Espera un momento.' });
+      return { status: 'rate_limited' };
+    }
+
+    this.logger.log(`[Intercom] Command from ${senderId} → production ${data.productionId} [${data.priority || 'NORMAL'}]`);
     const command = await this.intercomService.sendCommand({ ...data, senderId });
 
     const room = `production_${data.productionId}`;
@@ -95,6 +125,7 @@ export class IntercomGateway {
       targetUserIds: string[];
       templateId?: string;
       message: string;
+      priority?: string;
       requiresAck?: boolean;
     },
     @ConnectedSocket() client: AuthenticatedSocket,
@@ -114,6 +145,7 @@ export class IntercomGateway {
           targetUserId,
           templateId: data.templateId,
           message: data.message,
+          priority: data.priority,
           requiresAck: data.requiresAck,
         }),
       ),

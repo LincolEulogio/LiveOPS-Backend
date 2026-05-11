@@ -192,6 +192,7 @@ export class IntercomService {
         targetUserId: dto.targetUserId,
         templateId: dto.templateId,
         message: dto.message,
+        priority: dto.priority ?? 'NORMAL',
         requiresAck: dto.requiresAck ?? true,
         status: 'SENT',
       },
