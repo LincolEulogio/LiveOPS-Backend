@@ -187,7 +187,7 @@ export class SocialService {
       data: {
         productionId,
         question,
-        options: pollOptions,
+        options: pollOptions as unknown as import('@prisma/client').Prisma.InputJsonValue,
         isActive: true,
       },
     });

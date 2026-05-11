@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '@/app.module';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+import cookieParser = require('cookie-parser');
 import { AllExceptionsFilter } from '@/common/filters/all-exceptions.filter';
 import { Logger } from 'nestjs-pino';
 import { ConfigService } from '@nestjs/config';
@@ -18,6 +19,9 @@ async function bootstrap() {
 
   // Logger
   app.useLogger(app.get(Logger));
+
+  // Cookie parser (necesario para httpOnly cookies de refresh token)
+  app.use(cookieParser());
 
   // Security Headers
   app.use(helmet());
@@ -36,7 +40,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      forbidNonWhitelisted: false,
+      forbidNonWhitelisted: true,
     }),
   );
 

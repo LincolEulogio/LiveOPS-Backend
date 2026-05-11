@@ -14,6 +14,7 @@ import { Server, Socket } from 'socket.io';
 interface CustomSocket extends Socket {
   data: {
     productionId?: string;
+    userId?: string;
     isNdiBridge?: boolean;
     [key: string]: unknown;
   };
@@ -28,6 +29,8 @@ import { ChatService } from '@/chat/chat.service';
 import { ScriptService } from '@/script/script.service';
 import { PresenceService } from '@/websockets/presence.service';
 import { SocketEvents } from '@/common/socket-events';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import type { WebRTCSignalPayload } from '@/common/types/webrtc.types';
 
 interface SocialComment {
@@ -55,7 +58,8 @@ interface IntercomCommand {
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3001').split(','),
+    credentials: true,
   },
 })
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
@@ -78,6 +82,8 @@ export class EventsGateway
     private chatService: ChatService,
     private scriptService: ScriptService,
     private presenceService: PresenceService,
+    private configService: ConfigService,
+    private jwtService: JwtService,
   ) {}
 
   afterInit() {
@@ -435,22 +441,52 @@ export class EventsGateway
   }
 
   async handleConnection(client: CustomSocket) {
-    const productionId = client.handshake.query.productionId as string;
-    const userId = client.handshake.query.userId as string;
-    const userName = client.handshake.query.userName as string;
-    const roleId = client.handshake.query.roleId as string;
-    const roleName = client.handshake.query.roleName as string;
+    // Validate JWT token from handshake auth or query param
+    const rawToken =
+      (client.handshake.auth as Record<string, string>)?.token ??
+      (client.handshake.headers?.authorization as string | undefined)
+        ?.replace('Bearer ', '')
+        .trim() ??
+      (client.handshake.query?.token as string | undefined);
 
-    if (productionId && userId) {
+    if (!rawToken) {
+      this.logger.warn(`WS rejected — no token: ${client.id}`);
+      client.emit('error', { message: 'Unauthorized: token required' });
+      client.disconnect(true);
+      return;
+    }
+
+    let jwtPayload: { sub: string; tenantId?: string };
+    try {
+      jwtPayload = this.jwtService.verify<{ sub: string; tenantId?: string }>(
+        rawToken,
+        { secret: this.configService.get<string>('JWT_SECRET') ?? 'super-secret' },
+      );
+    } catch {
+      this.logger.warn(`WS rejected — invalid token: ${client.id}`);
+      client.emit('error', { message: 'Unauthorized: invalid token' });
+      client.disconnect(true);
+      return;
+    }
+
+    const verifiedUserId = jwtPayload.sub;
+    client.data.userId = verifiedUserId;
+
+    const productionId = client.handshake.query.productionId as string | undefined;
+    const userName = client.handshake.query.userName as string | undefined;
+    const roleId = client.handshake.query.roleId as string | undefined;
+    const roleName = client.handshake.query.roleName as string | undefined;
+
+    if (productionId) {
       await client.join(`production_${productionId}`);
 
       this.presenceService.upsertPresence(
         client.id,
         {
-          userId,
-          userName: userName || 'User',
-          roleId: roleId || '',
-          roleName: roleName || 'Viewer',
+          userId: verifiedUserId,
+          userName: userName ?? 'User',
+          roleId: roleId ?? '',
+          roleName: roleName ?? 'Viewer',
           lastSeen: new Date().toISOString(),
           status: 'IDLE',
         },
@@ -459,7 +495,7 @@ export class EventsGateway
 
       client.data.productionId = productionId;
       this.logger.log(
-        `User ${userId} (${roleName}) joined production_${productionId}`,
+        `User ${verifiedUserId} (${roleName ?? 'Viewer'}) joined production_${productionId}`,
       );
 
       this.broadcastPresence(productionId);
