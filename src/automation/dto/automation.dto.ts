@@ -76,3 +76,48 @@ export class UpdateRuleDto {
   @IsOptional()
   isEnabled?: boolean;
 }
+
+export class UpdateTriggerDto {
+  @IsString()
+  @IsNotEmpty()
+  eventType: string;
+
+  @IsOptional()
+  condition?: JsonValue;
+}
+
+export class UpdateRuleFullDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isEnabled?: boolean;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateTriggerDto)
+  triggers?: UpdateTriggerDto[];
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CreateActionDto)
+  actions?: CreateActionDto[];
+}
+
+export class PaginationQueryDto {
+  @IsOptional()
+  @IsString()
+  page?: string;
+
+  @IsOptional()
+  @IsString()
+  limit?: string;
+}

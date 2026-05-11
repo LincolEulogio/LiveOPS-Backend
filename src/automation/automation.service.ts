@@ -2,8 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   CreateRuleDto,
-  UpdateRuleDto,
+  UpdateRuleFullDto,
   CreateActionDto,
+  PaginationQueryDto,
 } from '@/automation/dto/automation.dto';
 import { Prisma } from '@prisma/client';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -17,14 +18,28 @@ export class AutomationService {
     private aiService: AiService,
   ) {}
 
-  async getRules(productionId: string) {
-    return this.prisma.rule.findMany({
-      where: { productionId },
-      include: {
-        triggers: true,
-        actions: { orderBy: { order: 'asc' } },
-      },
-    });
+  async getRules(productionId: string, query: PaginationQueryDto) {
+    const page = parseInt(query.page ?? '1', 10);
+    const limit = parseInt(query.limit ?? '20', 10);
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.rule.findMany({
+        where: { productionId },
+        skip,
+        take: limit,
+        include: {
+          triggers: true,
+          actions: { orderBy: { order: 'asc' } },
+        },
+      }),
+      this.prisma.rule.count({ where: { productionId } }),
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, lastPage: Math.ceil(total / limit) },
+    };
   }
 
   async getRule(id: string, productionId: string) {
@@ -61,15 +76,47 @@ export class AutomationService {
     });
   }
 
-  async updateRule(id: string, productionId: string, dto: UpdateRuleDto) {
+  async updateRule(id: string, productionId: string, dto: UpdateRuleFullDto) {
     const rule = await this.prisma.rule.findFirst({
       where: { id, productionId },
     });
     if (!rule) throw new NotFoundException('Rule not found');
 
-    return this.prisma.rule.update({
-      where: { id },
-      data: dto,
+    const { triggers, actions, ...basicData } = dto;
+
+    return this.prisma.$transaction(async (tx) => {
+      if (triggers !== undefined) {
+        await tx.trigger.deleteMany({ where: { ruleId: id } });
+      }
+      if (actions !== undefined) {
+        await tx.action.deleteMany({ where: { ruleId: id } });
+      }
+
+      return tx.rule.update({
+        where: { id },
+        data: {
+          ...basicData,
+          ...(triggers !== undefined && {
+            triggers: {
+              create: triggers as Prisma.TriggerCreateWithoutRuleInput[],
+            },
+          }),
+          ...(actions !== undefined && {
+            actions: {
+              create: actions.map(
+                (a: CreateActionDto, idx: number) => ({
+                  ...a,
+                  order: a.order ?? idx,
+                }),
+              ) as Prisma.ActionCreateWithoutRuleInput[],
+            },
+          }),
+        },
+        include: {
+          triggers: true,
+          actions: { orderBy: { order: 'asc' } },
+        },
+      });
     });
   }
 
@@ -83,13 +130,26 @@ export class AutomationService {
     return { success: true };
   }
 
-  async getExecutionLogs(productionId: string) {
-    return this.prisma.ruleExecutionLog.findMany({
-      where: { productionId },
-      include: { rule: { select: { name: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
+  async getExecutionLogs(productionId: string, query: PaginationQueryDto) {
+    const page = parseInt(query.page ?? '1', 10);
+    const limit = parseInt(query.limit ?? '50', 10);
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.ruleExecutionLog.findMany({
+        where: { productionId },
+        skip,
+        take: limit,
+        include: { rule: { select: { name: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.ruleExecutionLog.count({ where: { productionId } }),
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, lastPage: Math.ceil(total / limit) },
+    };
   }
 
   triggerInstantClip(productionId: string) {

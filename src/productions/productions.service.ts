@@ -11,7 +11,34 @@ import {
   AssignUserDto,
   EngineType,
   GetProductionsQueryDto,
+  PaginationQueryDto,
+  CloneProductionDto,
+  SaveAsTemplateDto,
+  CreateFromTemplateDto,
 } from '@/productions/dto/production.dto';
+
+interface TriggerConfig {
+  eventType: string;
+  condition: Prisma.JsonValue;
+}
+
+interface ActionConfig {
+  actionType: string;
+  payload: Prisma.JsonValue;
+  order: number;
+}
+
+interface RuleConfig {
+  name: string;
+  description: string | null;
+  isEnabled: boolean;
+  triggers: TriggerConfig[];
+  actions: ActionConfig[];
+}
+
+interface TemplateConfig {
+  rules: RuleConfig[];
+}
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ObsService } from '@/obs/obs.service';
 import { VmixService } from '@/vmix/vmix.service';
@@ -158,6 +185,17 @@ export class ProductionsService {
       ];
     }
 
+    if (query.engineType) {
+      where.engineType = query.engineType;
+    }
+
+    if (query.dateFrom || query.dateTo) {
+      where.createdAt = {
+        ...(query.dateFrom ? { gte: new Date(query.dateFrom) } : {}),
+        ...(query.dateTo ? { lte: new Date(query.dateTo) } : {}),
+      };
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.production.findMany({
         where,
@@ -230,7 +268,7 @@ export class ProductionsService {
     return prod;
   }
 
-  async update(productionId: string, dto: UpdateProductionDto) {
+  async update(productionId: string, dto: UpdateProductionDto, userId?: string) {
     const { obsConfig, vmixConfig, ...basicData } = dto;
 
     return this.prisma
@@ -290,6 +328,16 @@ export class ProductionsService {
           productionId,
           action: 'PRODUCTION_UPDATE',
           details: { name: prod.name, status: prod.status },
+        });
+
+        // History Log
+        void this.prisma.productionLog.create({
+          data: {
+            productionId,
+            userId: userId ?? null,
+            eventType: 'PRODUCTION_UPDATE',
+            details: { name: prod.name, status: prod.status, engineType: prod.engineType },
+          },
         });
 
         return prod;
@@ -437,5 +485,206 @@ export class ProductionsService {
       where: { id: productionId },
       data: { isRehearsal: enabled },
     });
+  }
+
+  async cloneProduction(productionId: string, userId: string, dto: CloneProductionDto) {
+    const source = await this.prisma.production.findFirst({
+      where: { id: productionId, deletedAt: null },
+      include: {
+        rules: {
+          include: {
+            triggers: true,
+            actions: { orderBy: { order: 'asc' } },
+          },
+        },
+      },
+    });
+    if (!source) throw new NotFoundException('Production not found');
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.tenantId) throw new ConflictException('User has no tenant');
+
+    const adminRole = await this.prisma.role.findUnique({ where: { name: Role.ADMIN } });
+    if (!adminRole) throw new NotFoundException('Admin role not found');
+
+    return this.prisma.$transaction(async (tx) => {
+      const clone = await tx.production.create({
+        data: {
+          name: dto.name,
+          description: source.description,
+          engineType: source.engineType,
+          status: 'DRAFT',
+          tenantId: user.tenantId,
+          users: { create: { userId, roleId: adminRole.id } },
+          rules: {
+            create: source.rules.map((rule) => ({
+              name: rule.name,
+              description: rule.description,
+              isEnabled: rule.isEnabled,
+              triggers: {
+                create: rule.triggers.map(({ eventType, condition }) => ({
+                  eventType,
+                  condition: condition ?? Prisma.JsonNull,
+                })),
+              },
+              actions: {
+                create: rule.actions.map(({ actionType, payload, order }) => ({
+                  actionType,
+                  payload: payload ?? Prisma.JsonNull,
+                  order,
+                })),
+              },
+            })),
+          },
+        },
+      });
+
+      void this.auditService.log({
+        productionId: clone.id,
+        userId,
+        action: 'PRODUCTION_CLONE',
+        details: { sourceId: productionId, name: clone.name },
+      });
+
+      void this.prisma.productionLog.create({
+        data: {
+          productionId: clone.id,
+          userId,
+          eventType: 'PRODUCTION_CLONE',
+          details: { sourceId: productionId },
+        },
+      });
+
+      return clone;
+    });
+  }
+
+  async saveAsTemplate(productionId: string, userId: string, dto: SaveAsTemplateDto) {
+    const source = await this.prisma.production.findFirst({
+      where: { id: productionId, deletedAt: null },
+      include: {
+        rules: {
+          include: {
+            triggers: true,
+            actions: { orderBy: { order: 'asc' } },
+          },
+        },
+      },
+    });
+    if (!source) throw new NotFoundException('Production not found');
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    const config: TemplateConfig = {
+      rules: source.rules.map((rule) => ({
+        name: rule.name,
+        description: rule.description,
+        isEnabled: rule.isEnabled,
+        triggers: rule.triggers.map(({ eventType, condition }) => ({
+          eventType,
+          condition: condition as Prisma.JsonValue,
+        })),
+        actions: rule.actions.map(({ actionType, payload, order }) => ({
+          actionType,
+          payload: payload as Prisma.JsonValue,
+          order,
+        })),
+      })),
+    };
+
+    return this.prisma.productionTemplate.create({
+      data: {
+        name: dto.name,
+        description: dto.description,
+        engineType: source.engineType,
+        tenantId: user?.tenantId ?? null,
+        config: config as unknown as Prisma.InputJsonValue,
+      },
+    });
+  }
+
+  async listTemplates(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    return this.prisma.productionTemplate.findMany({
+      where: {
+        OR: [
+          { tenantId: user?.tenantId ?? undefined },
+          { tenantId: null },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createFromTemplate(templateId: string, userId: string, dto: CreateFromTemplateDto) {
+    const template = await this.prisma.productionTemplate.findUnique({
+      where: { id: templateId },
+    });
+    if (!template) throw new NotFoundException('Template not found');
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.tenantId) throw new ConflictException('User has no tenant');
+
+    const adminRole = await this.prisma.role.findUnique({ where: { name: Role.ADMIN } });
+    if (!adminRole) throw new NotFoundException('Admin role not found');
+
+    const config = template.config as unknown as TemplateConfig;
+
+    return this.prisma.$transaction(async (tx) => {
+      return tx.production.create({
+        data: {
+          name: dto.name,
+          description: template.description,
+          engineType: template.engineType,
+          status: 'DRAFT',
+          tenantId: user.tenantId,
+          users: { create: { userId, roleId: adminRole.id } },
+          rules: {
+            create: config.rules.map((rule) => ({
+              name: rule.name,
+              description: rule.description,
+              isEnabled: rule.isEnabled,
+              triggers: {
+                create: rule.triggers.map(({ eventType, condition }) => ({
+                  eventType,
+                  condition: condition ?? Prisma.JsonNull,
+                })),
+              },
+              actions: {
+                create: rule.actions.map(({ actionType, payload, order }) => ({
+                  actionType,
+                  payload: payload ?? Prisma.JsonNull,
+                  order,
+                })),
+              },
+            })),
+          },
+        },
+      });
+    });
+  }
+
+  async getHistory(productionId: string, query: PaginationQueryDto) {
+    const page = parseInt(query.page ?? '1', 10);
+    const limit = parseInt(query.limit ?? '20', 10);
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.productionLog.findMany({
+        where: { productionId },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
+      }),
+      this.prisma.productionLog.count({ where: { productionId } }),
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, lastPage: Math.ceil(total / limit) },
+    };
   }
 }

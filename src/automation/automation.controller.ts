@@ -6,10 +6,15 @@
   Delete,
   Body,
   Param,
+  Query,
 } from '@nestjs/common';
 import { Protected } from '@/common/decorators/protected.decorator';
 import { AutomationService } from '@/automation/automation.service';
-import { CreateRuleDto, UpdateRuleDto } from '@/automation/dto/automation.dto';
+import {
+  CreateRuleDto,
+  UpdateRuleFullDto,
+  PaginationQueryDto,
+} from '@/automation/dto/automation.dto';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Protected()
@@ -19,8 +24,11 @@ export class AutomationController {
 
   @Get('rules')
   @Permissions('automation:view')
-  getRules(@Param('productionId') productionId: string) {
-    return this.automationService.getRules(productionId);
+  getRules(
+    @Param('productionId') productionId: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.automationService.getRules(productionId, query);
   }
 
   @Post('rules')
@@ -46,7 +54,7 @@ export class AutomationController {
   updateRule(
     @Param('productionId') productionId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateRuleDto,
+    @Body() dto: UpdateRuleFullDto,
   ) {
     return this.automationService.updateRule(id, productionId, dto);
   }
@@ -62,8 +70,11 @@ export class AutomationController {
 
   @Get('logs')
   @Permissions('automation:view')
-  getExecutionLogs(@Param('productionId') productionId: string) {
-    return this.automationService.getExecutionLogs(productionId);
+  getExecutionLogs(
+    @Param('productionId') productionId: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.automationService.getExecutionLogs(productionId, query);
   }
 
   @Post('instant-clip')

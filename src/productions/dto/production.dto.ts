@@ -146,4 +146,48 @@ export class GetProductionsQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsEnum(EngineType)
+  engineType?: EngineType;
+
+  @IsOptional()
+  @IsString()
+  dateFrom?: string;
+
+  @IsOptional()
+  @IsString()
+  dateTo?: string;
+}
+
+export class PaginationQueryDto {
+  @IsOptional()
+  @IsString()
+  page?: string;
+
+  @IsOptional()
+  @IsString()
+  limit?: string;
+}
+
+export class CloneProductionDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+}
+
+export class SaveAsTemplateDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+
+export class CreateFromTemplateDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
 }

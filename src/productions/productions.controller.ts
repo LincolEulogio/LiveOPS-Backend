@@ -28,6 +28,10 @@ import {
   UpdateProductionStateDto,
   AssignUserDto,
   GetProductionsQueryDto,
+  PaginationQueryDto,
+  CloneProductionDto,
+  SaveAsTemplateDto,
+  CreateFromTemplateDto,
 } from '@/productions/dto/production.dto';
 
 interface RequestWithUser extends Request {
@@ -69,8 +73,12 @@ export class ProductionsController {
   @Patch(':id')
   @Roles(Role.ADMIN, Role.SUPERADMIN)
   @Permissions('production:manage')
-  async update(@Param('id') id: string, @Body() dto: UpdateProductionDto) {
-    const result = await this.productionsService.update(id, dto);
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateProductionDto,
+    @Req() req: RequestWithUser,
+  ) {
+    const result = await this.productionsService.update(id, dto, req.user.userId);
     await this.cacheManager.del('productions_list');
     return result;
   }
@@ -115,5 +123,55 @@ export class ProductionsController {
     const result = await this.productionsService.remove(id);
     await this.cacheManager.del('productions_list');
     return result;
+  }
+
+  @Post(':id/clone')
+  @Roles(Role.ADMIN, Role.SUPERADMIN)
+  @Permissions('production:create')
+  async clone(
+    @Param('id') id: string,
+    @Body() dto: CloneProductionDto,
+    @Req() req: RequestWithUser,
+  ) {
+    const result = await this.productionsService.cloneProduction(id, req.user.userId, dto);
+    await this.cacheManager.del('productions_list');
+    return result;
+  }
+
+  @Post(':id/save-as-template')
+  @Roles(Role.ADMIN, Role.SUPERADMIN)
+  @Permissions('production:manage')
+  saveAsTemplate(
+    @Param('id') id: string,
+    @Body() dto: SaveAsTemplateDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.productionsService.saveAsTemplate(id, req.user.userId, dto);
+  }
+
+  @Get('templates/list')
+  listTemplates(@Req() req: RequestWithUser) {
+    return this.productionsService.listTemplates(req.user.userId);
+  }
+
+  @Post('from-template/:templateId')
+  @Roles(Role.ADMIN, Role.SUPERADMIN)
+  @Permissions('production:create')
+  async createFromTemplate(
+    @Param('templateId') templateId: string,
+    @Body() dto: CreateFromTemplateDto,
+    @Req() req: RequestWithUser,
+  ) {
+    const result = await this.productionsService.createFromTemplate(templateId, req.user.userId, dto);
+    await this.cacheManager.del('productions_list');
+    return result;
+  }
+
+  @Get(':id/history')
+  getHistory(
+    @Param('id') id: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.productionsService.getHistory(id, query);
   }
 }
