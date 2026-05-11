@@ -620,6 +620,8 @@ model VideoCall {
   description String?
   hostId      String    @db.Uuid
   status      String    @default("scheduled")
+  roomType    String    @default("general")
+  egressId    String?
   scheduledAt DateTime?
   endedAt     DateTime?
   createdAt   DateTime  @default(now())
@@ -629,6 +631,7 @@ model VideoCall {
   @@index([hostId])
   @@index([status])
   @@index([scheduledAt])
+  @@index([roomType])
 }
 
 model MediaAsset {

@@ -72,6 +72,9 @@ export class LiveKitService {
     options?: {
       isOperator?: boolean;
       roomAdmin?: boolean;
+      canPublish?: boolean;
+      canSubscribe?: boolean;
+      canPublishData?: boolean;
     },
   ) {
     this.logger.log(
@@ -86,10 +89,10 @@ export class LiveKitService {
     at.addGrant({
       roomJoin: true,
       room: roomId,
-      canPublish: true,
-      canSubscribe: true,
-      canPublishData: true,
-      roomAdmin: options?.roomAdmin || false,
+      canPublish: options?.canPublish ?? true,
+      canSubscribe: options?.canSubscribe ?? true,
+      canPublishData: options?.canPublishData ?? true,
+      roomAdmin: options?.roomAdmin ?? false,
     });
 
     return at.toJwt();
