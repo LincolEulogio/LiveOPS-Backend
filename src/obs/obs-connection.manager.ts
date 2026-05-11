@@ -59,11 +59,18 @@ interface ObsInstance {
   };
 }
 
+/** Number of failed reconnect attempts before emitting a critical alert. */
+const ALERT_AFTER_ATTEMPTS = 10;
+
 @Injectable()
 export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ObsConnectionManager.name);
-  private readonly MAX_RECONNECT_ATTEMPTS = 50;
+  // Keyed by connectionId (UUID from ObsConnection.id)
   private connections = new Map<string, ObsInstance>();
+  // productionId → set of connectionIds belonging to that production
+  private productionMap = new Map<string, Set<string>>();
+  // productionId → primary connectionId
+  private primaryMap = new Map<string, string>();
 
   constructor(
     private prisma: PrismaService,
@@ -77,8 +84,8 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
 
   onModuleDestroy() {
     this.logger.log('Destroying OBS Connection Manager...');
-    for (const [productionId, instance] of this.connections.entries()) {
-      this.disconnectInstance(productionId, instance);
+    for (const [connectionId, instance] of this.connections.entries()) {
+      this.disconnectInstance(connectionId, instance);
     }
   }
 
@@ -88,26 +95,45 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     });
 
     for (const config of obsConnections) {
-      void this.connectObs(
+      void this.connectObsById(
+        config.id,
         config.productionId,
         config.url,
         config.password || undefined,
+        config.isPrimary,
       );
     }
   }
 
-  async connectObs(productionId: string, url: string, password?: string) {
-    const existing = this.connections.get(productionId);
+  /** Connect using a known connectionId (preferred for multi-instance). */
+  async connectObsById(
+    connectionId: string,
+    productionId: string,
+    url: string,
+    password?: string,
+    isPrimary = false,
+  ) {
+    const existing = this.connections.get(connectionId);
     if (existing) {
       const isSameConfig =
         existing.url === url && existing.password === password;
       if (isSameConfig && (existing.isConnected || existing.reconnectTimeout)) {
         this.logger.debug(
-          `OBS already connected or reconnecting with same config for ${productionId}. Skipping.`,
+          `OBS already connected or reconnecting for connection ${connectionId}. Skipping.`,
         );
         return;
       }
-      this.disconnectInstance(productionId, existing);
+      this.disconnectInstance(connectionId, existing);
+    }
+
+    // Track which connections belong to this production
+    if (!this.productionMap.has(productionId)) {
+      this.productionMap.set(productionId, new Set());
+    }
+    this.productionMap.get(productionId)!.add(connectionId);
+
+    if (isPrimary) {
+      this.primaryMap.set(productionId, connectionId);
     }
 
     const obs = new OBSWebSocket();
@@ -118,19 +144,23 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       isConnected: false,
       reconnectAttempts: existing?.reconnectAttempts || 0,
     };
-    this.connections.set(productionId, instance);
+    this.connections.set(connectionId, instance);
 
     obs.on('ConnectionClosed', (error) => {
       this.logger.warn(
-        `OBS connection closed for production ${productionId}: ${error?.message || 'Unknown'} | code=${error?.code ?? 'n/a'}`,
+        `OBS connection closed [conn=${connectionId}] production ${productionId}: ${error?.message || 'Unknown'} | code=${error?.code ?? 'n/a'}`,
       );
       instance.isConnected = false;
-      this.scheduleReconnect(productionId, url, password);
+      this.eventEmitter.emit('obs.connection.state', { productionId, connected: false });
+      this.scheduleReconnect(connectionId, productionId, url, password);
 
-      if (instance.reconnectAttempts >= this.MAX_RECONNECT_ATTEMPTS) {
-        this.eventEmitter.emit('obs.connection.state', {
+      // Emit an alert after threshold so the UI can show a critical warning
+      if (instance.reconnectAttempts >= ALERT_AFTER_ATTEMPTS) {
+        this.eventEmitter.emit('obs.connection.alert', {
           productionId,
-          connected: false,
+          connectionId,
+          attempts: instance.reconnectAttempts,
+          wasStreaming: instance.lastState?.isStreaming ?? false,
         });
       }
     });
@@ -541,11 +571,20 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
       this.logger.error(
         `Failed to connect to OBS for production ${productionId} (${url}): ${message}`,
       );
-      this.scheduleReconnect(productionId, url, password);
+      this.scheduleReconnect(connectionId, productionId, url, password);
     }
   }
 
-  private disconnectInstance(productionId: string, instance: ObsInstance) {
+  /** Backward-compatible helper: connects/re-connects the primary OBS instance for a production. */
+  async connectObs(productionId: string, url: string, password?: string) {
+    const conn = await this.prisma.obsConnection.findFirst({
+      where: { productionId, isPrimary: true },
+    });
+    const connectionId = conn?.id ?? productionId;
+    return this.connectObsById(connectionId, productionId, url, password, true);
+  }
+
+  private disconnectInstance(connectionId: string, instance: ObsInstance) {
     if (instance.reconnectTimeout) {
       clearTimeout(instance.reconnectTimeout);
     }
@@ -554,55 +593,64 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     this.stopScreenshotPolling(instance);
     instance.obs.removeAllListeners();
     instance.obs.disconnect().catch(() => {});
-    this.connections.delete(productionId);
-    this.eventEmitter.emit('obs.connection.state', {
-      productionId,
-      connected: false,
-    });
+    this.connections.delete(connectionId);
   }
 
+  /** Disconnect all OBS instances for a production. */
   disconnectObs(productionId: string) {
-    const instance = this.connections.get(productionId);
-    if (instance) {
-      this.disconnectInstance(productionId, instance);
+    const ids = this.productionMap.get(productionId);
+    if (!ids) return;
+    for (const connectionId of ids) {
+      const instance = this.connections.get(connectionId);
+      if (instance) {
+        this.disconnectInstance(connectionId, instance);
+      }
     }
+    this.productionMap.delete(productionId);
+    this.primaryMap.delete(productionId);
+    this.eventEmitter.emit('obs.connection.state', { productionId, connected: false });
+  }
+
+  /** Manually trigger reconnect for a specific connection. */
+  manualReconnect(connectionId: string, productionId: string) {
+    const instance = this.connections.get(connectionId);
+    if (!instance) return;
+    instance.reconnectAttempts = 0;
+    if (instance.reconnectTimeout) {
+      clearTimeout(instance.reconnectTimeout);
+      instance.reconnectTimeout = undefined;
+    }
+    void this.connectObsById(connectionId, productionId, instance.url, instance.password, true);
   }
 
   private scheduleReconnect(
+    connectionId: string,
     productionId: string,
     url: string,
     password?: string,
   ) {
-    const instance = this.connections.get(productionId);
+    const instance = this.connections.get(connectionId);
     if (!instance) return;
 
     if (instance.reconnectTimeout) {
       this.logger.debug(
-        `Reconnect already scheduled for OBS (Production: ${productionId}). Skipping duplicate schedule.`,
+        `Reconnect already scheduled for OBS connection ${connectionId}. Skipping.`,
       );
       return;
     }
 
     instance.reconnectAttempts++;
-    if (instance.reconnectAttempts > this.MAX_RECONNECT_ATTEMPTS) {
-      this.logger.error(
-        `MAX_RECONNECT_ATTEMPTS reached for OBS (Production: ${productionId}). Stopping auto-reconnect.`,
-      );
-      return;
-    }
 
-    const delay = Math.min(
-      Math.pow(2, instance.reconnectAttempts) * 1000,
-      30000,
-    );
+    // Exponential backoff, capped at 30s — retries indefinitely
+    const delay = Math.min(Math.pow(2, instance.reconnectAttempts) * 1000, 30_000);
 
     this.logger.warn(
-      `Scheduling reconnect attempt ${instance.reconnectAttempts}/${this.MAX_RECONNECT_ATTEMPTS} for OBS (Production: ${productionId}) in ${delay / 1000}s`,
+      `Scheduling reconnect attempt ${instance.reconnectAttempts} for OBS connection ${connectionId} (production ${productionId}) in ${delay / 1000}s`,
     );
 
     instance.reconnectTimeout = setTimeout(() => {
       instance.reconnectTimeout = undefined;
-      void this.connectObs(productionId, url, password);
+      void this.connectObsById(connectionId, productionId, url, password);
     }, delay);
   }
 
@@ -703,19 +751,43 @@ export class ObsConnectionManager implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** Returns the primary connected OBSWebSocket for a production (for commands). */
   getInstance(productionId: string): OBSWebSocket | undefined {
-    const instance = this.connections.get(productionId);
-    return instance?.isConnected ? instance.obs : undefined;
+    const primaryId = this.primaryMap.get(productionId);
+    if (primaryId) {
+      const inst = this.connections.get(primaryId);
+      if (inst?.isConnected) return inst.obs;
+    }
+    // Fallback: any connected instance for this production
+    for (const connId of (this.productionMap.get(productionId) ?? [])) {
+      const inst = this.connections.get(connId);
+      if (inst?.isConnected) return inst.obs;
+    }
+    return undefined;
   }
 
   getObsState(productionId: string) {
-    const instance = this.connections.get(productionId);
+    const primaryId = this.primaryMap.get(productionId);
+    const instance = primaryId
+      ? this.connections.get(primaryId)
+      : [...(this.productionMap.get(productionId) ?? [])].map(id => this.connections.get(id)).find(Boolean);
     if (!instance) return { isConnected: false };
+    return { isConnected: instance.isConnected, ...instance.lastState };
+  }
 
-    return {
-      isConnected: instance.isConnected,
-      ...instance.lastState,
-    };
+  /** Returns state for a specific connection by ID. */
+  getConnectionState(connectionId: string) {
+    const instance = this.connections.get(connectionId);
+    if (!instance) return { isConnected: false };
+    return { isConnected: instance.isConnected, ...instance.lastState };
+  }
+
+  listConnections(productionId: string): Array<{ connectionId: string; isConnected: boolean; url: string }> {
+    const ids = this.productionMap.get(productionId) ?? new Set<string>();
+    return [...ids].map((id) => {
+      const inst = this.connections.get(id);
+      return { connectionId: id, isConnected: inst?.isConnected ?? false, url: inst?.url ?? '' };
+    });
   }
 
   private startScreenshotPolling(productionId: string, instance: ObsInstance) {

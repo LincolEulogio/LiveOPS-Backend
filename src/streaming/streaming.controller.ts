@@ -16,6 +16,10 @@ import {
   CreateStreamingDestinationDto,
   UpdateStreamingDestinationDto,
 } from '@/streaming/dto/streaming-destination.dto';
+import {
+  CreateStreamScheduleDto,
+  UpdateStreamScheduleDto,
+} from '@/streaming/dto/stream-schedule.dto';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 import { LiveKitService } from '@/streaming/livekit.service';
 import { SkipThrottle } from '@nestjs/throttler';
@@ -134,5 +138,37 @@ export class StreamingController {
   @Permissions('streaming:control')
   stopCloudRecording(@Param('id') productionId: string) {
     return this.streamingService.stopCloudRecording(productionId);
+  }
+
+  // --- Stream Schedules --- //
+
+  @Get(':id/schedules')
+  @Permissions('streaming:view')
+  getSchedules(@Param('id') productionId: string) {
+    return this.streamingService.getSchedules(productionId);
+  }
+
+  @Post(':id/schedules')
+  @Permissions('streaming:manage')
+  createSchedule(
+    @Param('id') productionId: string,
+    @Body() dto: CreateStreamScheduleDto,
+  ) {
+    return this.streamingService.createSchedule(productionId, dto);
+  }
+
+  @Patch('schedules/:scheduleId')
+  @Permissions('streaming:manage')
+  updateSchedule(
+    @Param('scheduleId') scheduleId: string,
+    @Body() dto: UpdateStreamScheduleDto,
+  ) {
+    return this.streamingService.updateSchedule(scheduleId, dto);
+  }
+
+  @Delete('schedules/:scheduleId')
+  @Permissions('streaming:manage')
+  deleteSchedule(@Param('scheduleId') scheduleId: string) {
+    return this.streamingService.deleteSchedule(scheduleId);
   }
 }

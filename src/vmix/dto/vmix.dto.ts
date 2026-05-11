@@ -37,3 +37,9 @@ export class ChangeInputDto {
   @IsNotEmpty()
   input: number;
 }
+
+export class TransitionDurationDto {
+  @IsNumber()
+  @IsOptional()
+  duration?: number;
+}

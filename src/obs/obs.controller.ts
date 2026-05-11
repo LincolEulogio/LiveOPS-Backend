@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Put } from '@nestjs/common';
 import { ObsService } from '@/obs/obs.service';
 import {
   SaveObsConnectionDto,
+  CreateObsConnectionDto,
   ChangeSceneDto,
   SetTransitionDto,
   SetSceneCollectionDto,
@@ -16,13 +17,14 @@ import { Permissions } from '@/common/decorators/permissions.decorator';
 export class ObsController {
   constructor(private readonly obsService: ObsService) {}
 
+  // ─── Connection management ────────────────────────────────────────────────
+
   @Put('connection')
   @Permissions('obs:manage')
   saveConnection(
     @Param('productionId') productionId: string,
     @Body() dto: SaveObsConnectionDto,
   ) {
-    // Requires production admin role IRL
     return this.obsService.saveConnection(productionId, dto);
   }
 
@@ -32,7 +34,50 @@ export class ObsController {
     return this.obsService.getConnection(productionId);
   }
 
-  // --- Commands ---
+  // ─── Multi-instance management ────────────────────────────────────────────
+
+  @Get('connections')
+  @Permissions('obs:view')
+  listConnections(@Param('productionId') productionId: string) {
+    return this.obsService.listConnections(productionId);
+  }
+
+  @Post('connections')
+  @Permissions('obs:manage')
+  addConnection(
+    @Param('productionId') productionId: string,
+    @Body() dto: CreateObsConnectionDto,
+  ) {
+    return this.obsService.addConnection(productionId, dto);
+  }
+
+  @Delete('connections/:connectionId')
+  @Permissions('obs:manage')
+  removeConnection(
+    @Param('productionId') productionId: string,
+    @Param('connectionId') connectionId: string,
+  ) {
+    return this.obsService.removeConnection(productionId, connectionId);
+  }
+
+  @Post('connections/reconnect')
+  @Permissions('obs:manage')
+  reconnect(
+    @Param('productionId') productionId: string,
+    @Body() body: { connectionId?: string },
+  ) {
+    return this.obsService.reconnect(productionId, body.connectionId);
+  }
+
+  // ─── Preview/Program monitor ──────────────────────────────────────────────
+
+  @Get('monitor')
+  @Permissions('obs:view')
+  getMonitorState(@Param('productionId') productionId: string) {
+    return this.obsService.getMonitorState(productionId);
+  }
+
+  // ─── Commands ─────────────────────────────────────────────────────────────
 
   @Post('scene')
   @Permissions('obs:control')

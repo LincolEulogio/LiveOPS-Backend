@@ -9,6 +9,7 @@ import { TallyService } from '@/streaming/tally.service';
 import { StreamingAutomationService } from '@/streaming/automation.service';
 import { StreamingDestinationsService } from '@/streaming/streaming-destinations.service';
 import { LiveKitService } from '@/streaming/livekit.service';
+import { StreamSchedulerService } from '@/streaming/stream-scheduler.service';
 
 @Module({
   imports: [ObsModule, VmixModule, WebsocketsModule],
@@ -19,6 +20,7 @@ import { LiveKitService } from '@/streaming/livekit.service';
     StreamingAutomationService,
     StreamingDestinationsService,
     LiveKitService,
+    StreamSchedulerService,
   ],
   exports: [
     StreamingService,

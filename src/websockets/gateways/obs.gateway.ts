@@ -122,6 +122,16 @@ export class ObsGateway {
     this.server.to(`production_${payload.productionId}`).emit('chat.received', msg);
   }
 
+  @OnEvent('obs.connection.alert')
+  handleObsConnectionAlert(payload: {
+    productionId: string;
+    connectionId: string;
+    attempts: number;
+    wasStreaming: boolean;
+  }): void {
+    this.server.to(`production_${payload.productionId}`).emit('obs.connection.alert', payload);
+  }
+
   // ─── vMix Event Handlers ─────────────────────────────────────────────────────
 
   @OnEvent('vmix.input.changed')

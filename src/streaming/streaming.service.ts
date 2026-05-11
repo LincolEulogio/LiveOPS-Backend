@@ -9,6 +9,10 @@ import { ObsService } from '@/obs/obs.service';
 import { VmixService } from '@/vmix/vmix.service';
 import { LiveKitService } from './livekit.service';
 import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
+import {
+  CreateStreamScheduleDto,
+  UpdateStreamScheduleDto,
+} from '@/streaming/dto/stream-schedule.dto';
 import { getErrorMessage } from '@/common/utils/error.util';
 import {
   IVideoEngine,
@@ -457,6 +461,51 @@ export class StreamingService {
       return sceneEngine.changeScene(productionId, sceneName);
     }
     throw new BadRequestException('SET_PREVIEW_SCENE not supported by this engine');
+  }
+
+  // ─── Schedule CRUD ────────────────────────────────────────────────────────
+
+  async getSchedules(productionId: string) {
+    const production = await this.prisma.production.findUnique({ where: { id: productionId } });
+    if (!production) throw new NotFoundException('Production not found');
+    return this.prisma.streamSchedule.findMany({
+      where: { productionId },
+      orderBy: { scheduledStart: 'asc' },
+    });
+  }
+
+  async createSchedule(productionId: string, dto: CreateStreamScheduleDto) {
+    const production = await this.prisma.production.findUnique({ where: { id: productionId } });
+    if (!production) throw new NotFoundException('Production not found');
+    return this.prisma.streamSchedule.create({
+      data: {
+        productionId,
+        scheduledStart: new Date(dto.scheduledStart),
+        scheduledEnd: dto.scheduledEnd ? new Date(dto.scheduledEnd) : null,
+        layout: dto.layout ?? null,
+      },
+    });
+  }
+
+  async updateSchedule(scheduleId: string, dto: UpdateStreamScheduleDto) {
+    const existing = await this.prisma.streamSchedule.findUnique({ where: { id: scheduleId } });
+    if (!existing) throw new NotFoundException('Schedule not found');
+    return this.prisma.streamSchedule.update({
+      where: { id: scheduleId },
+      data: {
+        ...(dto.scheduledStart !== undefined && { scheduledStart: new Date(dto.scheduledStart) }),
+        ...(dto.scheduledEnd !== undefined && { scheduledEnd: dto.scheduledEnd ? new Date(dto.scheduledEnd) : null }),
+        ...(dto.layout !== undefined && { layout: dto.layout }),
+        ...(dto.isEnabled !== undefined && { isEnabled: dto.isEnabled }),
+      },
+    });
+  }
+
+  async deleteSchedule(scheduleId: string) {
+    const existing = await this.prisma.streamSchedule.findUnique({ where: { id: scheduleId } });
+    if (!existing) throw new NotFoundException('Schedule not found');
+    await this.prisma.streamSchedule.delete({ where: { id: scheduleId } });
+    return { success: true };
   }
 
   private async executeEngineMethod(

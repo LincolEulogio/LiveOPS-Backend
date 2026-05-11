@@ -118,13 +118,18 @@ model DeviceSession {
 
 model ObsConnection {
   id           String     @id @default(uuid()) @db.Uuid
-  productionId String     @unique @db.Uuid
+  productionId String     @db.Uuid
+  name         String     @default("default")
+  isPrimary    Boolean    @default(true)
   url          String
   password     String?
   isEnabled    Boolean    @default(true)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
+  @@unique([productionId, name])
+  @@index([productionId])
 }
 
 model OperatorActivity {
@@ -169,7 +174,7 @@ model Production {
   guestInvitations      GuestInvitation[]
   hardwareMappings      HardwareMapping[]
   mediaAssets           MediaAsset[]
-  obsConnection         ObsConnection?
+  obsConnections        ObsConnection[]
   overlayTemplates      OverlayTemplate[]
   tenant                Tenant?                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   logs                  ProductionLog[]
@@ -182,6 +187,7 @@ model Production {
   restreamConnection    RestreamConnection?
   socialPolls           SocialPoll[]
   streamingDestinations StreamingDestination[]
+  streamSchedules       StreamSchedule[]
   telemetryLogs         TelemetryLog[]
   timelineBlocks        TimelineBlock[]
   vmixConnection        VmixConnection?
@@ -576,6 +582,22 @@ model StreamingDestination {
 
   @@index([productionId])
   @@index([isEnabled])
+}
+
+model StreamSchedule {
+  id             String     @id @default(uuid()) @db.Uuid
+  productionId   String     @db.Uuid
+  scheduledStart DateTime
+  scheduledEnd   DateTime?
+  layout         String?
+  isEnabled      Boolean    @default(true)
+  isExecuted     Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  production     Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
+
+  @@index([productionId])
+  @@index([scheduledStart])
 }
 
 model PushSubscription {

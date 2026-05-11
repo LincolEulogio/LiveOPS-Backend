@@ -6,10 +6,10 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { ObsConnectionManager } from '@/obs/obs-connection.manager';
-import { SaveObsConnectionDto } from '@/obs/dto/obs.dto';
+import { SaveObsConnectionDto, CreateObsConnectionDto } from '@/obs/dto/obs.dto';
 import { AuditService, AuditAction } from '@/common/services/audit.service';
+import { FieldCipherService } from '@/common/crypto/field-cipher.service';
 import { formatEngineUrl } from '@/common/utils/engine-url.util';
-
 import { ISceneEngine } from '@/streaming/interfaces/video-engine.interface';
 
 @Injectable()
@@ -20,48 +20,155 @@ export class ObsService implements ISceneEngine {
     private prisma: PrismaService,
     private obsManager: ObsConnectionManager,
     private auditService: AuditService,
+    private cipher: FieldCipherService,
   ) {}
+
+  // ─── Connection management ────────────────────────────────────────────────
 
   async saveConnection(productionId: string, dto: SaveObsConnectionDto) {
     const url = formatEngineUrl(dto, 'ws', '4455');
+    const encryptedPassword = dto.password ? this.cipher.encrypt(dto.password) : null;
+
     const connection = await this.prisma.obsConnection.upsert({
-      where: { productionId },
+      where: { productionId_name: { productionId, name: 'default' } },
       update: {
         url,
-        password: dto.password,
+        password: encryptedPassword,
         isEnabled: dto.isEnabled ?? true,
+        isPrimary: true,
       },
       create: {
         productionId,
+        name: 'default',
+        isPrimary: true,
         url,
-        password: dto.password,
+        password: encryptedPassword,
         isEnabled: dto.isEnabled ?? true,
       },
     });
 
     if (connection.isEnabled) {
-      void this.obsManager.connectObs(
+      void this.obsManager.connectObsById(
+        connection.id,
         productionId,
         connection.url,
-        connection.password || undefined,
+        dto.password || undefined,
+        true,
       );
     } else {
       this.obsManager.disconnectObs(productionId);
     }
 
-    return connection;
+    return this.maskConnection(connection);
   }
 
   async getConnection(productionId: string) {
-    const conn = await this.prisma.obsConnection.findUnique({
-      where: { productionId },
+    const conn = await this.prisma.obsConnection.findFirst({
+      where: { productionId, isPrimary: true },
     });
-    if (!conn)
-      throw new NotFoundException(
-        'OBS Connection not configured for this production',
-      );
-    return conn;
+    if (!conn) throw new NotFoundException('OBS Connection not configured for this production');
+    return this.maskConnection(conn);
   }
+
+  // ─── Multi-instance ───────────────────────────────────────────────────────
+
+  async addConnection(productionId: string, dto: CreateObsConnectionDto) {
+    const url = formatEngineUrl(dto, 'ws', '4455');
+    const encryptedPassword = dto.password ? this.cipher.encrypt(dto.password) : null;
+
+    const existing = await this.prisma.obsConnection.count({ where: { productionId } });
+    const isPrimary = dto.isPrimary ?? existing === 0;
+
+    if (isPrimary) {
+      await this.prisma.obsConnection.updateMany({
+        where: { productionId, isPrimary: true },
+        data: { isPrimary: false },
+      });
+    }
+
+    const connection = await this.prisma.obsConnection.create({
+      data: {
+        productionId,
+        name: dto.name,
+        isPrimary,
+        url,
+        password: encryptedPassword,
+        isEnabled: dto.isEnabled ?? true,
+      },
+    });
+
+    if (connection.isEnabled) {
+      void this.obsManager.connectObsById(
+        connection.id,
+        productionId,
+        connection.url,
+        dto.password || undefined,
+        isPrimary,
+      );
+    }
+
+    return this.maskConnection(connection);
+  }
+
+  async listConnections(productionId: string) {
+    const conns = await this.prisma.obsConnection.findMany({
+      where: { productionId },
+      orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+    });
+    const runtimeInfo = this.obsManager.listConnections(productionId);
+    return conns.map((c) => ({
+      ...this.maskConnection(c),
+      isConnected: runtimeInfo.find((r) => r.connectionId === c.id)?.isConnected ?? false,
+    }));
+  }
+
+  async removeConnection(productionId: string, connectionId: string) {
+    const conn = await this.prisma.obsConnection.findFirst({
+      where: { id: connectionId, productionId },
+    });
+    if (!conn) throw new NotFoundException('OBS Connection not found');
+
+    await this.prisma.obsConnection.delete({ where: { id: connectionId } });
+    this.obsManager.disconnectObs(productionId); // will only remove specific connection via productionMap
+
+    // If it was primary, promote the next available
+    if (conn.isPrimary) {
+      const next = await this.prisma.obsConnection.findFirst({ where: { productionId } });
+      if (next) await this.prisma.obsConnection.update({ where: { id: next.id }, data: { isPrimary: true } });
+    }
+    return { success: true };
+  }
+
+  async reconnect(productionId: string, connectionId?: string) {
+    if (connectionId) {
+      const conn = await this.prisma.obsConnection.findFirst({
+        where: { id: connectionId, productionId },
+      });
+      if (!conn) throw new NotFoundException('OBS Connection not found');
+      const password = conn.password && this.cipher.isEncrypted(conn.password)
+        ? this.cipher.decrypt(conn.password)
+        : conn.password ?? undefined;
+      this.obsManager.manualReconnect(conn.id, productionId);
+      // Re-pass decrypted password for the reconnect
+      void this.obsManager.connectObsById(conn.id, productionId, conn.url, password, conn.isPrimary);
+    } else {
+      const conn = await this.prisma.obsConnection.findFirst({
+        where: { productionId, isPrimary: true },
+      });
+      if (!conn) throw new NotFoundException('No primary OBS connection configured');
+      const password = conn.password && this.cipher.isEncrypted(conn.password)
+        ? this.cipher.decrypt(conn.password)
+        : conn.password ?? undefined;
+      this.obsManager.manualReconnect(conn.id, productionId);
+    }
+    return { success: true };
+  }
+
+  getMonitorState(productionId: string) {
+    return this.obsManager.getObsState(productionId);
+  }
+
+  // ─── ISceneEngine ─────────────────────────────────────────────────────────
 
   isConnected(productionId: string): boolean {
     return this.obsManager.getObsState(productionId).isConnected;
@@ -71,14 +178,12 @@ export class ObsService implements ISceneEngine {
     return Promise.resolve(this.obsManager.getObsState(productionId));
   }
 
-  // --- OBS Commands --- //
+  // ─── OBS Commands ─────────────────────────────────────────────────────────
 
   private getObs(productionId: string) {
     const obs = this.obsManager.getInstance(productionId);
     if (!obs) {
-      throw new BadRequestException(
-        'OBS is not connected or configured for this production',
-      );
+      throw new BadRequestException('OBS is not connected or configured for this production');
     }
     return obs;
   }
@@ -155,13 +260,7 @@ export class ObsService implements ISceneEngine {
     const obs = this.getObs(productionId);
     try {
       await obs.call('StopStream');
-
-      // Audit Log
-      void this.auditService.log({
-        productionId,
-        action: AuditAction.STREAM_STOP,
-      });
-
+      void this.auditService.log({ productionId, action: AuditAction.STREAM_STOP });
       return { success: true };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
@@ -174,13 +273,7 @@ export class ObsService implements ISceneEngine {
     const obs = this.getObs(productionId);
     try {
       await obs.call('StartRecord');
-
-      // Audit Log
-      void this.auditService.log({
-        productionId,
-        action: AuditAction.RECORD_START,
-      });
-
+      void this.auditService.log({ productionId, action: AuditAction.RECORD_START });
       return { success: true };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
@@ -193,13 +286,7 @@ export class ObsService implements ISceneEngine {
     const obs = this.getObs(productionId);
     try {
       await obs.call('StopRecord');
-
-      // Audit Log
-      void this.auditService.log({
-        productionId,
-        action: AuditAction.RECORD_STOP,
-      });
-
+      void this.auditService.log({ productionId, action: AuditAction.RECORD_STOP });
       return { success: true };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
@@ -215,7 +302,6 @@ export class ObsService implements ISceneEngine {
       return { success: true };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
-      this.logger.error(`Failed to start replay buffer: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
@@ -227,7 +313,6 @@ export class ObsService implements ISceneEngine {
       return { success: true };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
-      this.logger.error(`Failed to stop replay buffer: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
@@ -239,7 +324,6 @@ export class ObsService implements ISceneEngine {
       return { success: true };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
-      this.logger.error(`Failed to save replay buffer: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
@@ -252,7 +336,6 @@ export class ObsService implements ISceneEngine {
       return { success: true };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
-      this.logger.error(`Failed to start virtual cam: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
@@ -265,7 +348,6 @@ export class ObsService implements ISceneEngine {
       return { success: true };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
-      this.logger.error(`Failed to stop virtual cam: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
@@ -280,7 +362,6 @@ export class ObsService implements ISceneEngine {
       };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
-      this.logger.error(`Failed to get scene collections: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
@@ -293,7 +374,6 @@ export class ObsService implements ISceneEngine {
       return { success: true, sceneCollectionName };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
-      this.logger.error(`Failed to set scene collection: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
@@ -312,7 +392,6 @@ export class ObsService implements ISceneEngine {
       };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
-      this.logger.error(`Failed to get transitions: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
@@ -327,7 +406,6 @@ export class ObsService implements ISceneEngine {
       return { success: true, transitionName };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
-      this.logger.error(`Failed to set transition: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
@@ -339,7 +417,6 @@ export class ObsService implements ISceneEngine {
       return { success: true, studioModeEnabled: enabled };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
-      this.logger.error(`Failed to set studio mode: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
@@ -352,7 +429,6 @@ export class ObsService implements ISceneEngine {
       return { success: true, position: clamped };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
-      this.logger.error(`Failed to set T-Bar position: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
@@ -364,7 +440,6 @@ export class ObsService implements ISceneEngine {
       return { success: true };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
-      this.logger.error(`Failed to release T-Bar: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
@@ -376,42 +451,30 @@ export class ObsService implements ISceneEngine {
       return { success: true };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
-      this.logger.error(`Failed to trigger transition: ${message}`);
       throw new BadRequestException(`OBS Error: ${message}`);
     }
   }
 
-  // --- Audio Control for OBS ---
-  async setVolume(
-    productionId: string,
-    input?: string | number,
-    value?: number,
-  ) {
+  async setVolume(productionId: string, input?: string | number, value?: number) {
     const obs = this.getObs(productionId);
     try {
-      // Determine source name: if input is numeric/0/undefined, try default OBS audio sources
       let inputName = typeof input === 'string' ? input : '';
       if (!inputName || input === 0 || input === -1) {
-        // Try common default OBS audio names
         try {
           const inputVolumeMul = (value ?? 0) / 100;
-          await obs.call('SetInputVolume', {
-            inputName: 'Desktop Audio',
-            inputVolumeMul,
-          });
+          await obs.call('SetInputVolume', { inputName: 'Desktop Audio', inputVolumeMul });
           return { success: true };
         } catch {
           inputName = 'Mic/Aux';
         }
       }
-
       const inputVolumeMul = (value ?? 0) / 100;
       await obs.call('SetInputVolume', { inputName, inputVolumeMul });
       return { success: true };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
       this.logger.warn(`Failed to set OBS volume for ${input}: ${message}`);
-      return { success: true }; // Return success to UI anyway
+      return { success: true };
     }
   }
 
@@ -436,35 +499,26 @@ export class ObsService implements ISceneEngine {
     }
   }
 
-  toggleSolo(
-    productionId: string,
-    input?: string | number,
-  ): Promise<{ success: boolean }> {
-    this.logger.debug(
-      `toggleSolo (OBS) - Production: ${productionId}, Input: ${input}`,
-    );
+  toggleSolo(productionId: string, input?: string | number): Promise<{ success: boolean }> {
+    this.logger.debug(`toggleSolo (OBS) - Production: ${productionId}, Input: ${input}`);
     return Promise.resolve({ success: true });
   }
 
-  setGain(
-    productionId: string,
-    input?: string | number,
-    value?: number,
-  ): Promise<{ success: boolean }> {
-    this.logger.debug(
-      `setGain (OBS) - Production: ${productionId}, Input: ${input}, Value: ${value}`,
-    );
+  setGain(productionId: string, input?: string | number, value?: number): Promise<{ success: boolean }> {
+    this.logger.debug(`setGain (OBS) - Production: ${productionId}, Input: ${input}, Value: ${value}`);
     return Promise.resolve({ success: true });
   }
 
-  toggleBus(
-    productionId: string,
-    input?: string | number,
-    bus?: string,
-  ): Promise<{ success: boolean }> {
-    this.logger.debug(
-      `toggleBus (OBS) - Production: ${productionId}, Input: ${input}, Bus: ${bus}`,
-    );
+  toggleBus(productionId: string, input?: string | number, bus?: string): Promise<{ success: boolean }> {
+    this.logger.debug(`toggleBus (OBS) - Production: ${productionId}, Input: ${input}, Bus: ${bus}`);
     return Promise.resolve({ success: true });
+  }
+
+  // ─── Private helpers ──────────────────────────────────────────────────────
+
+  private maskConnection<T extends { password?: string | null }>(conn: T): Omit<T, 'password'> & { password: null } {
+    // Never return the encrypted password to the client
+    const { password: _pw, ...rest } = conn;
+    return { ...rest, password: null } as Omit<T, 'password'> & { password: null };
   }
 }

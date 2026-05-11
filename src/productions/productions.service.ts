@@ -258,7 +258,7 @@ export class ProductionsService {
             role: true,
           },
         },
-        obsConnection: true,
+        obsConnections: true,
         vmixConnection: true,
       },
     });

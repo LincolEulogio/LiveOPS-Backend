@@ -116,30 +116,41 @@ export class VmixService implements IInputEngine {
     }
   }
 
-  async fade(productionId: string, duration?: number) {
+  private async transition(productionId: string, fn: string, duration?: number) {
     try {
-      // Triggers a fade transition from Preview to Active
       const params = duration ? { Duration: duration } : undefined;
-      await this.vmixManager.sendCommand(productionId, 'Fade', params);
-
-      // Audit Trail
+      await this.vmixManager.sendCommand(productionId, fn, params);
       void this.auditService.log({
         productionId,
         action: AuditAction.SCENE_CHANGE,
-        details: {
-          engine: 'vmix',
-          action: 'fade',
-          duration: duration,
-          target: 'program',
-        },
+        details: { engine: 'vmix', action: fn.toLowerCase(), duration },
       });
-
-      return { success: true, action: 'fade', duration: duration };
+      return { success: true, action: fn.toLowerCase(), duration };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
-      this.logger.error(`Failed to trigger fade: ${message}`);
+      this.logger.error(`Failed to trigger ${fn}: ${message}`);
       throw new BadRequestException(`vMix Error: ${message || 'Unknown'}`);
     }
+  }
+
+  async fade(productionId: string, duration?: number) {
+    return this.transition(productionId, 'Fade', duration);
+  }
+
+  async wipe(productionId: string, duration?: number) {
+    return this.transition(productionId, 'Wipe', duration);
+  }
+
+  async slide(productionId: string, duration?: number) {
+    return this.transition(productionId, 'Slide', duration);
+  }
+
+  async merge(productionId: string, duration?: number) {
+    return this.transition(productionId, 'Merge', duration);
+  }
+
+  async crossZoom(productionId: string, duration?: number) {
+    return this.transition(productionId, 'CrossZoom', duration);
   }
 
   async setVolume(productionId: string, input?: number, value?: number) {

@@ -98,6 +98,7 @@ export class CoreGateway
       'guest.returnfeed.updated',
       'social.viewers_update',
       'analytics.log',
+      'stream.health.alert',
     ];
 
     for (const event of passthrough) {

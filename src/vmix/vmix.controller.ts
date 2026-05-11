@@ -8,7 +8,7 @@
 } from '@nestjs/common';
 import { Protected } from '@/common/decorators/protected.decorator';
 import { VmixService } from '@/vmix/vmix.service';
-import { SaveVmixConnectionDto, ChangeInputDto } from '@/vmix/dto/vmix.dto';
+import { SaveVmixConnectionDto, ChangeInputDto, TransitionDurationDto } from '@/vmix/dto/vmix.dto';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 
 @Protected()
@@ -50,8 +50,32 @@ export class VmixController {
 
   @Post('transition/fade')
   @Permissions('vmix:control')
-  fade(@Param('productionId') productionId: string) {
-    return this.vmixService.fade(productionId);
+  fade(@Param('productionId') productionId: string, @Body() dto: TransitionDurationDto) {
+    return this.vmixService.fade(productionId, dto.duration);
+  }
+
+  @Post('transition/wipe')
+  @Permissions('vmix:control')
+  wipe(@Param('productionId') productionId: string, @Body() dto: TransitionDurationDto) {
+    return this.vmixService.wipe(productionId, dto.duration);
+  }
+
+  @Post('transition/slide')
+  @Permissions('vmix:control')
+  slide(@Param('productionId') productionId: string, @Body() dto: TransitionDurationDto) {
+    return this.vmixService.slide(productionId, dto.duration);
+  }
+
+  @Post('transition/merge')
+  @Permissions('vmix:control')
+  merge(@Param('productionId') productionId: string, @Body() dto: TransitionDurationDto) {
+    return this.vmixService.merge(productionId, dto.duration);
+  }
+
+  @Post('transition/cross-zoom')
+  @Permissions('vmix:control')
+  crossZoom(@Param('productionId') productionId: string, @Body() dto: TransitionDurationDto) {
+    return this.vmixService.crossZoom(productionId, dto.duration);
   }
 }
 

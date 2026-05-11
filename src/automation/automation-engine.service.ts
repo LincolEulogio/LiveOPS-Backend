@@ -8,21 +8,25 @@ import { IntercomService } from '@/intercom/intercom.service';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { Rule, Trigger, Action } from '@prisma/client';
 import { AuditService, AuditAction } from '@/common/services/audit.service';
+import {
+  TriggerConditionNode,
+  SimpleCondition,
+  CompoundCondition,
+} from '@/automation/dto/automation.dto';
 
-interface TriggerCondition {
-  secondsBefore?: number;
-  [key: string]: string | number | boolean | undefined | null;
-}
+type ConditionValue = string | number | boolean | null;
 
 interface EventPayload {
   productionId: string;
-  [key: string]: string | number | boolean | undefined | null | Date | object;
+  [key: string]: ConditionValue | Date | object | undefined;
 }
 
 interface RuleWithActions extends Rule {
   triggers: Trigger[];
   actions: Action[];
 }
+
+type ActionPayload = Record<string, ConditionValue | undefined>;
 
 @Injectable()
 export class AutomationEngineService {
@@ -39,12 +43,12 @@ export class AutomationEngineService {
 
   /**
    * Ticker that runs every second to check for time-based triggers.
+   * Rule executions are fire-and-forget to avoid blocking the interval.
    */
   @Interval(1000)
   async checkTimeTriggers() {
     const now = new Date();
 
-    // 1. Obtener todos los bloques activos con duración
     const activeBlocks = await this.prisma.timelineBlock.findMany({
       where: {
         status: 'ACTIVE',
@@ -55,12 +59,10 @@ export class AutomationEngineService {
 
     if (activeBlocks.length === 0) return;
 
-    // 2. Agrupar bloques por producción para optimizar consultas de reglas
     const activeProductionIds = [
       ...new Set(activeBlocks.map((b) => b.productionId)),
     ];
 
-    // 3. Obtener todas las reglas relevantes para estas producciones de una sola vez
     const allRules = await this.prisma.rule.findMany({
       where: {
         productionId: { in: activeProductionIds },
@@ -75,7 +77,6 @@ export class AutomationEngineService {
       },
     });
 
-    // 4. Procesar cada bloque
     for (const block of activeBlocks) {
       if (!block.startTime) continue;
 
@@ -84,7 +85,6 @@ export class AutomationEngineService {
         (block.durationMs - elapsedTime) / 1000,
       );
 
-      // Reglas para esta producción específica
       const productionRules = allRules.filter(
         (r) => r.productionId === block.productionId,
       );
@@ -93,11 +93,10 @@ export class AutomationEngineService {
         for (const trigger of rule.triggers) {
           if (trigger.eventType !== 'timeline.before_end') continue;
 
-          const condition = trigger.condition as unknown as TriggerCondition;
-          const triggerSeconds = condition?.secondsBefore || 0;
+          const condition = trigger.condition as unknown as Record<string, ConditionValue>;
+          const triggerSeconds = (condition?.secondsBefore as number) || 0;
 
           if (remainingSeconds === triggerSeconds) {
-            // Evitar repeticiones: buscar log previo para este bloque
             const alreadyLogged = await this.prisma.ruleExecutionLog.findFirst({
               where: {
                 ruleId: rule.id,
@@ -110,7 +109,8 @@ export class AutomationEngineService {
               this.logger.log(
                 `Time-trigger hit! Rule "${rule.name}" triggered ${triggerSeconds}s before block end.`,
               );
-              await this.executeActions(rule as RuleWithActions, {
+              // Fire-and-forget to avoid blocking the 1-second interval
+              void this.executeActions(rule as RuleWithActions, {
                 ...block,
                 remainingSeconds,
               });
@@ -123,15 +123,12 @@ export class AutomationEngineService {
 
   /**
    * Listen to all events emitted on the internal EventBus.
-   * Wildcard '**' requires EventEmitter2 wildcard feature to be enabled.
    */
   @OnEvent('**')
   async handleEvent(eventPrefix: string, payload: EventPayload) {
-    // Most domain events will have productionId in the payload
     const productionId = payload?.productionId;
     if (!productionId) return;
 
-    // 1. If we have a specific ruleId, trigger only that one
     if (payload?.ruleId) {
       const rule = await this.prisma.rule.findUnique({
         where: { id: payload.ruleId as string },
@@ -143,15 +140,14 @@ export class AutomationEngineService {
 
       if (rule && rule.productionId === productionId) {
         this.logger.log(`Manual execution of rule "${rule.name}" (${rule.id})`);
-        await this.executeActions(rule as RuleWithActions, {
+        void this.executeActions(rule as RuleWithActions, {
           ...payload,
           isManual: true,
         });
-        return; // Don't check for event matches if we triggered by ID
+        return;
       }
     }
 
-    // 2. Otherwise, fetch enabled rules with triggers matching this eventType
     const rules = await this.prisma.rule.findMany({
       where: {
         productionId,
@@ -172,16 +168,16 @@ export class AutomationEngineService {
         this.logger.log(
           `Executing Rule "${rule.name}" (${rule.id}) due to event ${eventPrefix}`,
         );
-        // Add manual trigger context if applicable
         const context =
           eventPrefix === 'manual.trigger'
             ? { ...payload, isManual: true }
             : payload;
-        await this.executeActions(rule, context);
+        // Fire-and-forget to avoid blocking the event handler
+        void this.executeActions(rule, context);
       }
     }
 
-    // Special case: Single action trigger without full rule (for Instant Clip)
+    // Direct instant-clip action without a full rule
     if (
       eventPrefix === 'manual.trigger' &&
       payload.actionType === 'engine.instantClip'
@@ -189,7 +185,6 @@ export class AutomationEngineService {
       this.logger.log(
         `Executing direct action engine.instantClip for production ${productionId}`,
       );
-      // Create a dummy rule for action execution
       const dummyRule: RuleWithActions = {
         id: 'manual-trigger',
         productionId,
@@ -211,7 +206,7 @@ export class AutomationEngineService {
           },
         ],
       };
-      await this.executeActions(dummyRule, { ...payload, isManual: true });
+      void this.executeActions(dummyRule, { ...payload, isManual: true });
     }
   }
 
@@ -249,7 +244,7 @@ export class AutomationEngineService {
       this.logger.log(
         `Executing Rule "${ruleWithActions.name}" via hardware mapping: ${payload.mapKey}`,
       );
-      await this.executeActions(ruleWithActions, {
+      void this.executeActions(ruleWithActions, {
         ...payload,
         isHardware: true,
       });
@@ -257,10 +252,11 @@ export class AutomationEngineService {
   }
 
   /**
-   * Evaluates if any trigger condition matches the payload.
-   * Basic implementation: JSON subset matching.
+   * Evaluates trigger conditions supporting:
+   * - Compound AND/OR with SimpleCondition nodes (field/op/value)
+   * - Legacy flat-map conditions ({ key: value, ... })
    */
-  private evaluateTriggers(
+  evaluateTriggers(
     triggers: Trigger[],
     eventPrefix: string,
     payload: EventPayload,
@@ -269,24 +265,101 @@ export class AutomationEngineService {
       (t) => t.eventType === eventPrefix,
     );
 
-    for (const t of matchingTriggers) {
-      if (!t.condition) return true; // No conditions = run on any event of this type
+    const flatPayload = this.flattenPayload(payload);
 
-      // Check if payload matches condition properties
-      const conditionObj = t.condition as unknown as Record<
-        string,
-        string | number | boolean | null
-      >;
-      let matches = true;
-      for (const [key, val] of Object.entries(conditionObj)) {
-        if (payload[key] !== val) {
-          matches = false;
-          break;
-        }
-      }
-      if (matches) return true;
+    for (const t of matchingTriggers) {
+      if (!t.condition) return true;
+
+      const node = t.condition as unknown as TriggerConditionNode;
+      if (this.evaluateConditionNode(node, flatPayload)) return true;
     }
     return false;
+  }
+
+  private flattenPayload(
+    payload: EventPayload,
+  ): Record<string, ConditionValue> {
+    const flat: Record<string, ConditionValue> = {};
+    for (const [key, val] of Object.entries(payload)) {
+      if (
+        val === null ||
+        typeof val === 'string' ||
+        typeof val === 'number' ||
+        typeof val === 'boolean'
+      ) {
+        flat[key] = val;
+      }
+    }
+    return flat;
+  }
+
+  evaluateConditionNode(
+    node: TriggerConditionNode,
+    payload: Record<string, ConditionValue>,
+  ): boolean {
+    // CompoundCondition: has `operator` and `conditions` array
+    if (
+      'operator' in node &&
+      ((node as CompoundCondition).operator === 'AND' || (node as CompoundCondition).operator === 'OR')
+    ) {
+      const compound = node as CompoundCondition;
+      if (compound.operator === 'AND') {
+        return compound.conditions.every((c) =>
+          this.evaluateConditionNode(c as TriggerConditionNode, payload),
+        );
+      }
+      return compound.conditions.some((c) =>
+        this.evaluateConditionNode(c as TriggerConditionNode, payload),
+      );
+    }
+
+    // SimpleCondition: has `field`, `op`, `value`
+    if ('field' in node && 'op' in node) {
+      const simple = node as SimpleCondition;
+      const payloadVal = payload[simple.field];
+      switch (simple.op) {
+        case 'eq':
+          return payloadVal === simple.value;
+        case 'neq':
+          return payloadVal !== simple.value;
+        case 'gt':
+          return (
+            typeof payloadVal === 'number' &&
+            typeof simple.value === 'number' &&
+            payloadVal > simple.value
+          );
+        case 'gte':
+          return (
+            typeof payloadVal === 'number' &&
+            typeof simple.value === 'number' &&
+            payloadVal >= simple.value
+          );
+        case 'lt':
+          return (
+            typeof payloadVal === 'number' &&
+            typeof simple.value === 'number' &&
+            payloadVal < simple.value
+          );
+        case 'lte':
+          return (
+            typeof payloadVal === 'number' &&
+            typeof simple.value === 'number' &&
+            payloadVal <= simple.value
+          );
+        case 'contains':
+          return (
+            typeof payloadVal === 'string' &&
+            typeof simple.value === 'string' &&
+            payloadVal.includes(simple.value)
+          );
+        default:
+          return false;
+      }
+    }
+
+    // LegacyCondition: flat key-value map — all entries must match
+    const legacy = node as Record<string, ConditionValue>;
+    return Object.entries(legacy).every(([key, val]) => payload[key] === val);
   }
 
   private async executeActions(
@@ -298,113 +371,34 @@ export class AutomationEngineService {
         `Starting execution of ${rule.actions.length} actions for rule "${rule.name}"`,
       );
 
-      const executionPromises = rule.actions.map(async (action) => {
-        this.logger.debug(
-          `Executing action ${action.actionType} (order: ${action.order})`,
-        );
-        const payload = action.payload as unknown as Record<
-          string,
-          string | number | boolean | null
-        >;
-
-        try {
-          switch (action.actionType) {
-            case 'obs.changeScene':
-              if (payload?.sceneName) {
-                await this.obsService.changeScene(
-                  rule.productionId,
-                  payload.sceneName as string,
-                );
-              }
-              break;
-
-            case 'vmix.cut':
-              await this.vmixService.cut(rule.productionId);
-              break;
-
-            case 'vmix.fade':
-              await this.vmixService.fade(
-                rule.productionId,
-                (payload?.duration as number) || 500,
-              );
-              break;
-
-            case 'vmix.changeInput':
-              if (payload?.input) {
-                await this.vmixService.changeInput(
-                  rule.productionId,
-                  payload.input as number,
-                );
-              }
-              break;
-
-            case 'intercom.send':
-              if (payload?.templateId || payload?.message) {
-                let message = payload.message as string;
-                if (!message && payload.templateId) {
-                  const template = await this.prisma.commandTemplate.findUnique(
-                    {
-                      where: { id: payload.templateId as string },
-                    },
-                  );
-                  message = template?.name || 'Automation Alert';
-                }
-
-                await this.intercomService.sendCommand({
-                  productionId: rule.productionId,
-                  senderId: '00000000-0000-0000-0000-000000000000', // SYSTEM ID
-                  targetRoleId: payload?.targetRoleId as string,
-                  templateId: payload?.templateId as string,
-                  message: message,
-                  requiresAck: (payload?.requiresAck as boolean) ?? true,
-                });
-              }
-              break;
-
-            case 'webhook.call':
-              if (payload?.url || payload?.message) {
-                await this.notificationsService.sendNotification(
-                  rule.productionId,
-                  (payload.message as string) ||
-                    `Automation Rule Triggered: ${rule.name}`,
-                );
-              }
-              break;
-
-            case 'engine.instantClip':
-              try {
-                if (this.obsService.isConnected(rule.productionId)) {
-                  await this.obsService.saveReplayBuffer(rule.productionId);
-                } else if (this.vmixService.isConnected(rule.productionId)) {
-                  await this.vmixService.saveVideoDelay(rule.productionId);
-                }
-              } catch (e: unknown) {
-                this.logger.error(
-                  `Failed to trigger instant clip: ${e instanceof Error ? e.message : String(e)}`,
-                );
-              }
-              break;
-
-            default:
-              this.logger.warn(`Unknown action type: ${action.actionType}`);
-          }
-        } catch (actionError: unknown) {
-          this.logger.error(
-            `Action ${action.actionType} failed: ${actionError instanceof Error ? actionError.message : String(actionError)}`,
-          );
-          throw actionError; // Re-throw to be caught by Promise.all
-        }
+      const hasDelays = rule.actions.some((a) => {
+        const p = a.payload as unknown as ActionPayload;
+        return typeof p?.delayMs === 'number' && p.delayMs > 0;
       });
 
-      // Execute all actions in parallel
-      await Promise.all(executionPromises);
+      if (hasDelays) {
+        // Sequential execution respecting per-action delays
+        for (const action of rule.actions) {
+          const p = action.payload as unknown as ActionPayload;
+          const delay = typeof p?.delayMs === 'number' ? p.delayMs : 0;
+          if (delay > 0) {
+            await new Promise<void>((resolve) => setTimeout(resolve, delay));
+          }
+          await this.executeAction(action, rule);
+        }
+      } else {
+        // Parallel execution (original behaviour, faster)
+        await Promise.all(
+          rule.actions.map((action) => this.executeAction(action, rule)),
+        );
+      }
 
-      // Log Success with context
       const context =
         typeof eventPayload?.id === 'string' ||
         typeof eventPayload?.id === 'number'
           ? `Block: ${eventPayload.id}`
           : 'Generic event';
+
       await this.logExecution(
         rule.id,
         rule.productionId,
@@ -412,7 +406,6 @@ export class AutomationEngineService {
         `Executed for ${context}`,
       );
 
-      // Audit Log
       await this.auditService.log({
         productionId: rule.productionId,
         action: AuditAction.AUTOMATION_TRIGGER,
@@ -424,6 +417,100 @@ export class AutomationEngineService {
         `Rule execution failed for rule ${rule.id}: ${message}`,
       );
       await this.logExecution(rule.id, rule.productionId, 'ERROR', message);
+    }
+  }
+
+  private async executeAction(action: Action, rule: RuleWithActions) {
+    this.logger.debug(
+      `Executing action ${action.actionType} (order: ${action.order})`,
+    );
+    const payload = action.payload as unknown as ActionPayload;
+
+    try {
+      switch (action.actionType) {
+        case 'obs.changeScene':
+          if (payload?.sceneName) {
+            await this.obsService.changeScene(
+              rule.productionId,
+              payload.sceneName as string,
+            );
+          }
+          break;
+
+        case 'vmix.cut':
+          await this.vmixService.cut(rule.productionId);
+          break;
+
+        case 'vmix.fade':
+          await this.vmixService.fade(
+            rule.productionId,
+            (payload?.duration as number) || 500,
+          );
+          break;
+
+        case 'vmix.changeInput':
+          if (payload?.input) {
+            await this.vmixService.changeInput(
+              rule.productionId,
+              payload.input as number,
+            );
+          }
+          break;
+
+        case 'intercom.send':
+          if (payload?.templateId || payload?.message) {
+            let message = payload.message as string | undefined;
+            if (!message && payload.templateId) {
+              const template =
+                await this.prisma.commandTemplate.findUnique({
+                  where: { id: payload.templateId as string },
+                });
+              message = template?.name || 'Automation Alert';
+            }
+
+            await this.intercomService.sendCommand({
+              productionId: rule.productionId,
+              senderId: '00000000-0000-0000-0000-000000000000',
+              targetRoleId: payload?.targetRoleId as string,
+              templateId: payload?.templateId as string,
+              message: message ?? '',
+              requiresAck: (payload?.requiresAck as boolean) ?? true,
+            });
+          }
+          break;
+
+        case 'webhook.call':
+          if (payload?.url || payload?.message) {
+            await this.notificationsService.sendNotification(
+              rule.productionId,
+              (payload.message as string) ||
+                `Automation Rule Triggered: ${rule.name}`,
+            );
+          }
+          break;
+
+        case 'engine.instantClip':
+          try {
+            if (this.obsService.isConnected(rule.productionId)) {
+              await this.obsService.saveReplayBuffer(rule.productionId);
+            } else if (this.vmixService.isConnected(rule.productionId)) {
+              await this.vmixService.saveVideoDelay(rule.productionId);
+            }
+          } catch (e: unknown) {
+            this.logger.error(
+              `Failed to trigger instant clip: ${e instanceof Error ? e.message : String(e)}`,
+            );
+          }
+          break;
+
+        default:
+          this.logger.warn(`Unknown action type: ${action.actionType}`);
+      }
+    } catch (actionError: unknown) {
+      this.logger.error(
+        `Action ${action.actionType} failed: ${actionError instanceof Error ? actionError.message : String(actionError)}`,
+      );
+      throw actionError;
     }
   }
 
