@@ -80,7 +80,65 @@ export class OverlaysService {
       data: { isActive },
     });
 
+    if (isActive) {
+      this.eventEmitter.emit('overlay.activated', {
+        productionId,
+        overlayId: id,
+      });
+    }
+
     this.eventEmitter.emit('overlay.list_updated', { productionId });
     return overlay;
+  }
+
+  async syncLayerContent(
+    productionId: string,
+    layerBindings: Record<string, string>,
+  ) {
+    // Find the active overlay for this production
+    const activeOverlay = await this.prisma.overlayTemplate.findFirst({
+      where: { productionId, isActive: true },
+    });
+
+    if (!activeOverlay) return;
+    interface OverlayLayer {
+      name: string;
+      content: string;
+      [key: string]: any;
+    }
+
+    interface OverlayConfig {
+      layers: OverlayLayer[];
+      [key: string]: any;
+    }
+
+    const config = (activeOverlay.config as unknown as OverlayConfig) || {
+      layers: [],
+    };
+    const layers = config.layers || [];
+    let modified = false;
+
+    // Update layers that match the binding keys
+    const updatedLayers = layers.map((layer: OverlayLayer) => {
+      // Check if layer name or a custom binding field matches
+      const bindingKey = layer.name.toLowerCase().replace(/\s+/g, '_');
+      if (layerBindings[bindingKey] !== undefined) {
+        modified = true;
+        return { ...layer, content: String(layerBindings[bindingKey]) };
+      }
+      return layer;
+    });
+
+    if (modified) {
+      await this.update(activeOverlay.id, {
+        config: { ...config, layers: updatedLayers },
+      });
+    }
+  }
+
+  async findOneActive(productionId: string) {
+    return this.prisma.overlayTemplate.findFirst({
+      where: { productionId, isActive: true },
+    });
   }
 }

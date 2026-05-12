@@ -34,6 +34,7 @@ import { HealthModule } from '@/health/health.module';
 import { VideoCallModule } from '@/video-call/video-call.module';
 import { GuestModule } from '@/guest/guest.module';
 import { NdiModule } from '@/ndi/ndi.module';
+import { SportsModule } from '@/sports/sports.module';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { NdiModule } from '@/ndi/ndi.module';
     OverlaysModule,
     AuditModule,
     VideoCallModule,
+    SportsModule,
   ],
   controllers: [AppController],
   providers: [

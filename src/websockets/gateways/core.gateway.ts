@@ -64,10 +64,16 @@ export class CoreGateway
     const subClient = pubClient.duplicate();
 
     pubClient.on('error', (err) =>
-      this.logger.error('Redis pub error', err instanceof Error ? err.message : String(err)),
+      this.logger.error(
+        'Redis pub error',
+        err instanceof Error ? err.message : String(err),
+      ),
     );
     subClient.on('error', (err) =>
-      this.logger.error('Redis sub error', err instanceof Error ? err.message : String(err)),
+      this.logger.error(
+        'Redis sub error',
+        err instanceof Error ? err.message : String(err),
+      ),
     );
 
     this.server.adapter(createAdapter(pubClient, subClient));
@@ -99,12 +105,15 @@ export class CoreGateway
       'social.viewers_update',
       'analytics.log',
       'stream.health.alert',
+      'overlay.update_data',
     ];
 
     for (const event of passthrough) {
       this.eventEmitter.on(event, (payload: BaseEventPayload) => {
         if (payload?.productionId) {
-          this.server.to(`production_${payload.productionId}`).emit(event, payload);
+          this.server
+            .to(`production_${payload.productionId}`)
+            .emit(event, payload);
         }
         if (event === 'analytics.log' || !payload?.productionId) {
           this.server.emit(event, payload);
@@ -132,10 +141,8 @@ export class CoreGateway
   async handleConnection(client: AuthenticatedSocket): Promise<void> {
     const rawToken =
       (client.handshake.auth as Record<string, string>)?.token ??
-      (client.handshake.headers?.authorization as string | undefined)
-        ?.replace('Bearer ', '')
-        .trim() ??
-      (client.handshake.query?.token as string | undefined);
+      client.handshake.headers?.authorization?.replace('Bearer ', '').trim() ??
+      (client.handshake.query?.token as string);
 
     if (!rawToken) {
       this.logger.warn(`WS rejected — no token: ${client.id}`);
@@ -146,9 +153,13 @@ export class CoreGateway
 
     let jwtPayload: { sub: string; tenantId?: string };
     try {
-      jwtPayload = this.jwtService.verify<{ sub: string; tenantId?: string }>(rawToken, {
-        secret: this.configService.get<string>('JWT_SECRET') ?? 'super-secret',
-      });
+      jwtPayload = this.jwtService.verify<{ sub: string; tenantId?: string }>(
+        rawToken,
+        {
+          secret:
+            this.configService.get<string>('JWT_SECRET') ?? 'super-secret',
+        },
+      );
     } catch {
       this.logger.warn(`WS rejected — invalid token: ${client.id}`);
       client.emit('error', { message: 'Unauthorized: invalid token' });
@@ -159,7 +170,9 @@ export class CoreGateway
     const verifiedUserId = jwtPayload.sub;
     client.data.userId = verifiedUserId;
 
-    const productionId = client.handshake.query.productionId as string | undefined;
+    const productionId = client.handshake.query.productionId as
+      | string
+      | undefined;
     const userName = client.handshake.query.userName as string | undefined;
     const roleId = client.handshake.query.roleId as string | undefined;
     const roleName = client.handshake.query.roleName as string | undefined;
@@ -181,7 +194,9 @@ export class CoreGateway
         productionId,
       );
 
-      this.logger.log(`User ${verifiedUserId} (${roleName ?? 'Viewer'}) joined production_${productionId}`);
+      this.logger.log(
+        `User ${verifiedUserId} (${roleName ?? 'Viewer'}) joined production_${productionId}`,
+      );
       this.presenceService.broadcastToProduction(productionId);
     }
   }
@@ -271,10 +286,12 @@ export class CoreGateway
     @MessageBody() data: { productionId: string; state: unknown },
     @ConnectedSocket() client: AuthenticatedSocket,
   ) {
-    client.to(`production_${data.productionId}`).emit('production.state_updated', {
-      productionId: data.productionId,
-      state: data.state,
-    });
+    client
+      .to(`production_${data.productionId}`)
+      .emit('production.state_updated', {
+        productionId: data.productionId,
+        state: data.state,
+      });
     return { status: 'ok' };
   }
 
@@ -323,11 +340,15 @@ export class CoreGateway
     client.data.bridgeName = data.bridgeName;
     client.data.productionId = data.productionId;
     void client.join(`production_${data.productionId}`);
-    this.logger.log(`NDI Bridge "${data.bridgeName}" identified for production ${data.productionId}`);
-    this.server.to(`production_${data.productionId}`).emit('ndi.bridge_status', {
-      bridgeName: data.bridgeName,
-      status: 'ONLINE',
-    });
+    this.logger.log(
+      `NDI Bridge "${data.bridgeName}" identified for production ${data.productionId}`,
+    );
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('ndi.bridge_status', {
+        bridgeName: data.bridgeName,
+        status: 'ONLINE',
+      });
   }
 
   @UseGuards(WsAuthGuard)
@@ -336,24 +357,34 @@ export class CoreGateway
     @MessageBody() data: { productionId: string; bridgeName: string },
     @ConnectedSocket() client: AuthenticatedSocket,
   ): Promise<void> {
-    this.logger.log(`NDI Bridge ${data.bridgeName} registered for production ${data.productionId}`);
+    this.logger.log(
+      `NDI Bridge ${data.bridgeName} registered for production ${data.productionId}`,
+    );
     await client.join(`production_${data.productionId}`);
     client.data.isNdiBridge = true;
-    this.server.to(`production_${data.productionId}`).emit('ndi.bridge_status', {
-      bridgeName: data.bridgeName,
-      status: 'ONLINE',
-    });
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('ndi.bridge_status', {
+        bridgeName: data.bridgeName,
+        status: 'ONLINE',
+      });
   }
 
   @UseGuards(WsAuthGuard)
   @SubscribeMessage('ndi.sources_update')
   handleNdiSourcesUpdate(
-    @MessageBody() data: { productionId: string; sources: Record<string, unknown>[] },
+    @MessageBody()
+    data: {
+      productionId: string;
+      sources: Record<string, unknown>[];
+    },
   ): void {
-    this.server.to(`production_${data.productionId}`).emit('ndi.sources_received', {
-      productionId: data.productionId,
-      sources: data.sources,
-    });
+    this.server
+      .to(`production_${data.productionId}`)
+      .emit('ndi.sources_received', {
+        productionId: data.productionId,
+        sources: data.sources,
+      });
   }
 
   @UseGuards(WsAuthGuard)
