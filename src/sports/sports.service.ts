@@ -2,6 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { OverlaysService } from '@/overlays/overlays.service';
 
+export interface LineupPlayer {
+  number: string;
+  name: string;
+  position: string;
+}
+
 export interface SportsMatch {
   id: string;
   productionId: string;
@@ -12,6 +18,13 @@ export interface SportsMatch {
   period: string;
   timer: number; // seconds
   isRunning: boolean;
+  lineupA: LineupPlayer[];
+  lineupB: LineupPlayer[];
+  coachA: string;
+  coachB: string;
+  referees: string[];
+  logoA?: string;
+  logoB?: string;
 }
 
 @Injectable()
@@ -50,6 +63,19 @@ export class SportsService {
         period: '1T',
         timer: 0,
         isRunning: false,
+        lineupA: Array.from({ length: 11 }, () => ({
+          number: '',
+          name: '',
+          position: '',
+        })),
+        lineupB: Array.from({ length: 11 }, () => ({
+          number: '',
+          name: '',
+          position: '',
+        })),
+        coachA: '',
+        coachB: '',
+        referees: ['', '', ''],
       });
 
       this.seedFromOverlay(productionId).catch((err) =>
@@ -103,14 +129,27 @@ export class SportsService {
 
     this.broadcastUpdate(productionId);
 
-    await this.overlaysService.syncLayerContent(productionId, {
+    const bindings: Record<string, string> = {
       equipo_a: match.teamA,
       equipo_b: match.teamB,
       goles_a: String(match.scoreA),
       goles_b: String(match.scoreB),
       periodo: match.period,
       tiempo: this.formatTime(match.timer),
+      técnico_a: match.coachA,
+      técnico_b: match.coachB,
+      árbitros: match.referees.join(' · '),
+    };
+
+    // Add players
+    match.lineupA.forEach((p, i) => {
+      bindings[`jugador_${i + 1}_a`] = `${p.number}. ${p.name}`.trim();
     });
+    match.lineupB.forEach((p, i) => {
+      bindings[`jugador_${i + 1}_b`] = `${p.number}. ${p.name}`.trim();
+    });
+
+    await this.overlaysService.syncLayerContent(productionId, bindings);
 
     return match;
   }
@@ -170,6 +209,13 @@ export class SportsService {
       periodo: match.period,
       match_timer_raw: match.timer,
       is_running: match.isRunning,
+      lineup_a: match.lineupA,
+      lineup_b: match.lineupB,
+      coach_a: match.coachA,
+      coach_b: match.coachB,
+      referees: match.referees,
+      logo_a: match.logoA,
+      logo_b: match.logoB,
     };
 
     this.eventEmitter.emit('overlay.update_data', data);
