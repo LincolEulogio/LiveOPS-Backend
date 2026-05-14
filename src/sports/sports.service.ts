@@ -6,6 +6,7 @@ export interface LineupPlayer {
   number: string;
   name: string;
   position: string;
+  image?: string;
 }
 
 export interface SportsMatch {
@@ -22,6 +23,19 @@ export interface SportsMatch {
   lineupB: LineupPlayer[];
   coachA: string;
   coachB: string;
+  coachAImage?: string;
+  coachBImage?: string;
+  formationA: string;
+  formationB: string;
+  primaryColorA: string;
+  primaryColorB: string;
+  secondaryColorA: string;
+  secondaryColorB: string;
+  titleTextA: string;
+  titleTextB: string;
+  matchInfo: string;
+  competitionLogo: string;
+  hashtag: string;
   referees: string[];
   logoA?: string;
   logoB?: string;
@@ -75,6 +89,19 @@ export class SportsService {
         })),
         coachA: '',
         coachB: '',
+        coachAImage: '',
+        coachBImage: '',
+        formationA: '4-3-3',
+        formationB: '4-4-2',
+        primaryColorA: '#dc2626',
+        primaryColorB: '#1e40af',
+        secondaryColorA: '#fbbf24',
+        secondaryColorB: '#fbbf24',
+        titleTextA: 'ONCE TITULAR',
+        titleTextB: 'ONCE TITULAR',
+        matchInfo: '',
+        competitionLogo: '',
+        hashtag: '',
         referees: ['', '', ''],
       });
 
@@ -213,6 +240,19 @@ export class SportsService {
       lineup_b: match.lineupB,
       coach_a: match.coachA,
       coach_b: match.coachB,
+      coach_a_image: match.coachAImage,
+      coach_b_image: match.coachBImage,
+      formation_a: match.formationA,
+      formation_b: match.formationB,
+      primary_color_a: match.primaryColorA,
+      primary_color_b: match.primaryColorB,
+      secondary_color_a: match.secondaryColorA,
+      secondary_color_b: match.secondaryColorB,
+      title_text_a: match.titleTextA,
+      title_text_b: match.titleTextB,
+      match_info: match.matchInfo,
+      competition_logo: match.competitionLogo,
+      hashtag: match.hashtag,
       referees: match.referees,
       logo_a: match.logoA,
       logo_b: match.logoB,
