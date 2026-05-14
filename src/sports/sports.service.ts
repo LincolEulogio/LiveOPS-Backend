@@ -39,6 +39,16 @@ export interface SportsMatch {
   referees: string[];
   logoA?: string;
   logoB?: string;
+  bestPlayer?: {
+    name: string;
+    team: 'A' | 'B';
+    number: string;
+    position: string;
+    image?: string;
+    rating?: string;
+    goals?: string;
+    assists?: string;
+  };
 }
 
 @Injectable()
@@ -103,6 +113,7 @@ export class SportsService {
         competitionLogo: '',
         hashtag: '',
         referees: ['', '', ''],
+        bestPlayer: { name: '', team: 'A', number: '', position: '', image: '', rating: '', goals: '', assists: '' },
       });
 
       this.seedFromOverlay(productionId).catch((err) =>
@@ -256,6 +267,7 @@ export class SportsService {
       referees: match.referees,
       logo_a: match.logoA,
       logo_b: match.logoB,
+      best_player: match.bestPlayer,
     };
 
     this.eventEmitter.emit('overlay.update_data', data);
