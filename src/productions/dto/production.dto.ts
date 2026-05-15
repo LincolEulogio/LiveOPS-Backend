@@ -1,3 +1,4 @@
+import { PartialType } from '@nestjs/mapped-types';
 import {
   IsNotEmpty,
   IsOptional,
@@ -87,23 +88,7 @@ export class CreateProductionDto {
   initialMembers?: AssignUserDto[];
 }
 
-export class UpdateProductionDto {
-  @IsString()
-  @IsOptional()
-  name?: string;
-
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @IsEnum(EngineType)
-  @IsOptional()
-  engineType?: EngineType;
-
-  @IsEnum(ProductionStatus)
-  @IsOptional()
-  status?: ProductionStatus;
-
+export class UpdateProductionDto extends PartialType(CreateProductionDto) {
   @IsOptional()
   @ValidateNested()
   @Type(() => ObsConfigDto)

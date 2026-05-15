@@ -1,3 +1,4 @@
+import { PartialType } from '@nestjs/mapped-types';
 import {
   IsEmail,
   IsNotEmpty,
@@ -52,12 +53,4 @@ export class CreateRoleDto {
   description?: string;
 }
 
-export class UpdateRoleDto {
-  @IsString()
-  @IsOptional()
-  name?: string;
-
-  @IsString()
-  @IsOptional()
-  description?: string;
-}
+export class UpdateRoleDto extends PartialType(CreateRoleDto) {}
