@@ -14,6 +14,7 @@ import {
 } from '@/users/dto/users.dto';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
+import { USER_SELECT } from '@/auth/auth.types';
 import {
   PermissionAction,
   StandardRoles,
@@ -224,6 +225,31 @@ export class UsersService implements OnModuleInit {
       where: { id },
       data: { deletedAt: new Date() },
       select: { id: true, email: true },
+    });
+  }
+
+  // --- Profile ---
+
+  async getProfile(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId, deletedAt: null },
+      select: USER_SELECT,
+    });
+  }
+
+  async updateProfile(
+    userId: string,
+    data: { name?: string; password?: string; avatarUrl?: string },
+  ) {
+    const updateData: Prisma.UserUpdateInput = {};
+    if (data.name) updateData.name = data.name;
+    if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
+    if (data.password) updateData.password = await bcrypt.hash(data.password, 10);
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: USER_SELECT,
     });
   }
 

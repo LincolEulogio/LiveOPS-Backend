@@ -13,6 +13,7 @@ import { Prisma, Trigger } from '@prisma/client';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiService } from '@/ai/ai.service';
 import { AutomationEngineService } from '@/automation/automation-engine.service';
+import { AutomationConditionEvaluator } from '@/automation/automation-condition.evaluator';
 
 type ConditionValue = string | number | boolean | null;
 type EventPayload = Record<string, ConditionValue>;
@@ -24,6 +25,7 @@ export class AutomationService {
     private eventEmitter: EventEmitter2,
     private aiService: AiService,
     private engineService: AutomationEngineService,
+    private conditionEvaluator: AutomationConditionEvaluator,
   ) {}
 
   async getRules(productionId: string, query: PaginationQueryDto) {
@@ -231,7 +233,7 @@ export class AutomationService {
     const matchedTriggers = rule.triggers.filter((t: Trigger) => {
       if (!t.condition) return true;
       const node = t.condition as unknown as TriggerConditionNode;
-      return this.engineService.evaluateConditionNode(node, testPayload);
+      return this.conditionEvaluator.evaluateConditionNode(node, testPayload);
     });
 
     return {

@@ -2,14 +2,34 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
-import { AuthService } from '@/auth/auth.service';
-import { AuthController } from '@/auth/auth.controller';
-import { JwtStrategy } from '@/auth/jwt.strategy';
-import { GoogleStrategy } from '@/auth/strategies/google.strategy';
-import { GitHubStrategy } from '@/auth/strategies/github.strategy';
 import { UsersModule } from '@/users/users.module';
-import { MailerService } from '@/common/services/mailer.service';
 import { AuditModule } from '@/audit/audit.module';
+import { MailerService } from '@/common/services/mailer.service';
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
+import { JwtStrategy } from './jwt.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { GitHubStrategy } from './strategies/github.strategy';
+import { TokenService } from './token.service';
+import { PasswordService } from './password.service';
+import { EmailVerificationService } from './email-verification.service';
+import { TwoFactorService } from './two-factor.service';
+import { OAuthService } from './oauth.service';
+import { SessionsService } from './sessions.service';
+
+const AUTH_PROVIDERS = [
+  AuthService,
+  TokenService,
+  PasswordService,
+  EmailVerificationService,
+  TwoFactorService,
+  OAuthService,
+  SessionsService,
+  JwtStrategy,
+  GoogleStrategy,
+  GitHubStrategy,
+  MailerService,
+];
 
 @Module({
   imports: [
@@ -25,7 +45,7 @@ import { AuditModule } from '@/audit/audit.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy, GitHubStrategy, MailerService],
+  providers: AUTH_PROVIDERS,
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

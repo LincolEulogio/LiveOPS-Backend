@@ -5,9 +5,17 @@ import { ObsModule } from '@/obs/obs.module';
 import { VmixModule } from '@/vmix/vmix.module';
 import { IntercomModule } from '@/intercom/intercom.module';
 import { NotificationsModule } from '@/notifications/notifications.module';
-import { AutomationService } from '@/automation/automation.service';
-import { AutomationController } from '@/automation/automation.controller';
-import { AutomationEngineService } from '@/automation/automation-engine.service';
+import { AutomationService } from './automation.service';
+import { AutomationController } from './automation.controller';
+import { AutomationEngineService } from './automation-engine.service';
+import { AutomationConditionEvaluator } from './automation-condition.evaluator';
+import { AutomationActionExecutor } from './automation-action.executor';
+
+const ENGINE_PROVIDERS = [
+  AutomationEngineService,
+  AutomationConditionEvaluator,
+  AutomationActionExecutor,
+];
 
 @Module({
   imports: [
@@ -18,7 +26,7 @@ import { AutomationEngineService } from '@/automation/automation-engine.service'
     IntercomModule,
     NotificationsModule,
   ],
-  providers: [AutomationService, AutomationEngineService],
+  providers: [AutomationService, ...ENGINE_PROVIDERS],
   controllers: [AutomationController],
   exports: [AutomationService, AutomationEngineService],
 })
