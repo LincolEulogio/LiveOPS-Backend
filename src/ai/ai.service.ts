@@ -28,22 +28,36 @@ export class AiService {
 
   // ─── Core ─────────────────────────────────────────────────────────────────
 
-  generateText(prompt: string): Promise<string> {
-    return this.core.generateText(prompt);
+  generateText(prompt: string, context?: { userId?: string; productionId?: string }): Promise<string> {
+    return this.core.generateText(prompt, context);
   }
 
   streamChat(
     history: { role: 'user' | 'assistant' | 'system'; content: string }[],
     systemContext: string,
+    context?: { userId?: string; productionId?: string },
   ): ReturnType<typeof streamText> {
-    return this.core.streamChat(history, systemContext);
+    return this.core.streamChat(history, systemContext, context);
   }
 
   chat(
     history: { role: 'user' | 'assistant'; content: string }[],
     systemContext: string,
+    context?: { userId?: string; productionId?: string },
   ): Promise<string> {
-    return this.core.chat(history, systemContext);
+    return this.core.chat(history, systemContext, context);
+  }
+
+  streamSuggestScript(title: string, content: string): ReturnType<typeof streamText> {
+    return this.content.streamSuggestScriptContent(title, content);
+  }
+
+  streamBriefing(data: {
+    social: string;
+    telemetry: string;
+    script: string;
+  }): ReturnType<typeof streamText> {
+    return this.content.streamBriefing(data);
   }
 
   // ─── Analytics ────────────────────────────────────────────────────────────

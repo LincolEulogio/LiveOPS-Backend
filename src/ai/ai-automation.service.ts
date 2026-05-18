@@ -2,6 +2,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { Injectable, Logger } from '@nestjs/common';
 import { AiCoreService } from './ai-core.service';
+import { sanitizePromptInput } from './prompt-sanitizer';
 
 interface MacroDefinition {
   name: string;
@@ -17,9 +18,10 @@ export class AiAutomationService {
   constructor(private core: AiCoreService) {}
 
   async generateAutomationMacro(userInput: string): Promise<MacroDefinition> {
+    const safeInput = sanitizePromptInput(userInput, 500);
     const prompt = `Convierte la siguiente petición de usuario en una Macro de automatización para LiveOPS.
 
-        Petición: "${userInput}"
+        Petición: "${safeInput}"
 
         Sistemas Disponibles:
         - Triggers: "manual.trigger", "telemetry.fps_drop", "social.keyword", "obs.scene_change"

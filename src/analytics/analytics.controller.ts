@@ -47,7 +47,7 @@ export class AnalyticsController {
   @Post('report/generate')
   @Permissions('production:manage')
   async generateReport(@Param('id') id: string) {
-    return this.analyticsService.generateShowReport(id);
+    return this.analyticsService.enqueueShowReport(id);
   }
 
   @Get('seo-package')

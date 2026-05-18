@@ -13,7 +13,7 @@ import { SocketEvents } from '@/common/socket-events';
 import type { WebRTCSignalPayload } from '@/common/types/webrtc.types';
 import type { AuthenticatedSocket } from '@/websockets/types/socket.types';
 
-@WebSocketGateway()
+@WebSocketGateway({ namespace: '/webrtc' })
 @UseGuards(WsAuthGuard)
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class WebRTCGateway {

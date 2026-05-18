@@ -12,6 +12,10 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { sanitizePromptInput } from './prompt-sanitizer';
+
+const MAX_RETRIES = 3;
+const INITIAL_BACKOFF_MS = 1_000;
 
 @Injectable()
 export class AiCoreService implements OnModuleInit {
@@ -58,7 +62,7 @@ export class AiCoreService implements OnModuleInit {
     return this.googleModel;
   }
 
-  async generateText(prompt: string): Promise<string> {
+  async generateText(prompt: string, context?: { userId?: string; productionId?: string }): Promise<string> {
     this.getModel(); // throws if not ready
 
     if (Date.now() < this.quotaBackoffUntil) {
@@ -68,64 +72,133 @@ export class AiCoreService implements OnModuleInit {
       );
     }
 
-    try {
-      this.logger.debug(`Generating text for prompt: ${prompt.substring(0, 100)}...`);
-      const { text } = await generateText({ model: this.getModel(), prompt });
-      this.logger.debug(`Successfully generated ${text.length} characters.`);
+    return this.withRetry(async () => {
+      const { text, usage } = await generateText({ model: this.getModel(), prompt });
+      this.logTokenUsage('generateText', usage, context);
       return text;
-    } catch (error: unknown) {
-      const msg = (error instanceof Error ? error.message : String(error)).toLowerCase();
-      if (
-        msg.includes('quota exceeded') ||
-        msg.includes('rate limit') ||
-        msg.includes('too many requests')
-      ) {
-        const retryMs = this.extractRetryMs(error instanceof Error ? error.message : '');
-        this.quotaBackoffUntil = Date.now() + retryMs;
-        this.logger.warn(
-          `AI quota/rate limited. Enabling cooldown for ${Math.ceil(retryMs / 1000)}s.`,
-        );
-        throw new ServiceUnavailableException(
-          `LIVIA AI en límite de cuota. Reintenta en ~${Math.ceil(retryMs / 1000)}s.`,
-        );
-      }
-      const errMsg = error instanceof Error ? error.message : 'Unknown provider error';
-      this.logger.error(`AI Core Failure: ${errMsg}`);
-      throw new InternalServerErrorException(`LIVIA Intelligence error: ${errMsg}`);
-    }
+    });
   }
 
   streamChat(
     history: { role: 'user' | 'assistant' | 'system'; content: string }[],
     systemContext: string,
+    context?: { userId?: string; productionId?: string },
   ): ReturnType<typeof streamText> {
-    return streamText({
+    // Sanitize all user messages before streaming
+    const safeHistory = history.map((m) => ({
+      role: m.role,
+      content: m.role === 'user' ? sanitizePromptInput(m.content) : m.content,
+    }));
+
+    const stream = streamText({
       model: this.getModel(),
       messages: [
         { role: 'system', content: systemContext },
-        ...history.map((m) => ({ role: m.role, content: m.content })),
+        ...safeHistory,
       ],
+      onFinish: ({ usage }) => {
+        this.logTokenUsage('streamChat', usage, context);
+      },
     });
+
+    return stream;
   }
 
   async chat(
     history: { role: 'user' | 'assistant'; content: string }[],
     systemContext: string,
+    context?: { userId?: string; productionId?: string },
   ): Promise<string> {
-    try {
-      const { text } = await generateText({
+    const safeHistory = history.map((m) => ({
+      role: m.role,
+      content: m.role === 'user' ? sanitizePromptInput(m.content) : m.content,
+    }));
+
+    return this.withRetry(async () => {
+      const { text, usage } = await generateText({
         model: this.getModel(),
         messages: [
           { role: 'system', content: systemContext },
-          ...history.map((m) => ({ role: m.role, content: m.content })),
+          ...safeHistory,
         ],
       });
+      this.logTokenUsage('chat', usage, context);
       return text;
-    } catch (error: unknown) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`AI Chat Failure: ${errMsg}`);
-      throw new InternalServerErrorException(`LIVIA Intelligence error: ${errMsg}`);
+    });
+  }
+
+  /**
+   * Retries an AI call up to MAX_RETRIES times with exponential backoff on 429 errors.
+   * Other errors are thrown immediately.
+   */
+  private async withRetry<T>(fn: () => Promise<T>): Promise<T> {
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        return await fn();
+      } catch (error: unknown) {
+        lastError = error;
+        const msg = (error instanceof Error ? error.message : String(error)).toLowerCase();
+
+        const isRateLimit =
+          msg.includes('quota exceeded') ||
+          msg.includes('rate limit') ||
+          msg.includes('too many requests') ||
+          msg.includes('429');
+
+        if (!isRateLimit) {
+          // Non-retriable error — throw immediately
+          const errMsg = error instanceof Error ? error.message : 'Unknown provider error';
+          this.logger.error(`AI Core Failure: ${errMsg}`);
+          throw new InternalServerErrorException(`LIVIA Intelligence error: ${errMsg}`);
+        }
+
+        const retryAfterMs = this.extractRetryMs(error instanceof Error ? error.message : '');
+        const backoffMs = attempt === 0
+          ? Math.min(retryAfterMs, INITIAL_BACKOFF_MS * Math.pow(2, attempt))
+          : INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+
+        this.logger.warn(
+          `AI rate limited (attempt ${attempt + 1}/${MAX_RETRIES}). Retrying in ${backoffMs}ms...`,
+        );
+
+        if (attempt === MAX_RETRIES - 1) {
+          // Final attempt exhausted — set global cooldown
+          this.quotaBackoffUntil = Date.now() + retryAfterMs;
+        }
+
+        await new Promise<void>((resolve) => setTimeout(resolve, backoffMs));
+      }
     }
+
+    const retryMs = this.extractRetryMs(lastError instanceof Error ? lastError.message : '');
+    throw new ServiceUnavailableException(
+      `LIVIA AI en límite de cuota tras ${MAX_RETRIES} reintentos. Reintenta en ~${Math.ceil(retryMs / 1000)}s.`,
+    );
+  }
+
+  /**
+   * Logs token consumption per call for cost auditing.
+   * Format is structured so it can be ingested by log aggregators (Datadog, CloudWatch, etc.)
+   */
+  private logTokenUsage(
+    operation: string,
+    usage: { promptTokens?: number; completionTokens?: number; totalTokens?: number } | undefined,
+    context?: { userId?: string; productionId?: string },
+  ): void {
+    if (!usage) return;
+    this.logger.log(
+      JSON.stringify({
+        event: 'ai.token_usage',
+        operation,
+        promptTokens: usage.promptTokens ?? 0,
+        completionTokens: usage.completionTokens ?? 0,
+        totalTokens: usage.totalTokens ?? 0,
+        userId: context?.userId,
+        productionId: context?.productionId,
+      }),
+    );
   }
 
   private extractRetryMs(message: string): number {

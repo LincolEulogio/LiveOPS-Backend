@@ -52,13 +52,14 @@ const REFRESH_COOKIE_OPTIONS: CookieOptions = {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle({ auth: { limit: 5, ttl: 60000 } })
   @Post('register')
-  async register(@Body() dto: RegisterUserDto, @Res({ passthrough: true }) res: Response) {
-    const result = await this.authService.register(dto);
-    res.cookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);
-    return { user: result.user, accessToken: result.accessToken };
+  @HttpCode(HttpStatus.CREATED)
+  register(@Body() dto: RegisterUserDto) {
+    return this.authService.register(dto);
   }
 
+  @Throttle({ auth: { limit: 5, ttl: 60000 } })
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -71,12 +72,14 @@ export class AuthController {
     return this.authService.resetPassword(dto);
   }
 
+  @Throttle({ auth: { limit: 10, ttl: 60000 } })
   @Post('verify')
   @HttpCode(HttpStatus.OK)
   verify(@Body('token') token: string) {
     return this.authService.verifyEmail(token);
   }
 
+  @Throttle({ auth: { limit: 3, ttl: 60000 } })
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
   resendVerification(@Body('email') email: string) {
@@ -103,8 +106,7 @@ export class AuthController {
     return this.authService.updateProfile(req.user.userId, data);
   }
 
-  // Strict rate limit: 5 attempts per minute on login
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ auth: { limit: 5, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(

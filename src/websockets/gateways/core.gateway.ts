@@ -30,7 +30,11 @@ interface BaseEventPayload {
   productionId: string;
 }
 
-@WebSocketGateway({ cors: GATEWAY_CORS })
+@WebSocketGateway({
+  cors: GATEWAY_CORS,
+  pingInterval: 10000,  // server pings client every 10s
+  pingTimeout: 20000,   // disconnect if no pong within 20s
+})
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class CoreGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -109,15 +113,15 @@ export class CoreGateway
     ];
 
     for (const event of passthrough) {
-      this.eventEmitter.on(event, (payload: BaseEventPayload) => {
+      this.eventEmitter.on(event, (payload: BaseEventPayload & { tenantId?: string }) => {
         if (payload?.productionId) {
-          this.server
-            .to(`production_${payload.productionId}`)
-            .emit(event, payload);
+          // Scoped to production room — only users in that production receive this
+          this.server.to(`production_${payload.productionId}`).emit(event, payload);
+        } else if (payload?.tenantId) {
+          // Tenant-scoped broadcast — never cross-tenant
+          this.server.to(`tenant_${payload.tenantId}`).emit(event, payload);
         }
-        if (event === 'analytics.log' || !payload?.productionId) {
-          this.server.emit(event, payload);
-        }
+        // Global broadcast removed — no cross-tenant leakage
       });
     }
   }
@@ -177,7 +181,36 @@ export class CoreGateway
     const roleId = client.handshake.query.roleId as string | undefined;
     const roleName = client.handshake.query.roleName as string | undefined;
 
+    const tenantId = jwtPayload.tenantId;
+
+    // Always join the tenant room so tenant-scoped broadcasts work
+    if (tenantId) {
+      await client.join(`tenant_${tenantId}`);
+      client.data.tenantId = tenantId;
+    }
+
     if (productionId) {
+      // Verify the production belongs to the user's tenant before joining the room
+      const production = await this.prisma.production.findUnique({
+        where: { id: productionId },
+        select: { tenantId: true, activeState: true },
+      });
+
+      if (!production) {
+        client.emit('error', { message: 'Production not found' });
+        client.disconnect(true);
+        return;
+      }
+
+      if (tenantId && production.tenantId !== tenantId) {
+        this.logger.warn(
+          `User ${verifiedUserId} (tenant ${tenantId}) attempted to join production from tenant ${production.tenantId}`,
+        );
+        client.emit('error', { message: 'Unauthorized: production belongs to a different tenant' });
+        client.disconnect(true);
+        return;
+      }
+
       await client.join(`production_${productionId}`);
       client.data.productionId = productionId;
 
@@ -198,6 +231,13 @@ export class CoreGateway
         `User ${verifiedUserId} (${roleName ?? 'Viewer'}) joined production_${productionId}`,
       );
       this.presenceService.broadcastToProduction(productionId);
+
+      // Rehydrate state on connect so reconnecting clients recover immediately
+      client.emit('reconnect.rehydrate', {
+        productionId,
+        state: production.activeState ?? {},
+        serverTime: new Date().toISOString(),
+      });
     }
   }
 
@@ -218,11 +258,43 @@ export class CoreGateway
     @MessageBody() data: { productionId: string },
     @ConnectedSocket() client: AuthenticatedSocket,
   ) {
+    const production = await this.prisma.production.findUnique({
+      where: { id: data.productionId },
+      select: { tenantId: true, activeState: true },
+    });
+
+    if (!production) return { error: 'Production not found' };
+
+    const clientTenantId = client.data.tenantId as string | undefined;
+    if (clientTenantId && production.tenantId !== clientTenantId) {
+      this.logger.warn(
+        `User ${client.data.userId} attempted cross-tenant production join: ${data.productionId}`,
+      );
+      return { error: 'Unauthorized: cross-tenant access denied' };
+    }
+
     await client.join(`production_${data.productionId}`);
     client.data.productionId = data.productionId;
     this.presenceService.associateWithProduction(client.id, data.productionId);
     this.presenceService.broadcastToProduction(data.productionId);
+
+    // Rehydrate for this late-join / re-join
+    client.emit('reconnect.rehydrate', {
+      productionId: data.productionId,
+      state: production.activeState ?? {},
+      serverTime: new Date().toISOString(),
+    });
+
     return { status: 'joined', room: `production_${data.productionId}` };
+  }
+
+  /** Round-trip latency probe — client sends client.ping, we echo back client.pong. */
+  @SubscribeMessage('client.ping')
+  handleClientPing(
+    @MessageBody() data: { t: number },
+    @ConnectedSocket() client: AuthenticatedSocket,
+  ) {
+    client.emit('client.pong', { t: data.t });
   }
 
   @UseGuards(WsAuthGuard)

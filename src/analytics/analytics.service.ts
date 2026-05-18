@@ -1,7 +1,8 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
+import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { createHash } from 'crypto';
 import type { Cache } from 'cache-manager';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AiService } from '@/ai/ai.service';
@@ -14,7 +15,8 @@ import type {
   TelemetryStats,
 } from '@/analytics/analytics.types';
 
-const METRICS_CACHE_TTL = 10_000; // 10s — fresh enough for live dashboards
+const METRICS_CACHE_TTL = 10_000;  // 10s — live dashboard freshness
+const AI_ANALYSIS_CACHE_TTL = 3_600; // 1h — AI results are expensive and stable
 
 @Injectable()
 export class AnalyticsService {
@@ -26,9 +28,13 @@ export class AnalyticsService {
   private alertThresholds = new Map<string, AlertThreshold[]>();
   private retentionConfigs = new Map<string, RetentionConfig>();
 
+  /** Tracks in-flight report generation jobs to prevent duplicate runs. */
+  private reportJobs = new Map<string, 'pending' | 'done' | 'error'>();
+
   constructor(
     private prisma: PrismaService,
     private aiService: AiService,
+    private eventEmitter: EventEmitter2,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
@@ -108,21 +114,52 @@ export class AnalyticsService {
 
   // ─── Show report ────────────────────────────────────────────────────────────
 
-  async generateShowReport(productionId: string) {
-    try {
-      const existing = await this.prisma.showReport.findUnique({
-        where: { productionId },
-      });
-      if (existing) return existing;
+  /**
+   * Queues report generation asynchronously.
+   * Returns immediately so the HTTP request doesn't block while processing
+   * potentially thousands of telemetry rows + an AI call.
+   */
+  async enqueueShowReport(productionId: string): Promise<{ status: string; message: string }> {
+    const existing = await this.prisma.showReport.findUnique({ where: { productionId } });
+    if (existing) return { status: 'done', message: 'Report already generated. Fetch it with GET /report.' };
 
+    const jobStatus = this.reportJobs.get(productionId);
+    if (jobStatus === 'pending') {
+      return { status: 'pending', message: 'Report generation already in progress.' };
+    }
+
+    this.reportJobs.set(productionId, 'pending');
+    // Fire-and-forget event — the heavy work happens in the listener below
+    this.eventEmitter.emit('analytics.report.generate', { productionId });
+
+    return { status: 'queued', message: 'Report generation started. Poll GET /report for the result.' };
+  }
+
+  /** Returns the report if ready, or the current job status if still generating. */
+  async getShowReport(productionId: string) {
+    const report = await this.prisma.showReport.findUnique({ where: { productionId } });
+    if (report) return { status: 'done', report };
+
+    const jobStatus = this.reportJobs.get(productionId);
+    if (jobStatus) return { status: jobStatus, report: null };
+
+    return { status: 'not_started', report: null };
+  }
+
+  @OnEvent('analytics.report.generate')
+  async handleReportGeneration({ productionId }: { productionId: string }): Promise<void> {
+    try {
       const [telemetry, timelineBlocks] = await Promise.all([
         this.prisma.telemetryLog.findMany({
           where: { productionId },
           orderBy: { timestamp: 'asc' },
+          // Use aggregate-friendly select to avoid fetching unused columns
+          select: { timestamp: true, cpuUsage: true, fps: true, droppedFrames: true, isStreaming: true },
         }),
         this.prisma.timelineBlock.findMany({
           where: { productionId },
           orderBy: { order: 'asc' },
+          select: { startTime: true, endTime: true },
         }),
       ]);
 
@@ -149,7 +186,19 @@ export class AnalyticsService {
         ? telemetry.reduce((sum, l) => sum + (l.fps ?? 0), 0) / telemetry.length
         : 0;
 
-      const report = await this.prisma.showReport.create({
+      const statsInput = { durationMs, avgFps, maxCpu, totalDroppedFrames, samples: telemetry.length };
+
+      // Cache AI analysis by content hash — same stats = same analysis, no repeat API calls
+      const statsHash = createHash('sha256').update(JSON.stringify(statsInput)).digest('hex').slice(0, 16);
+      const aiCacheKey = `ai_show_analysis_${statsHash}`;
+      let aiAnalysis = await this.cacheManager.get<string>(aiCacheKey);
+
+      if (!aiAnalysis) {
+        aiAnalysis = await this.aiService.analyzeShowPerformance(statsInput);
+        await this.cacheManager.set(aiCacheKey, aiAnalysis, AI_ANALYSIS_CACHE_TTL);
+      }
+
+      await this.prisma.showReport.create({
         data: {
           productionId,
           startTime,
@@ -157,39 +206,26 @@ export class AnalyticsService {
           durationMs,
           alertsCount: 0,
           peakViewers: 0,
-          metrics: { totalDroppedFrames, maxCpu, avgFps, samples: telemetry.length },
+          metrics: { ...statsInput },
+          aiAnalysis,
         },
       });
 
-      const aiAnalysis = await this.aiService.analyzeShowPerformance({
-        durationMs,
-        avgFps,
-        maxCpu,
-        totalDroppedFrames,
-        samples: telemetry.length,
-      });
-
-      return this.prisma.showReport.update({
-        where: { id: report.id },
-        data: { aiAnalysis },
-      });
+      this.reportJobs.set(productionId, 'done');
+      this.logger.log(`Show report generated for production ${productionId} (${telemetry.length} samples)`);
     } catch (error: unknown) {
+      this.reportJobs.set(productionId, 'error');
       this.logger.error(
-        `Error generating show report for ${productionId}`,
+        `Report generation failed for ${productionId}`,
         error instanceof Error ? error.stack : String(error),
       );
-      throw error;
     }
-  }
-
-  async getShowReport(productionId: string) {
-    return this.prisma.showReport.findUnique({ where: { productionId } });
   }
 
   // ─── SEO ────────────────────────────────────────────────────────────────────
 
   async getPostShowSeo(productionId: string) {
-    const [report, production] = await Promise.all([
+    const [reportResult, production] = await Promise.all([
       this.getShowReport(productionId),
       this.prisma.production.findUnique({
         where: { id: productionId },
@@ -197,13 +233,23 @@ export class AnalyticsService {
       }),
     ]);
 
-    if (!report) throw new Error('No report found. Generate it first.');
+    if (!reportResult.report) throw new Error('No report found. Generate it first.');
 
-    return this.aiService.generatePostShowSEO({
+    const seoInput = {
       name: production?.name ?? 'Show en Vivo',
-      duration: `${Math.round((report.durationMs ?? 0) / 60000)} min`,
+      duration: `${Math.round((reportResult.report.durationMs ?? 0) / 60000)} min`,
       topics: production?.timelineBlocks.map((b) => b.title).join(', ') ?? 'Varios',
-    });
+    };
+
+    // Cache by content hash — same show = same SEO package, no repeat AI calls
+    const seoHash = createHash('sha256').update(JSON.stringify(seoInput)).digest('hex').slice(0, 16);
+    const cacheKey = `ai_seo_${seoHash}`;
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) return cached;
+
+    const result = await this.aiService.generatePostShowSEO(seoInput);
+    await this.cacheManager.set(cacheKey, result, AI_ANALYSIS_CACHE_TTL);
+    return result;
   }
 
   // ─── Dashboard metrics (cached) ─────────────────────────────────────────────

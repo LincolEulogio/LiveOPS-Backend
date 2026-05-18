@@ -478,6 +478,8 @@ model TelemetryLog {
 
   @@index([productionId])
   @@index([timestamp])
+  // Composite: primary query pattern is WHERE productionId = ? AND timestamp >= ?
+  @@index([productionId, timestamp])
 }
 
 model ShowReport {

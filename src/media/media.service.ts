@@ -1,7 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AssetType, Prisma } from '@prisma/client';
 import { AiService } from '@/ai/ai.service';
+import { STORAGE_PROVIDER, StorageProvider } from './storage.provider';
+import { randomUUID } from 'crypto';
 
 export interface MediaAsset {
   id: string;
@@ -14,13 +16,28 @@ export interface MediaAsset {
   createdAt: Date;
 }
 
+export interface UploadSession {
+  sessionId: string;
+  productionId: string;
+  filename: string;
+  mimeType: string;
+  totalSize: number;
+  uploadedBytes: number;
+  status: 'pending' | 'uploading' | 'complete' | 'error';
+  createdAt: Date;
+}
+
 @Injectable()
 export class MediaService {
   private readonly logger = new Logger(MediaService.name);
 
+  /** In-memory upload session store. Replace with Redis for multi-instance deployments. */
+  private uploadSessions = new Map<string, UploadSession>();
+
   constructor(
     private prisma: PrismaService,
     private aiService: AiService,
+    @Inject(STORAGE_PROVIDER) private storageProvider: StorageProvider,
   ) {}
 
   async getAssets(productionId: string): Promise<MediaAsset[]> {
@@ -45,40 +62,50 @@ export class MediaService {
     mimeType: string;
     productionId: string;
   }) {
+    // Save immediately without waiting for AI — never block the upload on AI availability
+    const asset = await this.prisma.mediaAsset.create({ data });
+
+    // Kick off AI tagging in background — updates the asset when done
+    void this.tagAssetWithAi(asset.id, data.name, data.type, data.mimeType);
+
+    return asset;
+  }
+
+  private async tagAssetWithAi(
+    assetId: string,
+    name: string,
+    type: AssetType,
+    mimeType: string,
+  ): Promise<void> {
     try {
-      // Trigger AI Analysis in parallel to not block simple save
-      // but for now we'll wait for it to have tags ready on first load
-      const aiMetadata = await this.aiService.analyzeMediaAsset(
-        data.name,
-        data.type,
-        data.mimeType,
-      );
-
-      const thumbnailData = data.mimeType.startsWith('image/')
-        ? await this.generateThumbnail(data.url).catch(() => null)
-        : null;
-
-      return await this.prisma.mediaAsset.create({
+      const aiMetadata = await this.aiService.analyzeMediaAsset(name, type, mimeType);
+      await this.prisma.mediaAsset.update({
+        where: { id: assetId },
         data: {
-          ...data,
           tags: aiMetadata.tags,
           aiMetadata: aiMetadata as Prisma.InputJsonValue,
-          thumbnailUrl: thumbnailData,
         },
       });
-    } catch (err: unknown) {
-      this.logger.error(
-        `Failed to save asset: ${err instanceof Error ? err.message : String(err)}`,
+      this.logger.debug(`AI tagging complete for asset ${assetId}`);
+    } catch (err) {
+      // AI failure is non-fatal — the asset is already saved and usable
+      this.logger.warn(
+        `AI tagging failed for asset ${assetId}: ${err instanceof Error ? err.message : String(err)}`,
       );
-      // Fallback save without AI if it fails
-      return await this.prisma.mediaAsset.create({ data });
     }
   }
+
   async deleteAsset(id: string, productionId: string) {
     try {
-      return await this.prisma.mediaAsset.delete({
-        where: { id, productionId },
+      const asset = await this.prisma.mediaAsset.findFirst({ where: { id, productionId } });
+      if (!asset) throw new NotFoundException('Asset not found');
+
+      // Delete from storage via the abstracted provider
+      void this.storageProvider.deleteFile(asset.url).catch((err: unknown) => {
+        this.logger.warn(`Storage delete failed for ${asset.url}: ${err instanceof Error ? err.message : String(err)}`);
       });
+
+      return await this.prisma.mediaAsset.delete({ where: { id } });
     } catch (err: unknown) {
       this.logger.error(
         `Failed to delete asset ${id}: ${err instanceof Error ? err.message : String(err)}`,
@@ -87,8 +114,65 @@ export class MediaService {
     }
   }
 
-  private generateThumbnail(url: string): Promise<string | null> {
-    this.logger.debug(`Generating thumbnail for ${url}`);
-    return Promise.resolve(null);
+  // ─── Chunked upload session management ──────────────────────────────────────
+
+  /**
+   * Initiates a resumable upload session.
+   * The client uses the returned sessionId to track progress and resume on failure.
+   */
+  initiateUpload(data: {
+    productionId: string;
+    filename: string;
+    mimeType: string;
+    totalSize: number;
+  }): UploadSession {
+    const session: UploadSession = {
+      sessionId: randomUUID(),
+      ...data,
+      uploadedBytes: 0,
+      status: 'pending',
+      createdAt: new Date(),
+    };
+    this.uploadSessions.set(session.sessionId, session);
+
+    // Auto-expire after 24h
+    setTimeout(() => this.uploadSessions.delete(session.sessionId), 24 * 60 * 60 * 1_000);
+
+    this.logger.log(`Upload session initiated: ${session.sessionId} (${data.filename}, ${data.totalSize} bytes)`);
+    return session;
+  }
+
+  getUploadSession(sessionId: string): UploadSession | undefined {
+    return this.uploadSessions.get(sessionId);
+  }
+
+  updateUploadProgress(sessionId: string, uploadedBytes: number): UploadSession {
+    const session = this.uploadSessions.get(sessionId);
+    if (!session) throw new NotFoundException('Upload session not found');
+
+    session.uploadedBytes = uploadedBytes;
+    session.status = uploadedBytes >= session.totalSize ? 'complete' : 'uploading';
+    return session;
+  }
+
+  async completeUpload(
+    sessionId: string,
+    fileUrl: string,
+    type: AssetType,
+  ): Promise<MediaAsset> {
+    const session = this.uploadSessions.get(sessionId);
+    if (!session) throw new NotFoundException('Upload session not found');
+
+    session.status = 'complete';
+    this.uploadSessions.delete(sessionId);
+
+    return this.saveAsset({
+      name: session.filename,
+      url: fileUrl,
+      type,
+      size: session.totalSize,
+      mimeType: session.mimeType,
+      productionId: session.productionId,
+    });
   }
 }

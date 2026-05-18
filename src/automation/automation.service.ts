@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   CreateRuleDto,
@@ -8,12 +8,15 @@ import {
   ImportRulesDto,
   PaginationQueryDto,
   TriggerConditionNode,
+  TRIGGER_EVENT_TYPES,
+  ACTION_TYPES,
 } from '@/automation/dto/automation.dto';
 import { Prisma, Trigger } from '@prisma/client';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiService } from '@/ai/ai.service';
 import { AutomationEngineService } from '@/automation/automation-engine.service';
 import { AutomationConditionEvaluator } from '@/automation/automation-condition.evaluator';
+import { AuditService } from '@/common/services/audit.service';
 
 type ConditionValue = string | number | boolean | null;
 type EventPayload = Record<string, ConditionValue>;
@@ -26,6 +29,7 @@ export class AutomationService {
     private aiService: AiService,
     private engineService: AutomationEngineService,
     private conditionEvaluator: AutomationConditionEvaluator,
+    private auditService: AuditService,
   ) {}
 
   async getRules(productionId: string, query: PaginationQueryDto) {
@@ -65,35 +69,39 @@ export class AutomationService {
     return rule;
   }
 
+  private buildRuleData(productionId: string, dto: CreateRuleDto): Prisma.RuleCreateInput {
+    return {
+      production: { connect: { id: productionId } },
+      name: dto.name,
+      description: dto.description,
+      isEnabled: dto.isEnabled ?? true,
+      triggers: {
+        create: dto.triggers.map(
+          (t: CreateTriggerDto): Prisma.TriggerCreateWithoutRuleInput => ({
+            eventType: t.eventType,
+            condition: t.condition as Prisma.InputJsonValue ?? Prisma.JsonNull,
+          }),
+        ),
+      },
+      actions: {
+        create: dto.actions.map(
+          (a: CreateActionDto, idx: number): Prisma.ActionCreateWithoutRuleInput => ({
+            actionType: a.actionType,
+            payload: (a.payload !== undefined
+              ? { ...(a.payload as object), ...(a.delayMs ? { delayMs: a.delayMs } : {}) }
+              : a.delayMs
+                ? { delayMs: a.delayMs }
+                : {}) as Prisma.InputJsonValue,
+            order: a.order ?? idx,
+          }),
+        ),
+      },
+    };
+  }
+
   async createRule(productionId: string, dto: CreateRuleDto) {
     return this.prisma.rule.create({
-      data: {
-        productionId,
-        name: dto.name,
-        description: dto.description,
-        isEnabled: dto.isEnabled ?? true,
-        triggers: {
-          create: dto.triggers.map(
-            (t: CreateTriggerDto): Prisma.TriggerCreateWithoutRuleInput => ({
-              eventType: t.eventType,
-              condition: t.condition as Prisma.InputJsonValue ?? Prisma.JsonNull,
-            }),
-          ),
-        },
-        actions: {
-          create: dto.actions.map(
-            (a: CreateActionDto, idx: number): Prisma.ActionCreateWithoutRuleInput => ({
-              actionType: a.actionType,
-              payload: (a.payload !== undefined
-                ? { ...(a.payload as object), ...(a.delayMs ? { delayMs: a.delayMs } : {}) }
-                : a.delayMs
-                  ? { delayMs: a.delayMs }
-                  : {}) as Prisma.InputJsonValue,
-              order: a.order ?? idx,
-            }),
-          ),
-        },
-      },
+      data: this.buildRuleData(productionId, dto),
       include: { triggers: true, actions: { orderBy: { order: 'asc' } } },
     });
   }
@@ -101,12 +109,22 @@ export class AutomationService {
   async updateRule(id: string, productionId: string, dto: UpdateRuleFullDto) {
     const rule = await this.prisma.rule.findFirst({
       where: { id, productionId },
+      include: { triggers: true, actions: { orderBy: { order: 'asc' } } },
     });
     if (!rule) throw new NotFoundException('Rule not found');
 
+    // Snapshot before state for audit trail
+    const before = {
+      name: rule.name,
+      description: rule.description,
+      isEnabled: rule.isEnabled,
+      triggers: rule.triggers.map((t) => ({ eventType: t.eventType, condition: t.condition })),
+      actions: rule.actions.map((a) => ({ actionType: a.actionType, payload: a.payload, order: a.order })),
+    };
+
     const { triggers, actions, ...basicData } = dto;
 
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       if (triggers !== undefined) {
         await tx.trigger.deleteMany({ where: { ruleId: id } });
       }
@@ -150,6 +168,22 @@ export class AutomationService {
         },
       });
     });
+
+    void this.auditService.log({
+      productionId,
+      action: 'RULE_UPDATED',
+      details: {
+        ruleId: id,
+        before,
+        after: {
+          ...basicData,
+          triggers: triggers?.map((t) => ({ eventType: t.eventType, condition: t.condition })),
+          actions: actions?.map((a, i) => ({ actionType: a.actionType, order: a.order ?? i })),
+        },
+      },
+    });
+
+    return updated;
   }
 
   async deleteRule(id: string, productionId: string) {
@@ -277,11 +311,16 @@ export class AutomationService {
   }
 
   /**
-   * Imports a list of rule definitions, creating them under the given production.
+   * Imports rules atomically — all-or-nothing. If any rule fails, none are created.
    */
   async importRules(productionId: string, dto: ImportRulesDto) {
-    const created = await Promise.all(
-      dto.rules.map((rule) => this.createRule(productionId, rule)),
+    const created = await this.prisma.$transaction(
+      dto.rules.map((rule) =>
+        this.prisma.rule.create({
+          data: this.buildRuleData(productionId, rule),
+          include: { triggers: true, actions: { orderBy: { order: 'asc' } } },
+        }),
+      ),
     );
     return { imported: created.length, rules: created };
   }
@@ -295,22 +334,29 @@ export class AutomationService {
   }
 
   async runRuleManual(productionId: string, ruleId: string) {
-    const rule = await this.prisma.rule.findFirst({
-      where: { id: ruleId, productionId },
-    });
-    if (!rule) throw new NotFoundException('Rule not found');
-
-    this.eventEmitter.emit('manual.trigger', {
-      productionId,
-      ruleId,
-      isManual: true,
-    });
-
-    return { success: true, message: `Macro "${rule.name}" triggered` };
+    // Awaits real execution — returns actual result instead of fire-and-forget
+    return this.engineService.executeRuleById(ruleId, productionId);
   }
 
   async generateRuleAi(productionId: string, prompt: string) {
     const macro = await this.aiService.generateAutomationMacro(prompt);
+
+    // Validate AI output against allowed types before touching the DB
+    const invalidTriggers = macro.triggers.filter(
+      (t) => !TRIGGER_EVENT_TYPES.includes(t.eventType as (typeof TRIGGER_EVENT_TYPES)[number]),
+    );
+    const invalidActions = macro.actions.filter(
+      (a) => !ACTION_TYPES.includes(a.actionType as (typeof ACTION_TYPES)[number]),
+    );
+
+    if (invalidTriggers.length > 0 || invalidActions.length > 0) {
+      throw new BadRequestException(
+        `La IA generó tipos no permitidos. ` +
+          (invalidTriggers.length ? `Triggers inválidos: ${invalidTriggers.map((t) => t.eventType).join(', ')}. ` : '') +
+          (invalidActions.length ? `Actions inválidas: ${invalidActions.map((a) => a.actionType).join(', ')}.` : ''),
+      );
+    }
+
     return this.createRule(productionId, macro as unknown as CreateRuleDto);
   }
 }

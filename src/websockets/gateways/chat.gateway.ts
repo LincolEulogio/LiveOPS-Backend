@@ -15,7 +15,7 @@ import type {
   SocialCommentPayload,
 } from '@/websockets/types/socket.types';
 
-@WebSocketGateway()
+@WebSocketGateway({ namespace: '/chat' })
 @UseGuards(WsAuthGuard)
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class ChatGateway {

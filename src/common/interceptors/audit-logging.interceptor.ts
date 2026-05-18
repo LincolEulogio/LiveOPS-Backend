@@ -5,9 +5,11 @@ import {
   CallHandler,
   Logger,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AuditService } from '@/common/services/audit.service';
+import { SKIP_AUDIT_KEY } from '@/common/decorators/skip-audit.decorator';
 
 interface AuditRequest {
   method: string;
@@ -24,9 +26,18 @@ interface AuditRequest {
 export class AuditLoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger('AuditInterceptor');
 
-  constructor(private auditService: AuditService) {}
+  constructor(
+    private auditService: AuditService,
+    private reflector: Reflector,
+  ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const skipAudit = this.reflector.getAllAndOverride<boolean>(SKIP_AUDIT_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (skipAudit) return next.handle();
+
     const request = context.switchToHttp().getRequest<AuditRequest>();
     const method = request.method;
     const url = request.url;
@@ -36,7 +47,7 @@ export class AuditLoggingInterceptor implements NestInterceptor {
     const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
     if (!isMutation) return next.handle();
 
-    // Skip non-critical or repetitive paths if needed
+    // Skip non-critical or repetitive paths
     if (
       url.includes('/telemetry') ||
       url.includes('/health') ||

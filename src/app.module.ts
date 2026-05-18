@@ -44,7 +44,8 @@ import { SportsModule } from '@/sports/sports.module';
     HealthModule,
     CacheModule.register({
       isGlobal: true,
-      ttl: 60000,
+      // No default TTL — each service must pass its own TTL to cache.set().
+      // Recommended constants: CACHE_TTL_PRESENCE=5s, CACHE_TTL_ANALYTICS=300s, CACHE_TTL_PROFILE=3600s
     }),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -66,12 +67,15 @@ import { SportsModule } from '@/sports/sports.module';
       },
     }),
     ThrottlerModule.forRoot([
-      {
-        ttl: 60000,
-        limit: 1000,
-      },
+      { name: 'short', ttl: 1000, limit: 3 },    // burst protection
+      { name: 'medium', ttl: 10000, limit: 20 }, // general API
+      { name: 'auth', ttl: 60000, limit: 10 },   // auth routes
     ]),
-    EventEmitterModule.forRoot({ wildcard: true }),
+    EventEmitterModule.forRoot({
+      wildcard: true,
+      maxListeners: 20,
+      ignoreErrors: false,
+    }),
     WebsocketsModule,
     AuthModule,
     ProductionsModule,
@@ -110,6 +114,12 @@ import { SportsModule } from '@/sports/sports.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(ProductionMiddleware).forRoutes('*');
+    consumer
+      .apply(ProductionMiddleware)
+      .exclude(
+        'api/v1/health(.*)',
+        'api/v1/auth(.*)',
+      )
+      .forRoutes('*');
   }
 }

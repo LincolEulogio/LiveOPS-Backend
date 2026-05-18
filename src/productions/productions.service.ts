@@ -257,6 +257,17 @@ export class ProductionsService {
   }
 
   async remove(productionId: string) {
+    const production = await this.prisma.production.findFirst({
+      where: { id: productionId, deletedAt: null },
+    });
+    if (!production) throw new NotFoundException('Production not found');
+
+    if (production.status === 'ACTIVE') {
+      throw new ConflictException(
+        'No se puede eliminar una producción activa. Archívala primero.',
+      );
+    }
+
     const result = await this.prisma.production.update({
       where: { id: productionId },
       data: { deletedAt: new Date() },
@@ -269,6 +280,37 @@ export class ProductionsService {
     });
 
     return result;
+  }
+
+  /** Recovers a soft-deleted production. Only SUPERADMIN should call this. */
+  async restore(productionId: string, userId: string) {
+    const production = await this.prisma.production.findFirst({
+      where: { id: productionId, deletedAt: { not: null } },
+    });
+    if (!production) throw new NotFoundException('Deleted production not found');
+
+    const result = await this.prisma.production.update({
+      where: { id: productionId },
+      data: { deletedAt: null, status: 'DRAFT' },
+    });
+
+    void this.auditService.log({
+      productionId,
+      userId,
+      action: 'PRODUCTION_RESTORE',
+      details: { name: result.name },
+    });
+
+    return result;
+  }
+
+  /** Returns soft-deleted productions — SUPERADMIN only. */
+  async findDeleted(tenantId: string) {
+    return this.prisma.production.findMany({
+      where: { deletedAt: { not: null }, tenantId },
+      orderBy: { deletedAt: 'desc' },
+      select: { id: true, name: true, deletedAt: true, status: true, engineType: true },
+    });
   }
 
   async getHistory(productionId: string, query: PaginationQueryDto) {

@@ -4,7 +4,9 @@ import {
   ConflictException,
   BadRequestException,
   ForbiddenException,
+  InternalServerErrorException,
 } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -58,19 +60,29 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    await this.usersService.seedDefaultRoles();
-
+    // seedDefaultRoles() runs at module init — no need to call it per registration
     const existingUserCount = await this.prisma.user.count();
-    const assignedRoleName = existingUserCount === 0 ? Role.SUPERADMIN : Role.VIEWER;
+    const isFirstUser = existingUserCount === 0;
+    const assignedRoleName = isFirstUser ? Role.SUPERADMIN : Role.VIEWER;
     const assignedRole = await this.prisma.role.findUnique({ where: { name: assignedRoleName } });
 
-    if (!assignedRole) throw new Error(`Role ${assignedRoleName} not found after seeding`);
+    if (!assignedRole) throw new InternalServerErrorException(`Role ${assignedRoleName} not found`);
 
-    const tenant = await this.prisma.tenant.create({
-      data: { name: `${dto.name ?? email.split('@')[0]}'s Workspace` },
-    });
+    // First user creates the org tenant; all subsequent users join that tenant.
+    let tenantId: string;
+    if (isFirstUser) {
+      const tenant = await this.prisma.tenant.create({
+        data: { name: `${dto.name ?? email.split('@')[0]}'s Workspace` },
+      });
+      tenantId = tenant.id;
+    } else {
+      const defaultTenant = await this.prisma.tenant.findFirst({ orderBy: { createdAt: 'asc' } });
+      if (!defaultTenant) throw new InternalServerErrorException('No tenant found');
+      tenantId = defaultTenant.id;
+    }
 
-    const verificationToken = String(Math.floor(100000 + Math.random() * 900000));
+    // Cryptographically secure verification token (not bruteforceable)
+    const verificationToken = randomBytes(32).toString('hex');
 
     const user = await this.prisma.user.create({
       data: {
@@ -78,7 +90,7 @@ export class AuthService {
         password: hashedPassword,
         name: dto.name,
         globalRoleId: assignedRole.id,
-        tenantId: tenant.id,
+        tenantId,
         isVerified: false,
         verificationToken,
       },
@@ -92,12 +104,8 @@ export class AuthService {
       details: { email: user.email, name: user.name },
     });
 
-    const tokens = await this.tokenService.generateTokens(user.id, user.tenantId);
-    const fullUser = await this.prisma.user.findUnique({
-      where: { id: user.id },
-      select: USER_SELECT,
-    });
-    return { user: fullUser, ...tokens };
+    // Do NOT issue tokens until email is verified — prevents unverified API access
+    return { message: 'Registro exitoso. Verifica tu correo para continuar.' };
   }
 
   async login(
@@ -180,13 +188,29 @@ export class AuthService {
 
     const session = await this.prisma.session.findUnique({ where: { refreshToken } });
 
-    if (!session || session.isRevoked || session.expiresAt < new Date()) {
+    if (!session || session.expiresAt < new Date()) {
       throw new UnauthorizedException('La sesión ha expirado o es inválida');
+    }
+
+    // Token reuse detected — someone is using an already-rotated token.
+    // Revoke ALL sessions for this user and force re-login.
+    if (session.isRevoked) {
+      await this.prisma.session.updateMany({
+        where: { userId: session.userId, isRevoked: false },
+        data: { isRevoked: true },
+      });
+      void this.auditService.log({
+        userId: session.userId,
+        action: 'REFRESH_TOKEN_REUSE_DETECTED',
+        ipAddress,
+        details: { userAgent, note: 'All sessions revoked due to token reuse (possible theft)' },
+      });
+      throw new UnauthorizedException('Sesión inválida. Por seguridad, cierra sesión y vuelve a iniciar.');
     }
 
     const user = await this.prisma.user.findUnique({ where: { id: session.userId } });
 
-    // Token rotation — revoke old session
+    // Token rotation — revoke the consumed session
     await this.prisma.session.update({
       where: { id: session.id },
       data: { isRevoked: true },

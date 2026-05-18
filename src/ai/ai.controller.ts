@@ -24,6 +24,15 @@ export class AiController {
     return { suggestion };
   }
 
+  /** Streaming variant — recommended for long suggestions to avoid 30s+ wait. */
+  @Post('suggest-script/stream')
+  @Permissions('production:manage')
+  streamSuggestScript(
+    @Body() body: { title: string; content: string },
+  ): Response {
+    return this.aiService.streamSuggestScript(body.title, body.content).toTextStreamResponse();
+  }
+
   @Post('generate-briefing')
   @Permissions('production:view')
   async generateBriefing(
@@ -31,6 +40,15 @@ export class AiController {
   ): Promise<{ briefing: string }> {
     const briefing = await this.aiService.generateBriefing(body);
     return { briefing };
+  }
+
+  /** Streaming variant — recommended for real-time briefing delivery. */
+  @Post('generate-briefing/stream')
+  @Permissions('production:view')
+  streamBriefing(
+    @Body() body: { social: string; telemetry: string; script: string },
+  ): Response {
+    return this.aiService.streamBriefing(body).toTextStreamResponse();
   }
 
   @Post('chat')

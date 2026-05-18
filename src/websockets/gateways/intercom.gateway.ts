@@ -16,7 +16,7 @@ import type { AuthenticatedSocket, IntercomCommandPayload } from '@/websockets/t
 
 const RATE_LIMIT_MS = 1_000;
 
-@WebSocketGateway()
+@WebSocketGateway({ namespace: '/intercom' })
 @UseGuards(WsAuthGuard)
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class IntercomGateway {

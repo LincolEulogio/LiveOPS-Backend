@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Interval } from '@nestjs/schedule';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -10,6 +10,9 @@ import { ConditionValue, EventPayload, RuleWithActions } from './automation-engi
 @Injectable()
 export class AutomationEngineService {
   private readonly logger = new Logger(AutomationEngineService.name);
+
+  /** Guards against concurrent execution of the same rule (event storms, race conditions). */
+  private readonly executingRules = new Set<string>();
 
   constructor(
     private prisma: PrismaService,
@@ -168,9 +171,34 @@ export class AutomationEngineService {
     }
   }
 
+  // ─── Public execution API ─────────────────────────────────────────────────
+
+  /** Executes a rule by ID and awaits completion — use this instead of fire-and-forget events. */
+  async executeRuleById(
+    ruleId: string,
+    productionId: string,
+  ): Promise<{ success: boolean; ruleName: string; status: string }> {
+    const rule = await this.prisma.rule.findFirst({
+      where: { id: ruleId, productionId },
+      include: { triggers: true, actions: { orderBy: { order: 'asc' } } },
+    });
+    if (!rule) throw new NotFoundException('Rule not found');
+
+    await this.executeActions(rule as RuleWithActions, { productionId, isManual: true });
+    return { success: true, ruleName: rule.name, status: 'executed' };
+  }
+
   // ─── Action orchestration ─────────────────────────────────────────────────
 
   private async executeActions(rule: RuleWithActions, eventPayload: EventPayload) {
+    if (this.executingRules.has(rule.id)) {
+      this.logger.warn(
+        `Rule "${rule.name}" (${rule.id}) already executing — skipping concurrent trigger`,
+      );
+      return;
+    }
+
+    this.executingRules.add(rule.id);
     try {
       this.logger.log(
         `Starting execution of ${rule.actions.length} actions for rule "${rule.name}"`,
@@ -208,6 +236,8 @@ export class AutomationEngineService {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Rule execution failed for rule ${rule.id}: ${message}`);
       await this.logExecution(rule.id, rule.productionId, 'ERROR', message);
+    } finally {
+      this.executingRules.delete(rule.id);
     }
   }
 

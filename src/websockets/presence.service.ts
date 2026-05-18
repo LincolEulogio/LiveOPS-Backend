@@ -7,17 +7,26 @@ export interface UserPresence extends PresenceMember {
   status: string;
 }
 
+const RECONNECT_GRACE_MS = 15_000;
+
 @Injectable()
 export class PresenceService {
   private readonly logger = new Logger(PresenceService.name);
   private server: Server | null = null;
-  // clientId (socketId) -> Presence data
+
   private activeSockets: Map<string, UserPresence> = new Map();
-  // userId -> Set of clientIds (socketIds)
-  // A user can be connected from multiple devices/tabs
   private userToSockets: Map<string, Set<string>> = new Map();
-  // productionId -> Set of clientIds (socketIds)
   private productionToSockets: Map<string, Set<string>> = new Map();
+
+  /**
+   * Grace window for reconnecting users. If a user reconnects within
+   * RECONNECT_GRACE_MS after disconnect, their presence is restored and
+   * they are NOT marked OFFLINE.
+   */
+  private reconnecting: Map<
+    string, // userId
+    { timer: ReturnType<typeof setTimeout>; lastPresence: UserPresence; productionId?: string }
+  > = new Map();
 
   setServer(server: Server): void {
     this.server = server;
@@ -30,6 +39,16 @@ export class PresenceService {
   }
 
   upsertPresence(clientId: string, data: UserPresence, productionId?: string) {
+    // Cancel any pending reconnect timer for this user
+    if (data.userId) {
+      const pending = this.reconnecting.get(data.userId);
+      if (pending) {
+        clearTimeout(pending.timer);
+        this.reconnecting.delete(data.userId);
+        this.logger.log(`User ${data.userId} reconnected within grace period — presence restored`);
+      }
+    }
+
     this.activeSockets.set(clientId, {
       ...data,
       lastSeen: new Date().toISOString(),
@@ -54,6 +73,10 @@ export class PresenceService {
     this.productionToSockets.get(productionId)!.add(clientId);
   }
 
+  /**
+   * Starts a grace-period timer instead of immediately removing presence.
+   * If the user reconnects within RECONNECT_GRACE_MS, the OFFLINE broadcast is skipped.
+   */
   removePresence(clientId: string) {
     const data = this.activeSockets.get(clientId);
     if (data) {
@@ -61,19 +84,45 @@ export class PresenceService {
         const sockets = this.userToSockets.get(data.userId);
         if (sockets) {
           sockets.delete(clientId);
-          if (sockets.size === 0) this.userToSockets.delete(data.userId);
+          if (sockets.size === 0) {
+            this.userToSockets.delete(data.userId);
+            // Start grace period before broadcasting OFFLINE
+            this.startReconnectGrace(data.userId, data, this.getProductionForSocket(clientId));
+          }
         }
       }
       this.activeSockets.delete(clientId);
     }
 
-    // Also remove from production sets (cleanup)
     for (const [pid, sockets] of this.productionToSockets.entries()) {
       if (sockets.has(clientId)) {
         sockets.delete(clientId);
         if (sockets.size === 0) this.productionToSockets.delete(pid);
       }
     }
+  }
+
+  private startReconnectGrace(userId: string, lastPresence: UserPresence, productionId?: string) {
+    // Clear any existing timer for this user
+    const existing = this.reconnecting.get(userId);
+    if (existing) clearTimeout(existing.timer);
+
+    const timer = setTimeout(() => {
+      this.reconnecting.delete(userId);
+      this.logger.warn(`User ${userId} grace period expired — broadcasting OFFLINE`);
+      if (productionId) {
+        this.broadcastToProduction(productionId);
+      }
+    }, RECONNECT_GRACE_MS);
+
+    this.reconnecting.set(userId, { timer, lastPresence, productionId });
+  }
+
+  private getProductionForSocket(clientId: string): string | undefined {
+    for (const [pid, sockets] of this.productionToSockets.entries()) {
+      if (sockets.has(clientId)) return pid;
+    }
+    return undefined;
   }
 
   getSocketIdsForUser(userId: string): string[] {
@@ -83,15 +132,24 @@ export class PresenceService {
 
   getPresenceForProduction(productionId: string): UserPresence[] {
     const socketIds = this.productionToSockets.get(productionId);
-    if (!socketIds) return [];
-
     const uniqueMembers = new Map<string, UserPresence>();
-    for (const sid of socketIds) {
-      const data = this.activeSockets.get(sid);
-      if (data && data.userId) {
-        uniqueMembers.set(data.userId, data);
+
+    if (socketIds) {
+      for (const sid of socketIds) {
+        const data = this.activeSockets.get(sid);
+        if (data && data.userId) {
+          uniqueMembers.set(data.userId, data);
+        }
       }
     }
+
+    // Also include users currently in grace period (show as RECONNECTING)
+    for (const [userId, pending] of this.reconnecting.entries()) {
+      if (pending.productionId === productionId && !uniqueMembers.has(userId)) {
+        uniqueMembers.set(userId, { ...pending.lastPresence, status: 'RECONNECTING' });
+      }
+    }
+
     return Array.from(uniqueMembers.values());
   }
 

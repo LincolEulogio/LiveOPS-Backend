@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '@/prisma/prisma.service';
 import { MailerService } from '@/common/services/mailer.service';
 
@@ -36,7 +37,7 @@ export class EmailVerificationService {
       return { message: 'Si la cuenta existe, se ha enviado un enlace de verificación.' };
     }
 
-    const verificationToken = String(Math.floor(100000 + Math.random() * 900000));
+    const verificationToken = randomBytes(32).toString('hex');
     await this.prisma.user.update({
       where: { id: user.id },
       data: { verificationToken },

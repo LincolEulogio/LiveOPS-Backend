@@ -13,7 +13,7 @@ import type { NdiSource } from '@/websockets/types/socket.types';
 
 type TallyState = 'PROGRAM' | 'PREVIEW' | 'IDLE';
 
-@WebSocketGateway()
+@WebSocketGateway({ namespace: '/obs' })
 @UseGuards(WsAuthGuard)
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class ObsGateway {

@@ -1,7 +1,8 @@
-import { generateObject } from 'ai';
+import { generateObject, streamText } from 'ai';
 import { z } from 'zod';
 import { Injectable } from '@nestjs/common';
 import { AiCoreService } from './ai-core.service';
+import { sanitizePromptInput } from './prompt-sanitizer';
 
 export interface SeoPackage {
   youtube: { title: string; description: string; tags: string[] };
@@ -20,13 +21,16 @@ export class AiContentService {
   constructor(private core: AiCoreService) {}
 
   async suggestScriptContent(title: string, currentContent: string): Promise<string> {
+    const safeTitle = sanitizePromptInput(title, 200);
+    const safeContent = sanitizePromptInput(currentContent, 1_000);
+
     const prompt = `
       Eres un asistente de producción creativa para un programa en vivo.
       Basado en el título del bloque y el contenido actual, genera 3 puntos clave (talking points)
       y una sugerencia de acción de cámara o visual para este segmento.
 
-      Segmento: "${title}"
-      Notas Actuales: "${currentContent}"
+      Segmento: "${safeTitle}"
+      Notas Actuales: "${safeContent}"
 
       Instrucciones:
       1. Sé conciso, directo y profesional.
@@ -47,9 +51,9 @@ export class AiContentService {
       Eres LIVIA, la IA de control de dirección de LiveOPS.
       Analiza el estado actual de la producción:
 
-      - Social: ${data.social}
-      - Telemetría: ${data.telemetry}
-      - Guion: ${data.script}
+      - Social: ${sanitizePromptInput(data.social, 500)}
+      - Telemetría: ${sanitizePromptInput(data.telemetry, 500)}
+      - Guion: ${sanitizePromptInput(data.script, 1_000)}
 
       Instrucciones:
       1. Genera un "Short Briefing" (3-4 líneas) sobre cómo va el show.
@@ -72,9 +76,9 @@ export class AiContentService {
     const prompt = `Genera un paquete de SEO y redes sociales para la producción terminada.
 
         Datos del Show:
-        - Título: ${data.name}
-        - Duración: ${data.duration}
-        - Temas tratados: ${data.topics}
+        - Título: ${sanitizePromptInput(data.name, 150)}
+        - Duración: ${sanitizePromptInput(data.duration, 50)}
+        - Temas tratados: ${sanitizePromptInput(data.topics, 500)}
 
         Responde SOLO en JSON:
         {
@@ -101,6 +105,23 @@ export class AiContentService {
     } catch {
       return { error: 'No se pudo generar el SEO' };
     }
+  }
+
+  /** Streaming variant — use for long-form generation to avoid perceived timeouts. */
+  streamSuggestScriptContent(title: string, currentContent: string): ReturnType<typeof streamText> {
+    const safeTitle = sanitizePromptInput(title, 200);
+    const safeContent = sanitizePromptInput(currentContent, 1_000);
+    return streamText({
+      model: this.core.getModel(),
+      prompt: `Eres un asistente de producción creativa. Genera 3 puntos clave y una sugerencia visual para el segmento "${safeTitle}". Notas: "${safeContent}". Responde en Español.`,
+    });
+  }
+
+  streamBriefing(data: { social: string; telemetry: string; script: string }): ReturnType<typeof streamText> {
+    return streamText({
+      model: this.core.getModel(),
+      prompt: `Eres LIVIA. Genera un Short Briefing ejecutivo.\n- Social: ${sanitizePromptInput(data.social, 500)}\n- Telemetría: ${sanitizePromptInput(data.telemetry, 500)}\n- Guion: ${sanitizePromptInput(data.script, 1_000)}\nFormato: STATUS / ALERTS / MOOD / NEXT. Español.`,
+    });
   }
 
   async suggestScriptHighlights(

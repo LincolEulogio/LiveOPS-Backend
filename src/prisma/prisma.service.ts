@@ -17,11 +17,29 @@ type MutationArgs = {
   data: Record<string, unknown> | Record<string, unknown>[];
 };
 
+/**
+ * Models that use soft-delete (deletedAt field).
+ * Hard-deletes on these are blocked at the ORM level to prevent accidental cascade data loss.
+ */
+const SOFT_DELETE_MODELS = ['Production'];
+
 function buildTenantExtension(base: PrismaClient) {
   return base.$extends({
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
+          // Guard: block hard-deletes on soft-delete models
+          if (SOFT_DELETE_MODELS.includes(model) && operation === 'delete') {
+            throw new Error(
+              `Hard delete on "${model}" is blocked. Use soft-delete (set deletedAt) to preserve related data and audit trail.`,
+            );
+          }
+          if (SOFT_DELETE_MODELS.includes(model) && operation === 'deleteMany') {
+            throw new Error(
+              `Hard deleteMany on "${model}" is blocked. Use bulk soft-delete instead.`,
+            );
+          }
+
           const tenantId = TenantContext.getTenantId();
 
           if (tenantId && TENANT_MODELS.includes(model)) {

@@ -125,6 +125,24 @@ export class ProductionsController {
     return result;
   }
 
+  /** Recovers a soft-deleted production. Resets status to DRAFT. SUPERADMIN only. */
+  @Post(':id/restore')
+  @Roles(Role.SUPERADMIN)
+  @Permissions('production:manage')
+  async restore(@Param('id') id: string, @Req() req: RequestWithUser) {
+    const result = await this.productionsService.restore(id, req.user.userId);
+    await this.cacheManager.del('productions_list');
+    return result;
+  }
+
+  /** Returns soft-deleted productions for this tenant. SUPERADMIN only. */
+  @Get('deleted/list')
+  @Roles(Role.SUPERADMIN)
+  @Permissions('production:manage')
+  findDeleted(@Req() req: RequestWithUser) {
+    return this.productionsService.findDeleted(req.user.tenantId);
+  }
+
   @Post(':id/clone')
   @Roles(Role.ADMIN, Role.SUPERADMIN)
   @Permissions('production:create')

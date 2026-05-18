@@ -1,11 +1,11 @@
 node_modules
-# Keep environment variables out of version control
+# Keep real credentials out of version control.
+# .env.example IS committed — it has placeholder values only.
 .env
 .env.local
 .env.production
 .env.development
 .env.test
-.env.example
 /node_modules
 /dist
 /build

@@ -11,7 +11,7 @@ import { ScriptService } from '@/script/script.service';
 import { WsAuthGuard } from '@/websockets/guards/ws-auth.guard';
 import type { AuthenticatedSocket } from '@/websockets/types/socket.types';
 
-@WebSocketGateway()
+@WebSocketGateway({ namespace: '/script' })
 @UseGuards(WsAuthGuard)
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class ScriptGateway {
