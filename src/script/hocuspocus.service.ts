@@ -6,8 +6,10 @@ import {
 } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
+// @ts-ignore — ESM-only package, loaded correctly at runtime by Node.js via SWC
 import { Server, onConnectPayload } from '@hocuspocus/server';
 import { PrismaService } from '@/prisma/prisma.service';
+// @ts-ignore — ESM-only package, loaded correctly at runtime by Node.js via SWC
 import * as Y from 'yjs';
 import Redis from 'ioredis';
 

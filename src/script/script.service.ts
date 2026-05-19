@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+// @ts-ignore — ESM-only package, loaded correctly at runtime by Node.js via SWC
 import * as Y from 'yjs';
 
 /** Minimum interval between history snapshots per production (ms). */
