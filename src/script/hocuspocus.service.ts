@@ -42,7 +42,7 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.server = new Server({
-      port: 1234,
+      port: this.configService.get<number>('HOCUSPOCUS_PORT', 1234),
 
       onLoadDocument: async (data) => {
         const { documentName } = data;
@@ -101,8 +101,22 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
       },
     });
 
-    await this.server.listen();
-    this.logger.log('Hocuspocus Collaboration Server active on port 1234');
+    const port = this.configService.get<number>('HOCUSPOCUS_PORT', 1234);
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      try {
+        await this.server.listen();
+        this.logger.log(`Hocuspocus Collaboration Server active on port ${port}`);
+        return;
+      } catch (err: unknown) {
+        const isAddrInUse = (err as NodeJS.ErrnoException).code === 'EADDRINUSE';
+        if (isAddrInUse && attempt < 5) {
+          this.logger.warn(`Port ${port} in use, retrying in ${attempt}s... (attempt ${attempt}/5)`);
+          await new Promise((r) => setTimeout(r, attempt * 1000));
+        } else {
+          throw err;
+        }
+      }
+    }
   }
 
   /**

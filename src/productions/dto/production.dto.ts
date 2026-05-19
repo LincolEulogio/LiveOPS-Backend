@@ -81,6 +81,16 @@ export class CreateProductionDto {
   @IsOptional()
   status?: ProductionStatus;
 
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ObsConfigDto)
+  obsConfig?: ObsConfigDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => VmixConfigDto)
+  vmixConfig?: VmixConfigDto;
+
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })

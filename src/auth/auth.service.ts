@@ -6,7 +6,6 @@ import {
   ForbiddenException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { randomBytes } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -81,18 +80,19 @@ export class AuthService {
       tenantId = defaultTenant.id;
     }
 
-    // Cryptographically secure verification token (not bruteforceable)
-    const verificationToken = randomBytes(32).toString('hex');
+    const verificationToken = String(Math.floor(100000 + Math.random() * 900000));
+    const verificationExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     const user = await this.prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name: dto.name,
-        globalRoleId: assignedRole.id,
-        tenantId,
+        globalRole: { connect: { id: assignedRole.id } },
+        tenant: { connect: { id: tenantId } },
         isVerified: false,
         verificationToken,
+        verificationExpiresAt,
       },
     });
 

@@ -97,7 +97,7 @@ export class MailerService {
 
   async sendVerificationEmail(email: string, token: string) {
     const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:4000';
     const verifyLink = `${frontendUrl}/verify-account`;
 
     // Format code with a space in the middle for readability: 123 456
@@ -157,7 +157,7 @@ export class MailerService {
 
   async sendPasswordResetEmail(email: string, token: string) {
     const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:4000';
     const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
     this.logger.log(`[MAILER] Sending password reset email to: ${email}`);

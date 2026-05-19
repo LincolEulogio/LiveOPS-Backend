@@ -1,7 +1,12 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { randomBytes } from 'crypto';
 import { PrismaService } from '@/prisma/prisma.service';
 import { MailerService } from '@/common/services/mailer.service';
+
+const CODE_EXPIRY_MINUTES = 15;
+
+function generateSixDigitCode(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
 
 @Injectable()
 export class EmailVerificationService {
@@ -15,11 +20,15 @@ export class EmailVerificationService {
       where: { verificationToken: token },
     });
 
-    if (!user) throw new BadRequestException('Token de verificación inválido');
+    if (!user) throw new BadRequestException('Código de verificación inválido.');
+
+    if (user.verificationExpiresAt && user.verificationExpiresAt < new Date()) {
+      throw new BadRequestException('El código ha expirado. Solicita uno nuevo.');
+    }
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { isVerified: true, verificationToken: null },
+      data: { isVerified: true, verificationToken: null, verificationExpiresAt: null },
     });
 
     return {
@@ -34,18 +43,20 @@ export class EmailVerificationService {
     });
 
     if (!user || user.isVerified) {
-      return { message: 'Si la cuenta existe, se ha enviado un enlace de verificación.' };
+      return { message: 'Si la cuenta existe, se ha enviado un código de verificación.' };
     }
 
-    const verificationToken = randomBytes(32).toString('hex');
+    const verificationToken = generateSixDigitCode();
+    const verificationExpiresAt = new Date(Date.now() + CODE_EXPIRY_MINUTES * 60 * 1000);
+
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { verificationToken },
+      data: { verificationToken, verificationExpiresAt },
     });
 
     await this.mailerService.sendVerificationEmail(user.email, verificationToken);
 
-    return { message: 'Si la cuenta existe, se ha enviado un enlace de verificación.' };
+    return { message: 'Si la cuenta existe, se ha enviado un código de verificación.' };
   }
 
   async checkSetup() {
