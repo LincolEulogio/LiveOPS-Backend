@@ -20,6 +20,8 @@ interface GuestSlotConfig {
   obsScene?: string;
   status?: GuestSlotStatus;
   returnFeed?: GuestReturnFeed;
+  ifbVolume?: number;           // 0.0-1.0 — how loud the studio sounds in the reporter's ear when IFB is active
+  programReturnVolume?: number; // 0.0-1.0 — base program mix volume in the reporter's ear
 }
 
 interface GuestSlotConfigEnvelope {
@@ -249,6 +251,26 @@ export class GuestService {
     });
   }
 
+  async listInvitations(productionId: string) {
+    const production = await this.prisma.production.findUnique({
+      where: { id: productionId },
+    });
+    if (!production) throw new NotFoundException('Producción no encontrada');
+
+    return this.prisma.guestInvitation.findMany({
+      where: { productionId, status: { not: 'USED' } },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        token: true,
+        guestName: true,
+        status: true,
+        expiresAt: true,
+        createdAt: true,
+      },
+    });
+  }
+
   async getGuestSlots(productionId: string) {
     const production = await this.prisma.production.findUnique({
       where: { id: productionId },
@@ -287,6 +309,8 @@ export class GuestService {
         obsScene: cfg.obsScene ?? `GUEST_${slotOrder}`,
         status: cfg.status ?? 'FREE',
         returnFeed: cfg.returnFeed ?? 'CONTROL',
+        ifbVolume: cfg.ifbVolume ?? 0.8,
+        programReturnVolume: cfg.programReturnVolume ?? 0.3,
         engineType: production.engineType,
       };
     });
@@ -300,6 +324,8 @@ export class GuestService {
       obsScene?: string;
       status?: GuestSlotStatus;
       returnFeed?: GuestReturnFeed;
+      ifbVolume?: number;
+      programReturnVolume?: number;
     },
   ) {
     const invitation = await this.prisma.guestInvitation.findFirst({
@@ -325,12 +351,14 @@ export class GuestService {
     const slots = await this.getGuestSlots(productionId);
     const updatedSlot = slots.find((s) => s.slotId === slotId);
 
-    if (patch.returnFeed && updatedSlot) {
+    if ((patch.returnFeed || patch.ifbVolume !== undefined || patch.programReturnVolume !== undefined) && updatedSlot) {
       this.eventEmitter.emit('guest.returnfeed.updated', {
         productionId,
         slotId,
         participantIdentity: updatedSlot.participantIdentity,
         returnFeed: updatedSlot.returnFeed,
+        ifbVolume: updatedSlot.ifbVolume,
+        programReturnVolume: updatedSlot.programReturnVolume,
         updatedAt: new Date().toISOString(),
       });
     }

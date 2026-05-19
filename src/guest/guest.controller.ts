@@ -2,6 +2,7 @@
   Controller,
   Post,
   Get,
+  Delete,
   Param,
   Body,
   Patch,
@@ -32,6 +33,23 @@ export class GuestController {
     return { token: lkToken, url: this.liveKitService.getLiveKitUrl() };
   }
 
+  @Get('productions/:id/guests/invitations')
+  @Protected()
+  @Permissions('streaming:view')
+  async listInvitations(@Param('id') productionId: string) {
+    return this.guestService.listInvitations(productionId);
+  }
+
+  @Delete('productions/:id/guests/:invitationId')
+  @Protected()
+  @Permissions('streaming:control')
+  async revokeInvitation(
+    @Param('id') productionId: string,
+    @Param('invitationId') invitationId: string,
+  ) {
+    return this.guestService.finalizeGuestById(productionId, invitationId);
+  }
+
   @Post('productions/:id/guests/invite')
   @Protected()
   async createInvite(
@@ -60,6 +78,8 @@ export class GuestController {
       obsScene?: string;
       status?: 'FREE' | 'PREVIEW' | 'PROGRAM';
       returnFeed?: 'PROGRAM' | 'PREVIEW' | 'CONTROL' | 'NONE';
+      ifbVolume?: number;
+      programReturnVolume?: number;
     },
   ) {
     return this.guestService.updateGuestSlot(productionId, slotId, body);

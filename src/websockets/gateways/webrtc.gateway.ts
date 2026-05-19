@@ -65,4 +65,29 @@ export class WebRTCGateway {
       level: data.level,
     });
   }
+
+  /**
+   * IFB push: operator requests a real-time volume change in a specific
+   * reporter's earpiece. Broadcasts to the whole production room; the guest
+   * app filters by targetParticipantIdentity on the client side.
+   */
+  @SubscribeMessage(SocketEvents.GUEST_IFB_PUSH)
+  handleGuestIFBPush(
+    @MessageBody()
+    data: {
+      productionId: string;
+      targetParticipantIdentity: string;
+      volume: number;
+      active: boolean;
+    },
+    @ConnectedSocket() client: AuthenticatedSocket,
+  ): void {
+    this.server.to(`production_${data.productionId}`).emit(SocketEvents.GUEST_IFB_RECEIVED, {
+      productionId: data.productionId,
+      targetParticipantIdentity: data.targetParticipantIdentity,
+      volume: Math.min(1, Math.max(0, data.volume)),
+      active: data.active,
+      fromUserId: client.data.userId,
+    });
+  }
 }

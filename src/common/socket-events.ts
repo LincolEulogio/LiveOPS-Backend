@@ -46,6 +46,10 @@ export enum SocketEvents {
   // Crew Status
   CREW_STATUS_UPDATE = 'crew.status_update',
 
+  // IFB (Interruptible Foldback)
+  GUEST_IFB_PUSH = 'guest.ifb.push',
+  GUEST_IFB_RECEIVED = 'guest.ifb.received',
+
   // Chat
   CHAT_SEND = 'chat.send',
   CHAT_RECEIVED = 'chat.received',

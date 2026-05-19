@@ -106,6 +106,7 @@ export class CoreGateway
       'production.state_updated',
       'guest.slots.updated',
       'guest.returnfeed.updated',
+      'guest.ifb.received',
       'social.viewers_update',
       'analytics.log',
       'stream.health.alert',
