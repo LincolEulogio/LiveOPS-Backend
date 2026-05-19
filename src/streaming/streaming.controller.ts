@@ -183,11 +183,14 @@ export class StreamingController {
     return this.streamingService.getSrsHubStatus(productionId);
   }
 
-  /** Start fan-out hub: pulls enabled destinations from DB and spawns FFmpeg */
+  /** Start fan-out hub with optional composite layout */
   @Post(':id/srs/start')
   @Permissions('streaming:control')
-  startSrsHub(@Param('id') productionId: string) {
-    return this.streamingService.startSrsHub(productionId);
+  startSrsHub(
+    @Param('id') productionId: string,
+    @Body('layout') layout?: import('./srs/ffmpeg-compositor.service').CompositorLayout,
+  ) {
+    return this.streamingService.startSrsHub(productionId, layout);
   }
 
   /** Stop fan-out hub and kill all FFmpeg forwarding processes */

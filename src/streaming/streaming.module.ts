@@ -12,6 +12,7 @@ import { LiveKitService } from '@/streaming/livekit.service';
 import { StreamSchedulerService } from '@/streaming/stream-scheduler.service';
 import { SrsService } from '@/streaming/srs/srs.service';
 import { SrsWebhookController } from '@/streaming/srs/srs-webhook.controller';
+import { FfmpegCompositorService } from '@/streaming/srs/ffmpeg-compositor.service';
 
 @Module({
   imports: [ObsModule, VmixModule, WebsocketsModule],
@@ -24,6 +25,7 @@ import { SrsWebhookController } from '@/streaming/srs/srs-webhook.controller';
     LiveKitService,
     StreamSchedulerService,
     SrsService,
+    FfmpegCompositorService,
   ],
   exports: [
     StreamingService,
@@ -32,6 +34,7 @@ import { SrsWebhookController } from '@/streaming/srs/srs-webhook.controller';
     StreamingDestinationsService,
     LiveKitService,
     SrsService,
+    FfmpegCompositorService,
   ],
 })
 export class StreamingModule {}

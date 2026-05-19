@@ -15,11 +15,13 @@ import {
   SrsMetrics,
   SrsStreamsData,
 } from './srs.types';
+import { FfmpegCompositorService, CompositorLayout } from './ffmpeg-compositor.service';
 
 interface HubEntry {
   destinations: SrsHubDestination[];
   processes: ChildProcess[];
   startedAt: Date;
+  layout?: CompositorLayout;
 }
 
 @Injectable()
@@ -32,7 +34,10 @@ export class SrsService implements OnModuleDestroy {
   // productionId → running hub state
   private readonly hubs = new Map<string, HubEntry>();
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly compositor: FfmpegCompositorService,
+  ) {
     this.srsApiUrl = this.configService.get<string>('SRS_API_URL', 'http://localhost:1985');
     this.srsRtmpHost = this.configService.get<string>('SRS_RTMP_HOST', 'localhost');
     this.srsRtmpPort = parseInt(
@@ -62,34 +67,69 @@ export class SrsService implements OnModuleDestroy {
 
   /**
    * Start the fan-out hub for a production.
-   * Spawns one FFmpeg process per destination that pulls from SRS and pushes
-   * to the target RTMP URL. Each process is supervised and auto-restarts once
-   * on unexpected exit.
+   *
+   * Simple mode (no layout or preset='full' with 1 source):
+   *   Spawns one FFmpeg per destination using `-c copy` for zero re-encode latency.
+   *
+   * Composite mode (multi-source layout):
+   *   Spawns ONE FFmpeg with a `-filter_complex` graph that composites all
+   *   input sources and fans out to all destinations via the `tee` muxer.
+   *   Source stream keys: prod_<id>_src_0, prod_<id>_src_1, ...
+   *   (or override via sourceStreamKeys parameter)
    */
   async startHub(
     productionId: string,
     destinations: SrsHubDestination[],
+    layout?: CompositorLayout,
+    sourceStreamKeys?: string[],
   ): Promise<SrsHubStatus> {
-    // Idempotent: stop any existing hub first
     await this.stopHub(productionId);
 
     const processes: ChildProcess[] = [];
-    const ingestUrl = this.getIngestUrl(productionId);
-
-    for (const dest of destinations) {
-      const rtmpTarget = this.buildRtmpTarget(dest.rtmpUrl, dest.streamKey);
-      const proc = this.spawnFfmpeg(productionId, dest.name, ingestUrl, rtmpTarget);
-      processes.push(proc);
-    }
-
-    const entry: HubEntry = { destinations, processes, startedAt: new Date() };
-    this.hubs.set(productionId, entry);
-
-    this.logger.log(
-      `Hub started: production=${productionId} destinations=${destinations.length}`,
+    const outputUrls = destinations.map((d) =>
+      this.buildRtmpTarget(d.rtmpUrl, d.streamKey),
     );
 
+    const isComposite = layout && layout.preset !== 'full';
+
+    if (isComposite) {
+      // Multi-source: build composite FFmpeg process
+      const keys = sourceStreamKeys ?? this.defaultSourceKeys(productionId, layout);
+      const inputUrls = keys.map(
+        (k) => `rtmp://${this.srsRtmpHost}:${this.srsRtmpPort}/live/${k}`,
+      );
+      const args = this.compositor.buildArgs(layout, inputUrls, outputUrls);
+      const proc = this.spawnComposite(productionId, args);
+      processes.push(proc);
+      this.logger.log(
+        `Composite hub started: production=${productionId} preset=${layout.preset} sources=${inputUrls.length} destinations=${destinations.length}`,
+      );
+    } else {
+      // Single source: one FFmpeg per destination (copy, minimal latency)
+      const ingestUrl = this.getIngestUrl(productionId);
+      for (const dest of destinations) {
+        const rtmpTarget = this.buildRtmpTarget(dest.rtmpUrl, dest.streamKey);
+        const proc = this.spawnFfmpeg(productionId, dest.name, ingestUrl, rtmpTarget);
+        processes.push(proc);
+      }
+      this.logger.log(
+        `Hub started: production=${productionId} destinations=${destinations.length}`,
+      );
+    }
+
+    const entry: HubEntry = { destinations, processes, startedAt: new Date(), layout };
+    this.hubs.set(productionId, entry);
     return this.buildStatus(productionId, entry);
+  }
+
+  /** Stream key for source index (used when OBS/vMix pushes multiple sources) */
+  getSourceStreamKey(productionId: string, index: number): string {
+    return `prod_${productionId}_src_${index}`;
+  }
+
+  /** Ingest URL for a specific source index in a multi-source layout */
+  getSourceIngestUrl(productionId: string, index: number): string {
+    return `rtmp://${this.srsRtmpHost}:${this.srsRtmpPort}/live/${this.getSourceStreamKey(productionId, index)}`;
   }
 
   /** Stop the fan-out hub and kill all FFmpeg processes */
@@ -176,6 +216,34 @@ export class SrsService implements OnModuleDestroy {
   }
 
   // ─── Private helpers ───────────────────────────────────────────────────────
+
+  private defaultSourceKeys(productionId: string, layout: CompositorLayout): string[] {
+    const count = layout.regions?.length ?? 2;
+    return Array.from({ length: count }, (_, i) =>
+      this.getSourceStreamKey(productionId, i),
+    );
+  }
+
+  private spawnComposite(productionId: string, args: string[]): ChildProcess {
+    const proc = spawn('ffmpeg', args, { stdio: 'pipe' });
+
+    proc.stderr?.on('data', (chunk: Buffer) => {
+      const line = chunk.toString();
+      if (line.includes('error') || line.includes('Error') || line.includes('Failed')) {
+        this.logger.warn(`FFmpeg compositor [${productionId}]: ${line.trim()}`);
+      }
+    });
+
+    proc.on('error', (err) => {
+      this.logger.error(`FFmpeg compositor spawn failed (production ${productionId}): ${err.message}`);
+    });
+
+    proc.on('exit', (code, signal) => {
+      this.logger.log(`FFmpeg compositor exited: production=${productionId} code=${code} signal=${signal}`);
+    });
+
+    return proc;
+  }
 
   private buildRtmpTarget(rtmpUrl: string, streamKey: string): string {
     // Normalise: ensure no double slash between base URL and stream key

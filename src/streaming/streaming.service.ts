@@ -9,6 +9,7 @@ import { ObsService } from '@/obs/obs.service';
 import { VmixService } from '@/vmix/vmix.service';
 import { LiveKitService } from './livekit.service';
 import { SrsService } from './srs/srs.service';
+import { CompositorLayout } from './srs/ffmpeg-compositor.service';
 import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
 import {
   CreateStreamScheduleDto,
@@ -445,7 +446,7 @@ export class StreamingService {
     };
   }
 
-  async startSrsHub(productionId: string) {
+  async startSrsHub(productionId: string, layout?: CompositorLayout) {
     const production = await this.prisma.production.findUnique({
       where: { id: productionId },
       include: { streamingDestinations: { where: { isEnabled: true } } },
@@ -464,9 +465,18 @@ export class StreamingService {
       throw new BadRequestException('No enabled streaming destinations. Add at least one destination before starting the hub.');
     }
 
-    const status = await this.srsService.startHub(productionId, destinations);
-    this.logger.log(`SRS hub started for production ${productionId} → ${destinations.length} destination(s)`);
-    return { ...status, hlsUrl: this.srsService.getHlsUrl(productionId) };
+    const status = await this.srsService.startHub(productionId, destinations, layout);
+    const preset = layout?.preset ?? 'full';
+    this.logger.log(`SRS hub started: production=${productionId} preset=${preset} destinations=${destinations.length}`);
+    return {
+      ...status,
+      hlsUrl: this.srsService.getHlsUrl(productionId),
+      preset,
+      // Provide per-source ingest URLs for multi-source layouts
+      sourceIngestUrls: layout && layout.preset !== 'full' && layout.regions
+        ? layout.regions.map((_, i) => this.srsService.getSourceIngestUrl(productionId, i))
+        : [this.srsService.getIngestUrl(productionId)],
+    };
   }
 
   async stopSrsHub(productionId: string) {
