@@ -11,6 +11,7 @@ import {
 import { Protected } from '@/common/decorators/protected.decorator';
 import { StreamingService } from '@/streaming/streaming.service';
 import { StreamingDestinationsService } from '@/streaming/streaming-destinations.service';
+import { SrsService } from '@/streaming/srs/srs.service';
 import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
 import {
   CreateStreamingDestinationDto,
@@ -31,6 +32,7 @@ export class StreamingController {
     private readonly streamingService: StreamingService,
     private readonly destinationsService: StreamingDestinationsService,
     private readonly liveKitService: LiveKitService,
+    private readonly srsService: SrsService,
   ) {}
 
   @Post(':id/token')
@@ -171,4 +173,36 @@ export class StreamingController {
   deleteSchedule(@Param('scheduleId') scheduleId: string) {
     return this.streamingService.deleteSchedule(scheduleId);
   }
+
+  // ── SRS Hub ─────────────────────────────────────────────────────────────────
+
+  /** Returns RTMP ingest URL, HLS URL, live metrics, and hub status */
+  @Get(':id/srs/status')
+  @Permissions('streaming:view')
+  getSrsStatus(@Param('id') productionId: string) {
+    return this.streamingService.getSrsHubStatus(productionId);
+  }
+
+  /** Start fan-out hub: pulls enabled destinations from DB and spawns FFmpeg */
+  @Post(':id/srs/start')
+  @Permissions('streaming:control')
+  startSrsHub(@Param('id') productionId: string) {
+    return this.streamingService.startSrsHub(productionId);
+  }
+
+  /** Stop fan-out hub and kill all FFmpeg forwarding processes */
+  @Post(':id/srs/stop')
+  @Permissions('streaming:control')
+  stopSrsHub(@Param('id') productionId: string) {
+    return this.streamingService.stopSrsHub(productionId);
+  }
+
+  /** Live stream metrics from SRS REST API (bitrate, clients, resolution) */
+  @SkipThrottle()
+  @Get(':id/srs/metrics')
+  @Permissions('streaming:view')
+  getSrsMetrics(@Param('id') productionId: string) {
+    return this.srsService.getStreamMetrics(productionId);
+  }
+
 }

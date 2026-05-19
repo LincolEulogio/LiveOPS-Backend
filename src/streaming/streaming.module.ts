@@ -10,10 +10,12 @@ import { StreamingAutomationService } from '@/streaming/automation.service';
 import { StreamingDestinationsService } from '@/streaming/streaming-destinations.service';
 import { LiveKitService } from '@/streaming/livekit.service';
 import { StreamSchedulerService } from '@/streaming/stream-scheduler.service';
+import { SrsService } from '@/streaming/srs/srs.service';
+import { SrsWebhookController } from '@/streaming/srs/srs-webhook.controller';
 
 @Module({
   imports: [ObsModule, VmixModule, WebsocketsModule],
-  controllers: [StreamingController],
+  controllers: [StreamingController, SrsWebhookController],
   providers: [
     StreamingService,
     TallyService,
@@ -21,6 +23,7 @@ import { StreamSchedulerService } from '@/streaming/stream-scheduler.service';
     StreamingDestinationsService,
     LiveKitService,
     StreamSchedulerService,
+    SrsService,
   ],
   exports: [
     StreamingService,
@@ -28,6 +31,7 @@ import { StreamSchedulerService } from '@/streaming/stream-scheduler.service';
     StreamingAutomationService,
     StreamingDestinationsService,
     LiveKitService,
+    SrsService,
   ],
 })
 export class StreamingModule {}

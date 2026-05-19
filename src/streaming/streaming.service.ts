@@ -8,6 +8,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { ObsService } from '@/obs/obs.service';
 import { VmixService } from '@/vmix/vmix.service';
 import { LiveKitService } from './livekit.service';
+import { SrsService } from './srs/srs.service';
 import { StreamingCommandDto } from '@/streaming/dto/streaming-command.dto';
 import {
   CreateStreamScheduleDto,
@@ -34,6 +35,7 @@ export class StreamingService {
     private obsService: ObsService,
     private vmixService: VmixService,
     private liveKitService: LiveKitService,
+    private srsService: SrsService,
   ) {}
 
   private getEngine(production: Production): IVideoEngine {
@@ -332,6 +334,9 @@ export class StreamingService {
         this.startDestination(productionId, p?.destId as string),
       STOP_DESTINATION: () =>
         this.stopDestination(productionId, p?.destId as string),
+      // SRS hub commands
+      START_SRS_HUB: () => this.startSrsHub(productionId),
+      STOP_SRS_HUB: () => this.stopSrsHub(productionId),
     };
 
     const handler = commands[dto.type];
@@ -428,6 +433,46 @@ export class StreamingService {
 
     this.logger.log(`Destination "${destination.name}" stopped for production ${productionId}`);
     return { success: true, destId };
+  }
+
+  // ─── SRS Hub ──────────────────────────────────────────────────────────────
+
+  async getSrsHubStatus(productionId: string) {
+    const status = await this.srsService.getHubStatus(productionId);
+    return {
+      ...status,
+      hlsUrl: this.srsService.getHlsUrl(productionId),
+    };
+  }
+
+  async startSrsHub(productionId: string) {
+    const production = await this.prisma.production.findUnique({
+      where: { id: productionId },
+      include: { streamingDestinations: { where: { isEnabled: true } } },
+    });
+    if (!production) throw new NotFoundException('Production not found');
+
+    const destinations = (production.streamingDestinations as StreamingDestination[]).map((d) => ({
+      destId: d.id,
+      platform: d.platform,
+      name: d.name,
+      rtmpUrl: d.rtmpUrl,
+      streamKey: d.streamKey,
+    }));
+
+    if (destinations.length === 0) {
+      throw new BadRequestException('No enabled streaming destinations. Add at least one destination before starting the hub.');
+    }
+
+    const status = await this.srsService.startHub(productionId, destinations);
+    this.logger.log(`SRS hub started for production ${productionId} → ${destinations.length} destination(s)`);
+    return { ...status, hlsUrl: this.srsService.getHlsUrl(productionId) };
+  }
+
+  async stopSrsHub(productionId: string) {
+    await this.srsService.stopHub(productionId);
+    this.logger.log(`SRS hub stopped for production ${productionId}`);
+    return { success: true, productionId };
   }
 
   private async handleChangeScene(
