@@ -17,6 +17,9 @@ RUN npx prisma generate && npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+# Install FFmpeg for video composition and streaming
+RUN apk add --no-cache ffmpeg
+
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 

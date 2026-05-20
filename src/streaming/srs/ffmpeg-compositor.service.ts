@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-export type LayoutPreset = 'full' | 'pip' | 'split-h' | 'split-v' | 'triple-h' | 'grid-4' | 'custom';
+export type LayoutPreset = 'full' | 'pip' | 'split-h' | 'split-v' | 'triple-h' | 'grid-4' | 'studio' | 'custom';
 
 export interface CompositorRegion {
   sourceIndex: number; // index into inputUrls array
@@ -86,11 +86,33 @@ export class FfmpegCompositorService {
     W: number,
     H: number,
   ): { filterComplex: string | null; audioMap: string[] } {
-    const audioMap = ['-map', '0:a?'];
+    let audioMap = ['-map', '0:a?'];
 
     switch (layout.preset) {
       case 'full':
         return { filterComplex: null, audioMap: [] };
+
+      case 'studio': {
+        const camW = Math.round(W * 0.25);
+        const camH = Math.round(H * 0.25);
+        const camX = W - camW - 40;
+        const camY = H - camH - 40;
+
+        // Video: [0] Screen (background), [1] Camera (PiP), [2] Overlays (top)
+        let vFilter = `[0:v]scale=${W}:${H}[bg];[1:v]scale=${camW}:${camH}[cam];[bg][cam]overlay=${camX}:${camY}[v1]`;
+        if (inputs > 2) {
+          vFilter += `;[2:v]scale=${W}:${H}[over];[v1][over]overlay=0:0[out]`;
+        } else {
+          vFilter += `;[v1]copy[out]`;
+        }
+
+        // Audio: Mix audio from screen and cam, avoid feedback if possible
+        const aFilter = `[0:a][1:a]amix=inputs=2:duration=first[aout]`;
+        return {
+          filterComplex: vFilter + (inputs >= 2 ? `;${aFilter}` : ''),
+          audioMap: inputs >= 2 ? ['-map', '[aout]'] : ['-map', '0:a?'],
+        };
+      }
 
       case 'pip': {
         const px = Math.round(W * 0.72);
@@ -112,8 +134,9 @@ export class FfmpegCompositorService {
           filterComplex:
             `[0:v]scale=${hw}:${H}[L];` +
             `[1:v]scale=${hw}:${H}[R];` +
-            `[L][R]hstack[out]`,
-          audioMap,
+            `[L][R]hstack[out];` +
+            `[0:a][1:a]amix=inputs=2:duration=first[aout]`,
+          audioMap: ['-map', '[aout]'],
         };
       }
 
@@ -123,8 +146,9 @@ export class FfmpegCompositorService {
           filterComplex:
             `[0:v]scale=${W}:${hh}[T];` +
             `[1:v]scale=${W}:${hh}[B];` +
-            `[T][B]vstack[out]`,
-          audioMap,
+            `[T][B]vstack[out];` +
+            `[0:a][1:a]amix=inputs=2:duration=first[aout]`,
+          audioMap: ['-map', '[aout]'],
         };
       }
 
@@ -135,8 +159,9 @@ export class FfmpegCompositorService {
             `[0:v]scale=${tw}:${H}[A];` +
             `[1:v]scale=${tw}:${H}[B];` +
             `[2:v]scale=${tw}:${H}[C];` +
-            `[A][B][C]hstack=inputs=3[out]`,
-          audioMap,
+            `[A][B][C]hstack=inputs=3[out];` +
+            `[0:a][1:a][2:a]amix=inputs=3:duration=first[aout]`,
+          audioMap: ['-map', '[aout]'],
         };
       }
 
@@ -151,8 +176,9 @@ export class FfmpegCompositorService {
             `[3:v]scale=${gw}:${gh}[D];` +
             `[A][B]hstack[top];` +
             `[C][D]hstack[bot];` +
-            `[top][bot]vstack[out]`,
-          audioMap,
+            `[top][bot]vstack[out];` +
+            `[0:a][1:a][2:a][3:a]amix=inputs=4:duration=first[aout]`,
+          audioMap: ['-map', '[aout]'],
         };
       }
 

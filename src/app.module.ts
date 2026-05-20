@@ -67,8 +67,8 @@ import { SportsModule } from '@/sports/sports.module';
       },
     }),
     ThrottlerModule.forRoot([
-      { name: 'short', ttl: 1000, limit: 3 },    // burst protection
-      { name: 'medium', ttl: 10000, limit: 20 }, // general API
+      { name: 'short', ttl: 1000, limit: 15 },    // burst protection (15 req/sec)
+      { name: 'medium', ttl: 10000, limit: 40 }, // general API (40 req/10sec)
       { name: 'auth', ttl: 60000, limit: 10 },   // auth routes
     ]),
     EventEmitterModule.forRoot({

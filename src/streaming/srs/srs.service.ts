@@ -218,7 +218,11 @@ export class SrsService implements OnModuleDestroy {
   // ─── Private helpers ───────────────────────────────────────────────────────
 
   private defaultSourceKeys(productionId: string, layout: CompositorLayout): string[] {
-    const count = layout.regions?.length ?? 2;
+    let count = layout.regions?.length ?? 2;
+    if (layout.preset === 'studio') count = 3;
+    if (layout.preset === 'triple-h') count = 3;
+    if (layout.preset === 'grid-4') count = 4;
+
     return Array.from({ length: count }, (_, i) =>
       this.getSourceStreamKey(productionId, i),
     );
