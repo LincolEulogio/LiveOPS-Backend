@@ -24,6 +24,7 @@ import {
 import { Permissions } from '@/common/decorators/permissions.decorator';
 import { LiveKitService } from '@/streaming/livekit.service';
 import { SkipThrottle } from '@nestjs/throttler';
+import { CompositorLayout } from './srs/ffmpeg-compositor.service';
 
 @Protected()
 @Controller('streaming')
@@ -188,7 +189,7 @@ export class StreamingController {
   @Permissions('streaming:control')
   startSrsHub(
     @Param('id') productionId: string,
-    @Body('layout') layout?: import('./srs/ffmpeg-compositor.service').CompositorLayout,
+    @Body('layout') layout?: CompositorLayout,
   ) {
     return this.streamingService.startSrsHub(productionId, layout);
   }
