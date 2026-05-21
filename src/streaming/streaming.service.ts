@@ -50,7 +50,11 @@ export class StreamingService {
     const production = (await this.prisma.production.findUnique({
       where: { id: productionId },
       include: { streamingDestinations: { orderBy: { createdAt: 'asc' } } },
-    })) as (ProductionWithCloud & { streamingDestinations: StreamingDestination[] }) | null;
+    })) as
+      | (ProductionWithCloud & {
+          streamingDestinations: StreamingDestination[];
+        })
+      | null;
 
     if (!production) {
       throw new NotFoundException('Production not found');
@@ -137,7 +141,9 @@ export class StreamingService {
           await this.liveKitService.stopEgress(egressId);
           this.logger.warn(`Rolled back egress ${egressId} after DB failure`);
         } catch (rollbackErr) {
-          this.logger.error(`Rollback failed for egress ${egressId}: ${getErrorMessage(rollbackErr)}`);
+          this.logger.error(
+            `Rollback failed for egress ${egressId}: ${getErrorMessage(rollbackErr)}`,
+          );
         }
       }
 
@@ -272,18 +278,28 @@ export class StreamingService {
     const engine = isAppMode ? null : this.getEngine(production);
     const p = dto.payload as Record<string, unknown>;
 
-    const engineRequired = (fn: () => Promise<void | Record<string, unknown>>) => {
-      if (!engine) throw new BadRequestException('Este comando requiere OBS o vMix conectado. Esta producción usa modo App.');
+    const engineRequired = (
+      fn: () => Promise<void | Record<string, unknown>>,
+    ) => {
+      if (!engine)
+        throw new BadRequestException(
+          'Este comando requiere OBS o vMix conectado. Esta producción usa modo App.',
+        );
       return fn();
     };
 
     type CommandHandler = () => Promise<void | Record<string, unknown>>;
     const commands: Partial<Record<string, CommandHandler>> = {
-      CHANGE_SCENE: () => engineRequired(() =>
-        this.handleChangeScene(engine!, productionId, dto.sceneName)),
-      SET_PREVIEW_SCENE: () => engineRequired(() =>
-        this.handleSetPreviewScene(engine!, productionId, dto.sceneName)),
-      START_STREAM: () => engineRequired(() => engine!.startStream(productionId)),
+      CHANGE_SCENE: () =>
+        engineRequired(() =>
+          this.handleChangeScene(engine!, productionId, dto.sceneName),
+        ),
+      SET_PREVIEW_SCENE: () =>
+        engineRequired(() =>
+          this.handleSetPreviewScene(engine!, productionId, dto.sceneName),
+        ),
+      START_STREAM: () =>
+        engineRequired(() => engine!.startStream(productionId)),
       STOP_STREAM: () => engineRequired(() => engine!.stopStream(productionId)),
       START_CLOUD_STREAM: () =>
         this.startCloudStream(productionId, p?.layout as string),
@@ -291,46 +307,194 @@ export class StreamingService {
       START_CLOUD_RECORDING: () =>
         this.startCloudRecording(productionId, p?.layout as string),
       STOP_CLOUD_RECORDING: () => this.stopCloudRecording(productionId),
-      START_RECORD: () => engineRequired(() => engine!.startRecord(productionId)),
+      START_RECORD: () =>
+        engineRequired(() => engine!.startRecord(productionId)),
       STOP_RECORD: () => engineRequired(() => engine!.stopRecord(productionId)),
-      START_REPLAY_BUFFER: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'startReplayBuffer', productionId) as Promise<void>),
-      STOP_REPLAY_BUFFER: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'stopReplayBuffer', productionId) as Promise<void>),
-      SAVE_REPLAY_BUFFER: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'saveReplayBuffer', productionId) as Promise<void>),
-      START_VIRTUAL_CAM: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'startVirtualCam', productionId) as Promise<void>),
-      STOP_VIRTUAL_CAM: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'stopVirtualCam', productionId) as Promise<void>),
-      SET_TBAR: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'setTBarPosition', productionId, p?.position) as Promise<void>),
-      RELEASE_TBAR: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'releaseTBar', productionId) as Promise<void>),
-      TRIGGER_TRANSITION: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'triggerTransition', productionId) as Promise<void>),
-      SET_TRANSITION: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'setCurrentTransition', productionId, p?.transitionName, p?.transitionDuration) as Promise<void>),
-      SET_SCENE_COLLECTION: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'setCurrentSceneCollection', productionId, p?.sceneCollectionName) as Promise<void>),
-      SET_STUDIO_MODE: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'setStudioMode', productionId, p?.enabled) as Promise<void>),
-      VMIX_CUT: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'cut', productionId) as Promise<void>),
-      VMIX_FADE: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'fade', productionId) as Promise<void>),
-      VMIX_SELECT_INPUT: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'changeInput', productionId, p?.input as number) as Promise<void>),
-      VMIX_SET_VOLUME: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'setVolume', productionId, p?.input, p?.value) as Promise<void>),
-      VMIX_TOGGLE_MUTE: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'toggleMute', productionId, p?.input) as Promise<void>),
-      VMIX_TOGGLE_SOLO: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'toggleSolo', productionId, p?.input) as Promise<void>),
-      VMIX_SET_GAIN: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'setGain', productionId, p?.input, p?.value) as Promise<void>),
-      VMIX_TOGGLE_BUS: () => engineRequired(() =>
-        this.executeEngineMethod(engine!, 'toggleBus', productionId, p?.input, p?.bus) as Promise<void>),
+      START_REPLAY_BUFFER: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'startReplayBuffer',
+              productionId,
+            ) as Promise<void>,
+        ),
+      STOP_REPLAY_BUFFER: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'stopReplayBuffer',
+              productionId,
+            ) as Promise<void>,
+        ),
+      SAVE_REPLAY_BUFFER: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'saveReplayBuffer',
+              productionId,
+            ) as Promise<void>,
+        ),
+      START_VIRTUAL_CAM: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'startVirtualCam',
+              productionId,
+            ) as Promise<void>,
+        ),
+      STOP_VIRTUAL_CAM: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'stopVirtualCam',
+              productionId,
+            ) as Promise<void>,
+        ),
+      SET_TBAR: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'setTBarPosition',
+              productionId,
+              p?.position,
+            ) as Promise<void>,
+        ),
+      RELEASE_TBAR: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'releaseTBar',
+              productionId,
+            ) as Promise<void>,
+        ),
+      TRIGGER_TRANSITION: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'triggerTransition',
+              productionId,
+            ) as Promise<void>,
+        ),
+      SET_TRANSITION: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'setCurrentTransition',
+              productionId,
+              p?.transitionName,
+              p?.transitionDuration,
+            ) as Promise<void>,
+        ),
+      SET_SCENE_COLLECTION: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'setCurrentSceneCollection',
+              productionId,
+              p?.sceneCollectionName,
+            ) as Promise<void>,
+        ),
+      SET_STUDIO_MODE: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'setStudioMode',
+              productionId,
+              p?.enabled,
+            ) as Promise<void>,
+        ),
+      VMIX_CUT: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'cut',
+              productionId,
+            ) as Promise<void>,
+        ),
+      VMIX_FADE: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'fade',
+              productionId,
+            ) as Promise<void>,
+        ),
+      VMIX_SELECT_INPUT: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'changeInput',
+              productionId,
+              p?.input as number,
+            ) as Promise<void>,
+        ),
+      VMIX_SET_VOLUME: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'setVolume',
+              productionId,
+              p?.input,
+              p?.value,
+            ) as Promise<void>,
+        ),
+      VMIX_TOGGLE_MUTE: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'toggleMute',
+              productionId,
+              p?.input,
+            ) as Promise<void>,
+        ),
+      VMIX_TOGGLE_SOLO: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'toggleSolo',
+              productionId,
+              p?.input,
+            ) as Promise<void>,
+        ),
+      VMIX_SET_GAIN: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'setGain',
+              productionId,
+              p?.input,
+              p?.value,
+            ) as Promise<void>,
+        ),
+      VMIX_TOGGLE_BUS: () =>
+        engineRequired(
+          () =>
+            this.executeEngineMethod(
+              engine!,
+              'toggleBus',
+              productionId,
+              p?.input,
+              p?.bus,
+            ) as Promise<void>,
+        ),
       START_DESTINATION: () =>
         this.startDestination(productionId, p?.destId as string),
       STOP_DESTINATION: () =>
@@ -356,30 +520,49 @@ export class StreamingService {
     if (!destination) throw new NotFoundException('Destination not found');
     if (!production) throw new NotFoundException('Production not found');
     if (destination.productionId !== productionId)
-      throw new BadRequestException('Destination does not belong to this production');
+      throw new BadRequestException(
+        'Destination does not belong to this production',
+      );
     if (destination.isActive)
-      throw new BadRequestException(`${destination.name} ya está transmitiendo`);
+      throw new BadRequestException(
+        `${destination.name} ya está transmitiendo`,
+      );
 
     const isAppMode = production.engineType === 'APP';
     const engine = isAppMode ? null : this.getEngine(production);
 
     if (engine?.startStreamToDestination) {
       // Engine-native path: OBS/vMix streams directly to the platform RTMP
-      await engine.startStreamToDestination(productionId, destination.rtmpUrl, destination.streamKey);
+      await engine.startStreamToDestination(
+        productionId,
+        destination.rtmpUrl,
+        destination.streamKey,
+      );
     } else {
       // APP mode or fallback: LiveKit Egress composites the room and pushes to RTMP
-      const activeState = ((production.activeState as Record<string, unknown>) ?? {}) as Record<string, unknown>;
-      const destEgresses = ((activeState.destinationEgresses ?? {}) as Record<string, string>);
+      const activeState = ((production.activeState as Record<
+        string,
+        unknown
+      >) ?? {}) as Record<string, unknown>;
+      const destEgresses = (activeState.destinationEgresses ?? {}) as Record<
+        string,
+        string
+      >;
 
       const roomName = `production_${productionId}`;
       await this.liveKitService.ensureRoomExists(roomName);
       const rtmpTarget = `${destination.rtmpUrl}${destination.streamKey}`;
-      const egressInfo = await this.liveKitService.startRoomCompositeEgress(roomName, [rtmpTarget]);
+      const egressInfo = await this.liveKitService.startRoomCompositeEgress(
+        roomName,
+        [rtmpTarget],
+      );
       destEgresses[destId] = egressInfo.egressId;
 
       await this.prisma.production.update({
         where: { id: productionId },
-        data: { activeState: { ...activeState, destinationEgresses: destEgresses } },
+        data: {
+          activeState: { ...activeState, destinationEgresses: destEgresses },
+        },
       });
     }
 
@@ -388,8 +571,15 @@ export class StreamingService {
       data: { isActive: true },
     });
 
-    this.logger.log(`Destination "${destination.name}" (${destination.platform}) started for production ${productionId}`);
-    return { success: true, destId, platform: destination.platform, name: destination.name };
+    this.logger.log(
+      `Destination "${destination.name}" (${destination.platform}) started for production ${productionId}`,
+    );
+    return {
+      success: true,
+      destId,
+      platform: destination.platform,
+      name: destination.name,
+    };
   }
 
   async stopDestination(productionId: string, destId: string) {
@@ -412,17 +602,29 @@ export class StreamingService {
       await engine.stopStreamFromDestination(productionId);
     } else {
       // LiveKit Egress fallback
-      const activeState = ((production.activeState as Record<string, unknown>) ?? {}) as Record<string, unknown>;
-      const destEgresses = ((activeState.destinationEgresses ?? {}) as Record<string, string>);
+      const activeState = ((production.activeState as Record<
+        string,
+        unknown
+      >) ?? {}) as Record<string, unknown>;
+      const destEgresses = (activeState.destinationEgresses ?? {}) as Record<
+        string,
+        string
+      >;
       const egressId = destEgresses[destId];
       if (egressId) {
-        try { await this.liveKitService.stopEgress(egressId); } catch (err) {
-          this.logger.warn(`Could not stop egress ${egressId}: ${getErrorMessage(err)}`);
+        try {
+          await this.liveKitService.stopEgress(egressId);
+        } catch (err) {
+          this.logger.warn(
+            `Could not stop egress ${egressId}: ${getErrorMessage(err)}`,
+          );
         }
         delete destEgresses[destId];
         await this.prisma.production.update({
           where: { id: productionId },
-          data: { activeState: { ...activeState, destinationEgresses: destEgresses } },
+          data: {
+            activeState: { ...activeState, destinationEgresses: destEgresses },
+          },
         });
       }
     }
@@ -432,7 +634,9 @@ export class StreamingService {
       data: { isActive: false },
     });
 
-    this.logger.log(`Destination "${destination.name}" stopped for production ${productionId}`);
+    this.logger.log(
+      `Destination "${destination.name}" stopped for production ${productionId}`,
+    );
     return { success: true, destId };
   }
 
@@ -453,7 +657,9 @@ export class StreamingService {
     });
     if (!production) throw new NotFoundException('Production not found');
 
-    const destinations = (production.streamingDestinations as StreamingDestination[]).map((d) => ({
+    const destinations = (
+      production.streamingDestinations as StreamingDestination[]
+    ).map((d) => ({
       destId: d.id,
       platform: d.platform,
       name: d.name,
@@ -462,20 +668,31 @@ export class StreamingService {
     }));
 
     if (destinations.length === 0) {
-      throw new BadRequestException('No enabled streaming destinations. Add at least one destination before starting the hub.');
+      throw new BadRequestException(
+        'No enabled streaming destinations. Add at least one destination before starting the hub.',
+      );
     }
 
-    const status = await this.srsService.startHub(productionId, destinations, layout);
+    const status = await this.srsService.startHub(
+      productionId,
+      destinations,
+      layout,
+    );
     const preset = layout?.preset ?? 'full';
-    this.logger.log(`SRS hub started: production=${productionId} preset=${preset} destinations=${destinations.length}`);
+    this.logger.log(
+      `SRS hub started: production=${productionId} preset=${preset} destinations=${destinations.length}`,
+    );
     return {
       ...status,
       hlsUrl: this.srsService.getHlsUrl(productionId),
       preset,
       // Provide per-source ingest URLs for multi-source layouts
-      sourceIngestUrls: layout && layout.preset !== 'full' && layout.regions
-        ? layout.regions.map((_, i) => this.srsService.getSourceIngestUrl(productionId, i))
-        : [this.srsService.getIngestUrl(productionId)],
+      sourceIngestUrls:
+        layout && layout.preset !== 'full' && layout.regions
+          ? layout.regions.map((_, i) =>
+              this.srsService.getSourceIngestUrl(productionId, i),
+            )
+          : [this.srsService.getIngestUrl(productionId)],
     };
   }
 
@@ -494,7 +711,10 @@ export class StreamingService {
       throw new BadRequestException('sceneName is required');
     }
     if ('changeScene' in engine) {
-      return (engine as unknown as ISceneEngine).changeScene(productionId, sceneName);
+      return (engine as unknown as ISceneEngine).changeScene(
+        productionId,
+        sceneName,
+      );
     }
     throw new BadRequestException('CHANGE_SCENE not supported by this engine');
   }
@@ -515,13 +735,17 @@ export class StreamingService {
     if ('changeScene' in engine) {
       return sceneEngine.changeScene(productionId, sceneName);
     }
-    throw new BadRequestException('SET_PREVIEW_SCENE not supported by this engine');
+    throw new BadRequestException(
+      'SET_PREVIEW_SCENE not supported by this engine',
+    );
   }
 
   // ─── Schedule CRUD ────────────────────────────────────────────────────────
 
   async getSchedules(productionId: string) {
-    const production = await this.prisma.production.findUnique({ where: { id: productionId } });
+    const production = await this.prisma.production.findUnique({
+      where: { id: productionId },
+    });
     if (!production) throw new NotFoundException('Production not found');
     return this.prisma.streamSchedule.findMany({
       where: { productionId },
@@ -530,7 +754,9 @@ export class StreamingService {
   }
 
   async createSchedule(productionId: string, dto: CreateStreamScheduleDto) {
-    const production = await this.prisma.production.findUnique({ where: { id: productionId } });
+    const production = await this.prisma.production.findUnique({
+      where: { id: productionId },
+    });
     if (!production) throw new NotFoundException('Production not found');
     return this.prisma.streamSchedule.create({
       data: {
@@ -543,13 +769,19 @@ export class StreamingService {
   }
 
   async updateSchedule(scheduleId: string, dto: UpdateStreamScheduleDto) {
-    const existing = await this.prisma.streamSchedule.findUnique({ where: { id: scheduleId } });
+    const existing = await this.prisma.streamSchedule.findUnique({
+      where: { id: scheduleId },
+    });
     if (!existing) throw new NotFoundException('Schedule not found');
     return this.prisma.streamSchedule.update({
       where: { id: scheduleId },
       data: {
-        ...(dto.scheduledStart !== undefined && { scheduledStart: new Date(dto.scheduledStart) }),
-        ...(dto.scheduledEnd !== undefined && { scheduledEnd: dto.scheduledEnd ? new Date(dto.scheduledEnd) : null }),
+        ...(dto.scheduledStart !== undefined && {
+          scheduledStart: new Date(dto.scheduledStart),
+        }),
+        ...(dto.scheduledEnd !== undefined && {
+          scheduledEnd: dto.scheduledEnd ? new Date(dto.scheduledEnd) : null,
+        }),
         ...(dto.layout !== undefined && { layout: dto.layout }),
         ...(dto.isEnabled !== undefined && { isEnabled: dto.isEnabled }),
       },
@@ -557,7 +789,9 @@ export class StreamingService {
   }
 
   async deleteSchedule(scheduleId: string) {
-    const existing = await this.prisma.streamSchedule.findUnique({ where: { id: scheduleId } });
+    const existing = await this.prisma.streamSchedule.findUnique({
+      where: { id: scheduleId },
+    });
     if (!existing) throw new NotFoundException('Schedule not found');
     await this.prisma.streamSchedule.delete({ where: { id: scheduleId } });
     return { success: true };
