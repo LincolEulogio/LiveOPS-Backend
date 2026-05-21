@@ -14,7 +14,8 @@ export class LiveKitService {
   private readonly logger = new Logger(LiveKitService.name);
   private readonly apiKey: string;
   private readonly apiSecret: string;
-  private readonly livekitUrl: string;
+  private readonly livekitInternalUrl: string;
+  private readonly livekitPublicUrl: string;
   private readonly defaultLayout: string;
   private readonly egressClient: EgressClient;
   private readonly roomClient: RoomServiceClient;
@@ -23,8 +24,14 @@ export class LiveKitService {
     this.apiKey = this.configService.get<string>('LIVEKIT_API_KEY') ?? 'devkey';
     this.apiSecret =
       this.configService.get<string>('LIVEKIT_API_SECRET') ?? 'secret';
-    this.livekitUrl =
-      this.configService.get<string>('LIVEKIT_URL') ?? 'ws://localhost:7880';
+    this.livekitInternalUrl =
+      this.configService.get<string>('LIVEKIT_INTERNAL_URL') ??
+      this.configService.get<string>('LIVEKIT_URL') ??
+      'ws://localhost:7880';
+    this.livekitPublicUrl =
+      this.configService.get<string>('LIVEKIT_PUBLIC_URL') ??
+      this.configService.get<string>('LIVEKIT_URL') ??
+      this.livekitInternalUrl;
 
     this.defaultLayout =
       this.configService.get<string>('LIVEKIT_DEFAULT_LAYOUT') ?? 'speaker-dark';
@@ -35,7 +42,7 @@ export class LiveKitService {
       );
     }
 
-    const httpUrl = this.livekitUrl.replace(/^ws/, 'http');
+    const httpUrl = this.livekitInternalUrl.replace(/^wss?/, 'http');
 
     this.egressClient = new EgressClient(httpUrl, this.apiKey, this.apiSecret);
     this.roomClient = new RoomServiceClient(
@@ -155,6 +162,6 @@ export class LiveKitService {
   }
 
   getLiveKitUrl() {
-    return this.livekitUrl;
+    return this.livekitPublicUrl;
   }
 }
