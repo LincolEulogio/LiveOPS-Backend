@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "module": "Node16",
+    "moduleResolution": "Node16",
     "ignoreDeprecations": "5.0",
     "esModuleInterop": true,
     "isolatedModules": true,
@@ -21,8 +21,8 @@
     "noImplicitAny": true,
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": "./",
     "paths": {
+      "*": ["./*"],
       "@/*": ["./src/*"]
     }
   }
