@@ -228,7 +228,7 @@ export class AuthController {
     );
     res.cookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);
     const frontendUrl =
-      process.env.FRONTEND_URL ?? 'http://localhost:3001';
+      process.env.FRONTEND_URL ?? 'http://localhost:4000';
     res.redirect(
       `${frontendUrl}/oauth/callback?accessToken=${result.accessToken}`,
     );
@@ -253,7 +253,7 @@ export class AuthController {
     );
     res.cookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);
     const frontendUrl =
-      process.env.FRONTEND_URL ?? 'http://localhost:3001';
+      process.env.FRONTEND_URL ?? 'http://localhost:4000';
     res.redirect(
       `${frontendUrl}/oauth/callback?accessToken=${result.accessToken}`,
     );

@@ -39,10 +39,10 @@ RUN chmod +x ./docker-entrypoint.sh && chown -R liveops:liveops /app
 
 USER liveops
 
-EXPOSE 4000
+EXPOSE 5000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD wget -qO- http://localhost:4000/api/v1/health || exit 1
+  CMD wget -qO- http://localhost:5000/api/v1/health || exit 1
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "dist/main.js"]

@@ -7,7 +7,7 @@ import type { AlertThreshold } from '@/analytics/analytics.types';
 import { AnalyticsService } from '@/analytics/analytics.service';
 
 const GATEWAY_CORS = {
-  origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3001').split(','),
+  origin: (process.env.CORS_ORIGIN ?? 'http://localhost:4000').split(','),
   credentials: true,
 };
 

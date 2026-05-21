@@ -64,7 +64,7 @@ export class RestreamOAuthController {
     @Res() res: Response,
   ): Promise<void> {
     const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
+      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:4000';
 
     let productionId = '';
     let redirectPath = 'social';

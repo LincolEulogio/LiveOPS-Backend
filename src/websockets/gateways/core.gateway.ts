@@ -22,7 +22,7 @@ import { WsAuthGuard } from '@/websockets/guards/ws-auth.guard';
 import type { AuthenticatedSocket } from '@/websockets/types/socket.types';
 
 const GATEWAY_CORS = {
-  origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3001').split(','),
+  origin: (process.env.CORS_ORIGIN ?? 'http://localhost:4000').split(','),
   credentials: true,
 };
 

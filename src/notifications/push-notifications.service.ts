@@ -13,20 +13,45 @@ export class PushNotificationsService implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    const publicKey = this.configService.get<string>('VAPID_PUBLIC_KEY');
-    const privateKey = this.configService.get<string>('VAPID_PRIVATE_KEY');
+    const publicKey = this.configService.get<string>('VAPID_PUBLIC_KEY')?.trim();
+    const privateKey = this.configService.get<string>('VAPID_PRIVATE_KEY')?.trim();
     const email = this.configService.get<string>(
       'VAPID_EMAIL',
       'admin@liveops.com',
     );
 
-    if (publicKey && privateKey) {
-      webpush.setVapidDetails(`mailto:${email}`, publicKey, privateKey);
-      this.logger.log('VAPID details set successfully');
-    } else {
+    if (!publicKey || !privateKey) {
       this.logger.warn(
         'VAPID keys not found in config. Push notifications will not work.',
       );
+      return;
+    }
+
+    if (!this.isValidVapidPublicKey(publicKey)) {
+      this.logger.error(
+        'Invalid VAPID_PUBLIC_KEY. Expected a base64url-encoded public key that decodes to 65 bytes. Push notifications will be disabled.',
+      );
+      return;
+    }
+
+    try {
+      webpush.setVapidDetails(`mailto:${email}`, publicKey, privateKey);
+      this.logger.log('VAPID details set successfully');
+    } catch (error: unknown) {
+      this.logger.error(
+        `Failed to configure VAPID details: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  private isValidVapidPublicKey(publicKey: string) {
+    const normalizedKey = publicKey.replace(/-/g, '+').replace(/_/g, '/');
+    const padding = '='.repeat((4 - (normalizedKey.length % 4)) % 4);
+
+    try {
+      return Buffer.from(normalizedKey + padding, 'base64').length === 65;
+    } catch {
+      return false;
     }
   }
 
